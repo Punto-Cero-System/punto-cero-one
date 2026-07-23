@@ -5,7 +5,14 @@ import HeroSection from '../components/HeroSection';
 import CoreSection from '../components/CoreSection';
 import ZeroMoment from '../components/ZeroMoment';
 import EcosystemSection from '../components/EcosystemSection';
+import PuntoCeroLegalSection from '../components/PuntoCeroLegalSection';
+import LatinAmericaSection from '../components/LatinAmericaSection';
 import ManifestoSection from '../components/ManifestoSection';
+import InvestorsSection from '../components/InvestorsSection';
+import PartnersSection from '../components/PartnersSection';
+import CommunitySection from '../components/CommunitySection';
+import PressSection from '../components/PressSection';
+import CareersSection from '../components/CareersSection';
 import MarqueeSection from '../components/MarqueeSection';
 import ContactSection from '../components/ContactSection';
 import Footer from '../components/Footer';
@@ -118,7 +125,14 @@ const HomePage = () => {
         <CoreSection />
         <ZeroMoment />
         <EcosystemSection />
+        <PuntoCeroLegalSection />
+        <LatinAmericaSection />
         <ManifestoSection />
+        <InvestorsSection />
+        <PartnersSection />
+        <CommunitySection />
+        <PressSection />
+        <CareersSection />
         <MarqueeSection />
         <ContactSection />
         <Footer />
