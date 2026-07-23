@@ -106,3 +106,32 @@ class InvestorRequestStats(BaseModel):
     under_review: int
     approved: int
     rejected: int
+
+
+# ---------------------------
+# Pitch Deck Analytics
+# ---------------------------
+class PitchDeckEventCreate(BaseModel):
+    """One dwell measurement for a single slide within a session."""
+    model_config = ConfigDict(extra="ignore")
+    session_id: str = Field(min_length=6, max_length=64)
+    slide_number: int = Field(ge=1, le=99)
+    slide_title: Optional[str] = Field(default="", max_length=160)
+    duration_ms: int = Field(ge=0, le=1000 * 60 * 30)  # cap 30 min per slide
+    completed: bool = False  # did the user actually leave the slide
+    user_agent: Optional[str] = Field(default="", max_length=400)
+
+
+class PitchDeckSlideStat(BaseModel):
+    slide_number: int
+    slide_title: str
+    views: int
+    unique_sessions: int
+    total_ms: int
+    avg_ms: float
+
+
+class PitchDeckAnalytics(BaseModel):
+    total_events: int
+    total_sessions: int
+    slides: list[PitchDeckSlideStat]

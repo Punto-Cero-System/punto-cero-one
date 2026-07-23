@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import {
   LogOut, Filter, Search, RefreshCcw, Shield, Users, ArrowRight,
   Clock, Loader, CheckCircle, XCircle, ChevronRight, ExternalLink, Mail, Building2, Globe2,
-  Sparkles,
+  Sparkles, BarChart3, Presentation, Download, Eye, Timer,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -292,6 +292,9 @@ const AdminDashboardPage = () => {
             {items.length} de {total} solicitudes
           </div>
         </div>
+
+        {/* Pitch Deck Analytics */}
+        <PitchDeckAnalyticsPanel />
       </main>
 
       {/* Detail drawer */}
@@ -541,6 +544,179 @@ const InfoRow = ({ icon: Icon, label, value }) => (
         {label.toUpperCase()}
       </div>
       <div style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.9)' }}>{value}</div>
+    </div>
+  </div>
+);
+
+// ============================================================================
+// PITCH DECK ANALYTICS PANEL
+// ============================================================================
+const fmtMs = (ms) => {
+  if (!ms || ms < 1000) return `${Math.round(ms || 0)}ms`;
+  const s = ms / 1000;
+  if (s < 60) return `${s.toFixed(1)}s`;
+  const m = Math.floor(s / 60);
+  const r = Math.round(s % 60);
+  return `${m}m ${r}s`;
+};
+
+const PitchDeckAnalyticsPanel = () => {
+  const { authFetch } = useAuth();
+  const [data, setData] = useState(null);
+  const [downloads, setDownloads] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [aRes, dRes] = await Promise.all([
+        authFetch('/api/admin/pitch-deck/analytics'),
+        authFetch('/api/admin/pitch-deck/downloads'),
+      ]);
+      if (aRes.ok) setData(await aRes.json());
+      if (dRes.ok) setDownloads(await dRes.json());
+    } finally { setLoading(false); }
+  }, [authFetch]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const maxViews = Math.max(1, ...(data?.slides || []).map((s) => s.views));
+
+  return (
+    <section
+      data-testid="pitch-analytics-panel"
+      style={{
+        marginTop: '4rem', padding: '2rem',
+        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: '20px', color: '#FFFFFF',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', gap: '1rem', flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontSize: '0.65rem', color: '#D4AF37', letterSpacing: '0.25em', fontWeight: 700, marginBottom: '0.6rem' }}>
+            <Presentation size={12} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
+            PITCH DECK · ENGAGEMENT
+          </div>
+          <h3 style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.65rem', fontWeight: 300, letterSpacing: '-0.02em', margin: 0 }}>
+            Analítica por slide
+          </h3>
+        </div>
+        <button
+          onClick={load} disabled={loading}
+          data-testid="pitch-analytics-refresh"
+          className="interactive"
+          style={{
+            padding: '0.55rem 1rem', background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.12)', borderRadius: '100px',
+            color: '#FFFFFF', fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit',
+            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+          }}
+        >
+          <RefreshCcw size={12} className={loading ? 'spin' : ''} /> {loading ? 'Cargando…' : 'Refrescar'}
+        </button>
+      </div>
+
+      {/* KPI orbs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
+        <AnalyticsKPI icon={Eye} label="Eventos totales" value={data?.total_events ?? '—'} testid="kpi-total-events" />
+        <AnalyticsKPI icon={Users} label="Sesiones únicas" value={data?.total_sessions ?? '—'} color="#00C896" testid="kpi-total-sessions" />
+        <AnalyticsKPI icon={Timer} label="Tiempo total" value={data ? fmtMs((data.slides || []).reduce((a, s) => a + s.total_ms, 0)) : '—'} testid="kpi-total-time" />
+        <AnalyticsKPI icon={Download} label="Descargas PDF" value={downloads?.total_downloads ?? '—'} color="#D4AF37" testid="kpi-downloads" />
+      </div>
+
+      {/* Per-slide bars */}
+      <div>
+        <div style={{ display: 'grid', gridTemplateColumns: '60px 1.6fr 1fr 1fr 1fr', gap: '1rem', padding: '0 1rem', fontSize: '0.65rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: '0.75rem' }} className="analytics-header-grid">
+          <div>SLIDE</div>
+          <div>TÍTULO</div>
+          <div>VISTAS</div>
+          <div>SESIONES</div>
+          <div>DWELL MEDIO</div>
+        </div>
+
+        {(!data || data.slides.length === 0) && !loading && (
+          <div data-testid="pitch-analytics-empty" style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
+            Aún no hay datos de engagement. Los eventos se registrarán a medida que los usuarios recorran el Pitch Deck.
+          </div>
+        )}
+
+        {(data?.slides || []).map((s) => (
+          <div
+            key={s.slide_number}
+            data-testid={`pitch-slide-row-${s.slide_number}`}
+            style={{
+              display: 'grid', gridTemplateColumns: '60px 1.6fr 1fr 1fr 1fr',
+              gap: '1rem', alignItems: 'center', padding: '0.9rem 1rem',
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
+            }}
+            className="analytics-row"
+          >
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '50%',
+              background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.85rem', fontWeight: 700, color: '#D4AF37',
+            }}>
+              {String(s.slide_number).padStart(2, '0')}
+            </div>
+            <div>
+              <div style={{ fontSize: '0.9rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.4rem' }}>
+                {s.slide_title || `Slide ${s.slide_number}`}
+              </div>
+              {/* Views bar */}
+              <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${(s.views / maxViews) * 100}%`,
+                  background: 'linear-gradient(90deg, #00C896, #D4AF37)',
+                  transition: 'width .4s',
+                }} />
+              </div>
+            </div>
+            <div style={{ fontSize: '0.95rem', color: '#FFFFFF', fontWeight: 600 }}>{s.views}</div>
+            <div style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.75)' }}>{s.unique_sessions}</div>
+            <div style={{ fontSize: '0.9rem', color: '#00C896', fontFamily: 'monospace' }}>{fmtMs(s.avg_ms)}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: '1.5rem', fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>
+        Los eventos se envían al abandonar cada slide (mínimo 400ms de permanencia). La sesión persiste sólo en la pestaña.
+      </div>
+
+      <style>{`
+        @media (max-width: 900px) {
+          .analytics-header-grid { display: none !important; }
+          .analytics-row { grid-template-columns: 40px 1fr !important; gap: 0.75rem !important; }
+          .analytics-row > div:nth-child(3),
+          .analytics-row > div:nth-child(4),
+          .analytics-row > div:nth-child(5) { display: none; }
+        }
+      `}</style>
+    </section>
+  );
+};
+
+const AnalyticsKPI = ({ icon: Icon, label, value, color = '#FFFFFF', testid }) => (
+  <div
+    data-testid={testid}
+    style={{
+      position: 'relative', padding: '1.5rem',
+      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '20px', overflow: 'hidden',
+    }}
+  >
+    <div style={{
+      position: 'absolute', top: '-24px', right: '-24px', width: '90px', height: '90px',
+      borderRadius: '50%', border: `1px dashed ${color}33`,
+    }} />
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem', color: 'rgba(255,255,255,0.55)' }}>
+      <Icon size={13} />
+      <span style={{ fontSize: '0.63rem', letterSpacing: '0.25em', fontWeight: 700 }}>{label.toUpperCase()}</span>
+    </div>
+    <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '2rem', fontWeight: 700, color, lineHeight: 1, letterSpacing: '-0.02em' }}>
+      {value}
     </div>
   </div>
 );

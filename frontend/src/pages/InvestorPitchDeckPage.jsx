@@ -1,11 +1,104 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, ExternalLink, Sparkles, Brain, Database, Lock, Zap,
   FileText, Users, BarChart, CreditCard, Layers, Globe, TrendingUp, Building2,
-  Scale, Target, MessageCircle, Mail
+  Scale, Target, MessageCircle, Mail, Download
 } from 'lucide-react';
+
+const API = process.env.REACT_APP_BACKEND_URL;
+
+const SLIDE_TITLES = {
+  1: 'Cover', 2: 'The Opportunity', 3: 'The Vision', 4: 'Shared Technology Core',
+  5: 'The First Vertical (Punto Cero Legal)', 6: '18-Country Opportunity',
+  7: 'Why the Architecture Matters', 8: 'The Ecosystem', 9: 'The Roadmap',
+  10: 'Business Model', 11: 'Current Stage', 12: 'The Conversation',
+};
+
+// Session id — persists per browser tab
+const getSessionId = () => {
+  const key = 'pcs_deck_session';
+  let sid = sessionStorage.getItem(key);
+  if (!sid) {
+    sid = 'sess-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    sessionStorage.setItem(key, sid);
+  }
+  return sid;
+};
+
+const sendEvent = (payload) => {
+  try {
+    const body = JSON.stringify(payload);
+    // Beacon survives page unload; fallback to fetch keepalive
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body], { type: 'application/json' });
+      navigator.sendBeacon(`${API}/api/pitch-deck/events`, blob);
+    } else {
+      fetch(`${API}/api/pitch-deck/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: true,
+      });
+    }
+  } catch (_) { /* silent */ }
+};
+
+// Hook: measures dwell time per .pitch-slide-track element and posts to backend.
+const usePitchDeckAnalytics = () => {
+  useEffect(() => {
+    const sessionId = getSessionId();
+    const ua = (navigator.userAgent || '').slice(0, 400);
+    const active = new Map(); // element → entry-timestamp
+
+    const flush = (el, forceCompleted = false) => {
+      const started = active.get(el);
+      if (!started) return;
+      const duration_ms = Math.max(0, Math.round(performance.now() - started));
+      active.delete(el);
+      if (duration_ms < 400) return; // ignore quick scroll-throughs
+      const slide_number = Number(el.dataset.slideNumber);
+      const slide_title = el.dataset.slideTitle || '';
+      sendEvent({
+        session_id: sessionId,
+        slide_number,
+        slide_title,
+        duration_ms,
+        completed: forceCompleted || true,
+        user_agent: ua,
+      });
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.35) {
+          if (!active.has(entry.target)) {
+            active.set(entry.target, performance.now());
+          }
+        } else {
+          flush(entry.target);
+        }
+      });
+    }, { threshold: [0, 0.35, 0.7] });
+
+    const els = document.querySelectorAll('.pitch-slide-track');
+    els.forEach((el) => observer.observe(el));
+
+    const beforeUnload = () => {
+      active.forEach((_, el) => flush(el, true));
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    window.addEventListener('pagehide', beforeUnload);
+
+    return () => {
+      beforeUnload();
+      observer.disconnect();
+      window.removeEventListener('beforeunload', beforeUnload);
+      window.removeEventListener('pagehide', beforeUnload);
+    };
+  }, []);
+};
 
 // ============================================================
 // SLIDE 01 — COVER
@@ -1887,6 +1980,29 @@ const PitchDeckNav = () => {
           </div>
 
           <a
+            href={`${API}/api/pitch-deck/download`}
+            data-testid="deck-download-pdf"
+            className="interactive hide-mobile"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              background: 'linear-gradient(135deg, #D4AF37 0%, #b8942d 100%)',
+              border: '1px solid rgba(212, 175, 55, 0.3)',
+              borderRadius: '100px',
+              color: '#0B1F3A',
+              textDecoration: 'none',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              letterSpacing: '0.02em',
+            }}
+          >
+            <Download size={12} />
+            Descargar PDF
+          </a>
+
+          <a
             href="https://puntocerolegal.com"
             target="_blank"
             rel="noopener noreferrer"
@@ -1933,21 +2049,33 @@ const PitchDeckNav = () => {
 // MAIN PAGE
 // ============================================================
 const InvestorPitchDeckPage = () => {
+  usePitchDeckAnalytics();
+  const wrap = (n, Comp) => (
+    <div
+      className="pitch-slide-track"
+      data-slide-number={n}
+      data-slide-title={SLIDE_TITLES[n]}
+      data-testid={`slide-track-${n}`}
+      key={n}
+    >
+      <Comp />
+    </div>
+  );
   return (
     <div style={{ background: '#0B1F3A', minHeight: '100vh' }}>
       <PitchDeckNav />
-      <Slide01 />
-      <Slide02 />
-      <Slide03 />
-      <Slide04 />
-      <Slide05 />
-      <Slide06 />
-      <Slide07 />
-      <Slide08 />
-      <Slide09 />
-      <Slide10 />
-      <Slide11 />
-      <Slide12 />
+      {wrap(1, Slide01)}
+      {wrap(2, Slide02)}
+      {wrap(3, Slide03)}
+      {wrap(4, Slide04)}
+      {wrap(5, Slide05)}
+      {wrap(6, Slide06)}
+      {wrap(7, Slide07)}
+      {wrap(8, Slide08)}
+      {wrap(9, Slide09)}
+      {wrap(10, Slide10)}
+      {wrap(11, Slide11)}
+      {wrap(12, Slide12)}
 
       {/* Footer bridge back to main site */}
       <section style={{

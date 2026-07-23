@@ -1,0 +1,35 @@
+{
+  "summary": "FASE 3 (Pitch Deck Analytics + Server-side PDF) E2E test — both backend and frontend fully verified. 14 new pytest tests + 45 pre-existing regression tests → 59/59 passing under pytest-xdist LoadScope. PDF download returns valid 58KB PDF starting with %PDF header, Content-Type application/pdf, Content-Disposition 'Punto-Cero-System-Investor-Pitch-Deck-YYYYMMDD.pdf', 13 pages (12 slides + closing) parseable by pypdf, metadata title/author both contain 'Punto Cero'. Public POST /api/pitch-deck/events accepts valid payload → 201 {ok:true} → persisted with created_at. All boundary validations return 422 (slide=0, slide=100, duration=-1, duration>1800000, session_id shorter than 6). Downloads counter increments 1 per download. Analytics aggregation math verified: 3 events same session on slide 91 → views=3, unique_sessions=1, total_ms=6000, avg_ms=2000; 2 events 2 sessions on slide 92 → views=2, unique_sessions=2, total_ms=1200, avg_ms=600. Slides sorted ascending. Admin analytics + downloads endpoints reject unauthenticated (401/403). MongoDB pitch_deck_events indexes on session_id, slide_number, created_at all present. FRONTEND: /investor-pitch-deck loads, nav shows anchor [data-testid=deck-download-pdf] with correct href (/api/pitch-deck/download). Scrolling through slides 1,3,5,7 with 1.5s dwell fired 5 event POSTs (>= 4 required). sessionStorage['pcs_deck_session'] persists across navigation (sess-8ycz92p6mrxufa7d retained). Admin dashboard shows [data-testid=pitch-analytics-panel] with all 4 KPI orbs (events=15, sessions=4, tiempo=35.7s, downloads=14) and per-slide rows [pitch-slide-row-1/2/3/5/7]. Refresh button re-fetches. All 6 regression routes (/, /investor-pitch-deck, /executive-summary, /request-access, /investor-room, /admin/login) return 200 with 0 console errors / 0 page errors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_pitch_deck.py",
+    "/app/backend/tests/test_executive_summary_fields.py",
+    "/app/backend/tests/test_investor_requests.py",
+    "/app/backend/tests/test_auth.py",
+    "/app/backend/tests/test_health.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "pdf_service.py hard-codes the 12-slide SLIDES list in English (Cover/The Opportunity/...) while the frontend UI is in Spanish. The generated PDF is in English but marketed alongside a Spanish deck. Consider translating slide copy to Spanish for brand consistency (or documenting the dual-language positioning intentionally).",
+    "pitch_deck_routes.py:31 the /events endpoint does not rate-limit or dedupe — a malicious client could flood the pitch_deck_events collection (each doc is small but no upper bound on inserts per session/IP). Same public-POST spam surface flagged in earlier iterations. Not blocking.",
+    "pitch_deck_routes.py:44 IP extraction from x-forwarded-for takes .split(',')[0] which is correct, but there's no validation/sanitization; behind a hostile proxy this could log arbitrary strings. Minor.",
+    "pitch_deck_routes.py:41-47 catches Exception silently on download-tracking insert. If Mongo write fails, the counter silently drifts. Consider logging the exception with logger.warning() so ops can spot degradation.",
+    "InvestorPitchDeckPage.jsx is 2153 lines — well over the 700-line soft cap. Each slide component could move to /components/pitch-deck/Slide0N.jsx to keep the page as an orchestrator.",
+    "usePitchDeckAnalytics hook (line 68 in InvestorPitchDeckPage.jsx) sets `completed: forceCompleted || true` which always evaluates to true — the || short-circuits when forceCompleted is falsy. This means the `completed` flag is meaningless (always true). If the intent was 'true only when explicitly forced', use `completed: forceCompleted === true`. Currently the field is not actionable in analytics.",
+    "PitchDeckAnalyticsPanel: fmtMs() shows values <1000ms as 'Xms', but avg_ms coming from Mongo $avg is a float and the panel renders it via fmtMs which rounds. For sub-second slides this may misleadingly show 999ms as 999ms and 1000ms as 1.0s — a display band right at 1s. Cosmetic.",
+    "conftest.py doesn't clean pitch_deck_events or pitch_deck_downloads collections across sessions — new /app/backend/tests/test_pitch_deck.py cleans inline. Consider centralizing a session-scoped teardown that safely filters by test-prefix session_ids only.",
+    "Downloads counter: every GET /api/pitch-deck/download triggers a Mongo insert including a synthetic 'HEAD' or preflight request would too (only if a client issued GET). CORS preflight is OPTIONS so no drift here — verified. However, the counter has no dedupe by IP+minute, so a single user reloading rapidly inflates the metric. Business decision — not a bug."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_pitch_deck.py"
+  ],
+  "success_rate": {"backend": "100% (59/59 total; 14/14 new)", "frontend": "100% on all 5 required FASE 3 flows"},
+  "test_credentials": "admin@puntocerosystem.com / PuntoCero2026Admin (verified working). Read from /app/memory/test_credentials.md.",
+  "seed_data_creation": "New /app/backend/tests/test_pitch_deck.py creates TESTsess-* and TEST_AGG_session_* pitch_deck_events using synthetic slide numbers 91 & 92 (outside the real 1..12 range) so live analytics remain unaffected. All inserts are cleaned up inline within each test (per-worker safety under pytest-xdist LoadScope — a module/session-scope teardown was tried first but caused cross-worker data-wipe race, fixed by inline cleanup). No production data touched.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 59 pytest tests pass. New pitch deck test module lives at /app/backend/tests/test_pitch_deck.py — key gotcha: DO NOT add a session/module-scope autouse fixture that deletes pitch_deck_events by broad regex, because under pytest-xdist LoadScope one worker's teardown can wipe another worker's in-flight test data (verified failure mode). Use inline per-test cleanup or narrow filters on unique test data. Aggregation test uses slide_numbers 91/92 to avoid colliding with real user events (slides 1..12). Frontend confirmed IntersectionObserver + sendBeacon flow works via network sniffing (5 POSTs for 4 slides visited — extras from re-crossing viewport are expected). If E1 addresses the `completed: forceCompleted || true` bug in usePitchDeckAnalytics, no functional regression expected — the field is ignored server-side but should be corrected for future analytics semantics.",
+  "rca of the issue": "N/A — no bugs blocking acceptance. One latent semantic bug flagged in code-review: usePitchDeckAnalytics hook's `completed: forceCompleted || true` always emits true; not currently harmful because the analytics aggregation doesn't use this field, but should be corrected."
+}

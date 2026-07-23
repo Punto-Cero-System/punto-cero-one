@@ -23,6 +23,8 @@ from auth import hash_password, verify_password
 from routes.auth_routes import router as auth_router
 from routes.investor_routes import public_router as investor_public_router
 from routes.investor_routes import admin_router as investor_admin_router
+from routes.pitch_deck_routes import public_router as pitch_public_router
+from routes.pitch_deck_routes import admin_router as pitch_admin_router
 
 
 # -------------------- Logging --------------------
@@ -72,6 +74,8 @@ app.include_router(meta_router)
 app.include_router(auth_router)
 app.include_router(investor_public_router)
 app.include_router(investor_admin_router)
+app.include_router(pitch_public_router)
+app.include_router(pitch_admin_router)
 
 
 # -------------------- CORS --------------------
@@ -93,6 +97,9 @@ async def ensure_indexes():
     await db.investor_requests.create_index("status")
     await db.investor_requests.create_index("submitted_at")
     await db.login_attempts.create_index("identifier", unique=True)
+    await db.pitch_deck_events.create_index("session_id")
+    await db.pitch_deck_events.create_index("slide_number")
+    await db.pitch_deck_events.create_index("created_at")
 
 
 async def seed_admin():
