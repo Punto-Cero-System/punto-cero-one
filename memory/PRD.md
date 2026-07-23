@@ -112,6 +112,16 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 - ✅ Formulario público `/request-access` conectado al backend.
 - ✅ **Testing agent: 33/33 backend tests passing (100%)**.
 
+### FASE 3 — Investor Pitch Deck avanzado (2026-02)
+- ✅ **Descarga PDF institucional** (`GET /api/pitch-deck/download`, público) — generado en tiempo real con reportlab, 58KB, 13 páginas (12 slides + cierre), paleta navy/emerald/gold, órbitas decorativas, footer branded. Botón dorado "Descargar PDF" en el nav del deck.
+- ✅ **Analytics por slide** — hook `usePitchDeckAnalytics()` con IntersectionObserver (threshold 0.35) mide dwell time por slide y hace beacon POST a `/api/pitch-deck/events` al salir del viewport (mínimo 400ms). Session ID persistente en `sessionStorage`.
+- ✅ **Endpoints**:
+  - Público: `POST /api/pitch-deck/events`, `GET /api/pitch-deck/download`
+  - Admin: `GET /api/admin/pitch-deck/analytics` (views · sesiones únicas · dwell medio por slide), `GET /api/admin/pitch-deck/downloads`
+- ✅ **Panel admin extendido**: `PitchDeckAnalyticsPanel` con 4 KPI orbes (Eventos totales, Sesiones únicas, Tiempo total, Descargas PDF) + tabla per-slide con barra emerald→gold proporcional al máximo.
+- ✅ Nuevos índices Mongo: `pitch_deck_events.session_id`, `.slide_number`, `.created_at`.
+- ✅ **Testing agent: 59/59 backend (100%, 14 nuevos + 45 regresión) + 5/5 frontend flows (100%)**.
+
 ### FASE 2 — Executive Summary Experience (2026-02)
 - ✅ Ruta `/executive-summary` — experiencia cinematográfica de 13 secciones en scroll único.
   1. Hero (dark, órbitas expansivas, gradient PUNTO CERO SYSTEM)
@@ -135,17 +145,11 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 
 ## Roadmap / Backlog
 
-### P1 — FASE 3: Investor Pitch Deck avanzado (siguiente)
-- Ampliar el pitch deck actual con datos estratégicos más detallados.
-- Descarga PDF del deck.
-- Analytics por slide (heatmap de engagement).
-
-### P1 — FASE 4-8: Estrategia de capital y modelo financiero
+### P1 — FASE 4-7: Estrategia de capital y modelo financiero
 - Capital strategy (P4)
 - 36-month financial projection (P5)
 - Cash flow model (P6)
 - Financial feasibility study (P7)
-- Advanced private Investor Room autenticada (P8)
 
 ### P2 — Investor Room privado (autenticado)
 - Rol `investor` diferenciado de `admin`.
