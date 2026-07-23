@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Lock, CheckCircle, Shield } from 'lucide-react';
 
+const API = process.env.REACT_APP_BACKEND_URL;
+
 const InvestorRequestPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -15,22 +17,37 @@ const InvestorRequestPage = () => {
     message: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Store request locally for now (no backend authentication yet)
-    const requests = JSON.parse(localStorage.getItem('investor_requests') || '[]');
-    requests.push({
-      ...formData,
-      submittedAt: new Date().toISOString(),
-      status: 'pending_review'
-    });
-    localStorage.setItem('investor_requests', JSON.stringify(requests));
-    setSubmitted(true);
+    setError('');
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API}/api/investor-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = data?.detail;
+        const msg = Array.isArray(detail)
+          ? detail.map((d) => d.msg || JSON.stringify(d)).join(' ')
+          : (detail || 'No se pudo enviar la solicitud.');
+        throw new Error(msg);
+      }
+      setSubmitted(true);
+    } catch (err) {
+      setError(err.message || 'Error de red. Intenta de nuevo.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -295,20 +312,24 @@ const InvestorRequestPage = () => {
 
           <motion.button
             type="submit"
-            whileHover={{ scale: 1.02, boxShadow: '0 20px 60px rgba(212, 175, 55, 0.4)' }}
-            whileTap={{ scale: 0.98 }}
+            disabled={submitting}
+            whileHover={submitting ? {} : { scale: 1.02, boxShadow: '0 20px 60px rgba(212, 175, 55, 0.4)' }}
+            whileTap={submitting ? {} : { scale: 0.98 }}
             className="interactive"
+            data-testid="investor-request-submit"
             style={{
               width: '100%',
               padding: '1.15rem 2rem',
-              background: 'linear-gradient(135deg, #D4AF37 0%, #b8942d 100%)',
+              background: submitting
+                ? 'rgba(212,175,55,0.4)'
+                : 'linear-gradient(135deg, #D4AF37 0%, #b8942d 100%)',
               color: '#0B1F3A',
               border: 'none',
               borderRadius: '100px',
               fontSize: '1rem',
               fontWeight: 700,
               letterSpacing: '0.02em',
-              cursor: 'pointer',
+              cursor: submitting ? 'wait' : 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -316,9 +337,26 @@ const InvestorRequestPage = () => {
               fontFamily: 'inherit'
             }}
           >
-            Enviar solicitud de acceso
-            <ArrowRight size={18} />
+            {submitting ? 'Enviando…' : 'Enviar solicitud de acceso'}
+            {!submitting && <ArrowRight size={18} />}
           </motion.button>
+
+          {error && (
+            <div
+              data-testid="investor-request-error"
+              style={{
+                marginTop: '1rem',
+                padding: '0.75rem 1rem',
+                background: 'rgba(255,90,90,0.08)',
+                border: '1px solid rgba(255,90,90,0.3)',
+                borderRadius: '10px',
+                color: '#ff9a9a',
+                fontSize: '0.85rem',
+              }}
+            >
+              {error}
+            </div>
+          )}
         </motion.form>
       </div>
     </div>

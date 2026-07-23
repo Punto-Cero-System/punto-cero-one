@@ -6,6 +6,10 @@ import HomePage from './pages/HomePage';
 import InvestorRequestPage from './pages/InvestorRequestPage';
 import InvestorRoomPreview from './pages/InvestorRoomPreview';
 import InvestorPitchDeckPage from './pages/InvestorPitchDeckPage';
+import AdminLoginPage from './pages/AdminLoginPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import ProtectedAdminRoute from './components/ProtectedAdminRoute';
+import { AuthProvider } from './contexts/AuthContext';
 
 function App() {
   useEffect(() => {
@@ -37,12 +41,23 @@ function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/investor-room" element={<InvestorRoomPreview />} />
-          <Route path="/request-access" element={<InvestorRequestPage />} />
-          <Route path="/investor-pitch-deck" element={<InvestorPitchDeckPage />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/investor-room" element={<InvestorRoomPreview />} />
+            <Route path="/request-access" element={<InvestorRequestPage />} />
+            <Route path="/investor-pitch-deck" element={<InvestorPitchDeckPage />} />
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminDashboardPage />
+                </ProtectedAdminRoute>
+              }
+            />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </div>
   );

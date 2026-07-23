@@ -1,0 +1,42 @@
+{
+  "summary": "Backend-only integration testing of Punto Cero investor room. All 33 pytest tests pass across 3 consecutive runs. Covered: health, admin seed + bcrypt hash, MongoDB indexes, /api/auth/login (success, wrong password, unknown email), /api/auth/me (with/without/malformed token), /api/auth/logout, brute-force lockout (5 fails -> 429 with 'minutos') + counter reset on success, public POST /api/investor-requests (create, no-auth, 422 validations, sensitive-field leak check), admin GET list (auth-required, pagination shape, sort desc, _id excluded), status filter (pending + 400 on invalid), case-insensitive search, GET stats (shape + sum equals total), GET by id (200 + 404), PATCH all four statuses (persistence via GET), PATCH 422 invalid status, PATCH 404 unknown id.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_health.py",
+    "/app/backend/tests/test_auth.py",
+    "/app/backend/tests/test_investor_requests.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py: on_event('startup')/('shutdown') are deprecated in FastAPI/Starlette; migrate to lifespan context manager for future-proofing.",
+    "CORS: allow_origins defaults to '*' AND allow_credentials=True — browsers will reject credentialed requests with a wildcard origin. If cookies are ever added, set CORS_ORIGINS to an explicit origin list. Not a bug today (Bearer tokens only), but a footgun.",
+    "login_attempts uses (ip+email) identifier. Preview URL proxies through ingress; if x-forwarded-for is spoofable, an attacker could sidestep lockout by varying it. Consider trusting only the first hop or falling back to request.client.host. Acceptable for MVP.",
+    "seed_admin does not re-hash if password is unchanged, but always updates name — minor: could no-op when name matches too.",
+    "investor_routes list endpoint has no explicit Pydantic response model for the paginated wrapper; documented shape ({items,total,limit,skip}) is fine but not enforced.",
+    "InvestorRequest model regenerates updated_at on every read via default_factory — currently harmless because docs always carry the field, but any future path constructing from partial data would see drift.",
+    "No rate-limit on POST /api/investor-requests — public endpoint, susceptible to spam. Consider IP-based throttling or captcha at ingress."
+  ],
+  "updated_files": [
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_health.py",
+    "/app/backend/tests/test_auth.py",
+    "/app/backend/tests/test_investor_requests.py"
+  ],
+  "success_rate": {"backend": "100% (33/33)", "frontend": "N/A (backend-only run)"},
+  "test_credentials": "admin@puntocerosystem.com / PuntoCero2026Admin (from /app/memory/test_credentials.md, verified working).",
+  "seed_data_creation": "Tests create TEST_-prefixed investor_requests documents during execution; a session-scoped teardown in conftest.py removes them and clears bruteforce-target* login_attempts. Admin user is seeded by the app on startup and left intact.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend routes verified: /api/health, /api/, /api/auth/{login,me,logout}, /api/investor-requests (public POST), /api/admin/investor-requests (GET list, GET /stats, GET /{id}, PATCH /{id}). Brute-force test uses a synthetic email 'bruteforce-target@example.com' so it does NOT lock out the admin. Login_attempts is cleared for admin identifier before every admin login. Note pytest-xdist runs with -n 2 --dist loadscope (fixed by pytest.ini); DO NOT change addopts. Any teardown that mutates shared TEST_ data must be session-scoped, not module-scoped, to avoid cross-worker races.",
+  "rca of the issue": "During initial run one flaky failure occurred on test_patch_valid_statuses[rejected]: a GET after PATCH returned 404. RCA: a module-scoped autouse teardown fixture in test_investor_requests.py deleted all TEST_-prefixed records when the FIRST worker finished its slice of the module (loadscope splits classes to different workers), while the SECOND worker was still executing TestAdminPatch. Fix: moved cleanup to a session-scoped autouse fixture in conftest.py — teardown now only fires after each worker's own test session ends, eliminating the cross-worker race. Verified across 3 consecutive full runs (33/33 pass every time)."
+}
