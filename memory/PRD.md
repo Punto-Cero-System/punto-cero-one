@@ -112,26 +112,59 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 - ✅ Formulario público `/request-access` conectado al backend.
 - ✅ **Testing agent: 33/33 backend tests passing (100%)**.
 
+### FASE 2 — Executive Summary Experience (2026-02)
+- ✅ Ruta `/executive-summary` — experiencia cinematográfica de 13 secciones en scroll único.
+  1. Hero (dark, órbitas expansivas, gradient PUNTO CERO SYSTEM)
+  2. Origen (Punto Fijo, Falcón, filosofía de transformación, timeline radial)
+  3. Problema (América Latina fragmentada, animación fragmentación→conexión)
+  4. Oportunidad (18 países como visión de expansión, sin claim de operación actual)
+  5. Visión (Esto no es una aplicación. Es una plataforma. — jerarquía en pills apiladas)
+  6. Shared Technology Core (9 capacidades + diagrama de arquitectura + 3 columnas de claridad)
+  7. Punto Cero Legal (80% con progress bar animada + CTA externo)
+  8. Ecosistema (15 verticales en órbita, Legal='Disponible', resto='Visión futura')
+  9. Comunidad (tecnología + personas + conocimiento + oportunidades)
+  10. Etapa Actual (transparencia institucional, sin inventar tracción)
+  11. Próxima Etapa (flujo horizontal + capital habilitante)
+  12. Visión Largo Plazo (cadena de 9 pasos hacia el ecosistema LatAm)
+  13. Conversación Estratégica (form con contactType + source)
+- ✅ Backend: modelo `InvestorRequest` extendido con `contactType` (Literal 7 tipos) + `source`.
+- ✅ Admin dashboard muestra `Tipo de contacto` y `Origen del envío` localizados en el drawer.
+- ✅ CTA "Executive Summary" añadido en el home (PitchDeckPreview).
+- ✅ Side dot nav + top progress bar + IntersectionObserver para navegación activa.
+- ✅ **Testing agent: 45/45 backend (100%) + 13/13 frontend flows (100%)**.
+
 ## Roadmap / Backlog
 
-### P1 — FASE 2: Investor Room privado autenticado
+### P1 — FASE 3: Investor Pitch Deck avanzado (siguiente)
+- Ampliar el pitch deck actual con datos estratégicos más detallados.
+- Descarga PDF del deck.
+- Analytics por slide (heatmap de engagement).
+
+### P1 — FASE 4-8: Estrategia de capital y modelo financiero
+- Capital strategy (P4)
+- 36-month financial projection (P5)
+- Cash flow model (P6)
+- Financial feasibility study (P7)
+- Advanced private Investor Room autenticada (P8)
+
+### P2 — Investor Room privado (autenticado)
 - Rol `investor` diferenciado de `admin`.
 - Flujo "solicitud aprobada → invitación → creación de usuario investor".
-- Repositorio de documentos privados (con Emergent Object Storage vía integration playbook).
+- Repositorio de documentos privados (Emergent Object Storage vía integration playbook).
 - Permisos granulares por documento/carpeta.
 - Historial de accesos y descargas.
 
-### P2
-- Notificaciones email al submitter cuando cambie el estado (Resend playbook).
-- Audit log de cambios administrativos.
-- Multi-admin: creación de administradores desde el panel.
-- Refresh-token flow + rotación.
-- CORS: pasar de `*` a lista explícita.
+### P2 — Notificaciones
+- Email al submitter cuando cambia el estado (Resend playbook).
+- Notificación al admin de nueva solicitud.
 
 ### P3
 - Localización EN/PT del panel admin.
 - Exportación CSV de solicitudes.
 - Migrar a FastAPI lifespan API (deprecar `@app.on_event`).
+- Refresh-token flow + panel multi-admin.
+- Audit log de cambios administrativos.
+- CORS explícito (hoy `*`).
 
 ## Integraciones actuales
 - MongoDB (motor) — persistencia.
