@@ -110,25 +110,55 @@ const PitchDeckPreview = () => {
               de la visión: desde el núcleo tecnológico compartido hasta la conversación estratégica.
             </p>
 
-            <Link
-              to="/request-access"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '1rem 1.75rem',
-                background: '#0B1F3A',
-                color: '#FFFFFF',
-                textDecoration: 'none',
-                borderRadius: '100px',
-                fontSize: '0.9rem',
-                fontWeight: 600
-              }}
-              className="interactive"
-            >
-              Solicitar acceso completo
-              <ArrowRight size={16} />
-            </Link>
+            <div style={{
+              display: 'flex',
+              gap: '0.75rem',
+              flexWrap: 'wrap'
+            }}>
+              <Link
+                to="/investor-pitch-deck"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '1rem 1.75rem',
+                  background: 'linear-gradient(135deg, #D4AF37 0%, #b8942d 100%)',
+                  color: '#0B1F3A',
+                  textDecoration: 'none',
+                  borderRadius: '100px',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  boxShadow: '0 10px 30px rgba(212, 175, 55, 0.25)'
+                }}
+                className="interactive"
+                data-testid="cta-explore-pitch-deck"
+              >
+                Explorar Investor Pitch Deck
+                <ArrowRight size={16} />
+              </Link>
+
+              <Link
+                to="/request-access"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '1rem 1.75rem',
+                  background: 'transparent',
+                  color: '#0B1F3A',
+                  textDecoration: 'none',
+                  borderRadius: '100px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  border: '1px solid rgba(11, 31, 58, 0.2)'
+                }}
+                className="interactive"
+                data-testid="cta-request-full-access"
+              >
+                Solicitar acceso completo
+                <ArrowRight size={16} />
+              </Link>
+            </div>
           </motion.div>
 
           {/* Right: Feature emphasis */}

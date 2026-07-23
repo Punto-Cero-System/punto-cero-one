@@ -5,6 +5,7 @@ import './App.css';
 import HomePage from './pages/HomePage';
 import InvestorRequestPage from './pages/InvestorRequestPage';
 import InvestorRoomPreview from './pages/InvestorRoomPreview';
+import InvestorPitchDeckPage from './pages/InvestorPitchDeckPage';
 
 function App() {
   useEffect(() => {
@@ -40,6 +41,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/investor-room" element={<InvestorRoomPreview />} />
           <Route path="/request-access" element={<InvestorRequestPage />} />
+          <Route path="/investor-pitch-deck" element={<InvestorPitchDeckPage />} />
         </Routes>
       </BrowserRouter>
     </div>
