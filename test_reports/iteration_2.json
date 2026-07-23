@@ -1,0 +1,29 @@
+{
+  "summary": "PHASE II Executive Summary E2E test — both backend and frontend fully verified. New backend fields (contactType Literal + source) persist through POST → Mongo → GET (admin) with all 7 valid contact types accepted and invalid value 'vip' rejected with 422. Backward compatibility preserved (submissions without the two fields still return 201). All 45 pytest tests pass (33 pre-existing + 12 new). Frontend /executive-summary renders all 13 sections with correct anchors, dot nav, gold hero CTA, Investor Pitch Deck outlined CTA, top-nav back link + external Punto Cero Legal link (target=_blank), 80% figure + external explore-legal link in section #legal, 15 verticals (Legal marked Disponible, other 14 marked Visión futura) with 3 legend labels, HTML validation prevents empty submit, valid submit POSTs {contactType:'investor', source:'executive_summary'} → 201 → cta-submitted card with 'Solicitud recibida' + 'Volver al home' + 'Ver Pitch Deck' links. Admin dashboard detail drawer localizes 'Tipo de contacto → Inversionista' and 'Origen del envío → Executive Summary' correctly. Homepage cta-executive-summary CTA navigates to /executive-summary. All 5 regression routes (/, /investor-pitch-deck, /request-access, /investor-room, /admin/login) return 200 with 0 console errors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_executive_summary_fields.py",
+    "/app/backend/tests/test_investor_requests.py",
+    "/app/backend/tests/test_auth.py",
+    "/app/backend/tests/test_health.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/pytest_exec_summary.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ExecutiveSummaryPage.jsx is 1630 lines — over the 700-line soft cap. Suggest extracting each of the 13 <section> components into /app/frontend/src/components/executive-summary/*.jsx (Hero.jsx, Origin.jsx, ..., FinalCTA.jsx) and keeping ExecutiveSummaryPage.jsx as an orchestrator. Purely maintainability; no functional impact.",
+    "Section eyebrow numbering is out of sync with review-request section numbers: request calls Legal 'Section 07' but its eyebrow reads '06 · EL PRIMER PRODUCTO REAL', Ecosystem 'Section 08' shows '07 · EL ECOSISTEMA', etc. The 13-section anchor IDs are correct — only the visible '0N ·' prefix is off-by-one throughout. Cosmetic; investor-facing copy so worth aligning.",
+    "IntersectionObserver rootMargin '-40% 0px -55% 0px' leaves a 5% band where NO section is 'active', causing the side-dot label to briefly disappear between two sections. Not a bug but a UX polish item — consider '-45% 0px -45% 0px' or tracking the most-visible entry.",
+    "Investor-requests POST endpoint still has no rate limiting or captcha (flagged in iteration 1). Executive Summary CTA now doubles the number of public POST surfaces; spam risk increases. Not blocking.",
+    "InvestorRequest model stores contactType=null when absent but source='' (default_factory returns empty string, not None). Mixed null/empty-string semantics for two adjacent optional fields — acceptable but inconsistent. Consider defaulting contactType to '' as well, or source to None."
+  ],
+  "updated_files": ["/app/backend/tests/test_executive_summary_fields.py"],
+  "success_rate": {"backend": "100% (45/45 total; 12/12 new)", "frontend": "100% on all 13 required flows"},
+  "test_credentials": "admin@puntocerosystem.com / PuntoCero2026Admin (verified working). Read from /app/memory/test_credentials.md.",
+  "seed_data_creation": "New TEST_-prefixed investor_requests created by test_executive_summary_fields.py (TEST_QA Investor, TEST_CT_investor, TEST_CT_strategic_partner, ..., TEST_Legacy Client, TEST_Source Only). All cleaned up by session-scoped autouse fixture in conftest.py (regex ^TEST_ on email/fullName). One live QA record 'QA Investor / qa_investor_1784830051@example.com' was created via the actual UI form during frontend testing and remains in the DB for visual confirmation in the admin drawer.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 45 backend tests pass under pytest-xdist -n 2 loadscope. New test file /app/backend/tests/test_executive_summary_fields.py covers the contactType+source contract and is the reference regression for PHASE II. The one non-TEST record 'QA Investor' left in DB was intentional (proves the UI form actually persisted through to the admin drawer). No blocking issues found. If E1 addresses the code-review nits (splitting ExecutiveSummaryPage.jsx, syncing eyebrow numbering), re-run just the frontend Playwright smoke on /executive-summary since numbering is visible in copy.",
+  "rca of the issue": "N/A — no bugs found in this iteration."
+}

@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import InvestorRequestPage from './pages/InvestorRequestPage';
 import InvestorRoomPreview from './pages/InvestorRoomPreview';
 import InvestorPitchDeckPage from './pages/InvestorPitchDeckPage';
+import ExecutiveSummaryPage from './pages/ExecutiveSummaryPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
@@ -47,6 +48,7 @@ function App() {
             <Route path="/investor-room" element={<InvestorRoomPreview />} />
             <Route path="/request-access" element={<InvestorRequestPage />} />
             <Route path="/investor-pitch-deck" element={<InvestorPitchDeckPage />} />
+            <Route path="/executive-summary" element={<ExecutiveSummaryPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route
               path="/admin"

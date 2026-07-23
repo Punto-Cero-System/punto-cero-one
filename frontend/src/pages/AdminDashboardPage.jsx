@@ -4,8 +4,25 @@ import { Link } from 'react-router-dom';
 import {
   LogOut, Filter, Search, RefreshCcw, Shield, Users, ArrowRight,
   Clock, Loader, CheckCircle, XCircle, ChevronRight, ExternalLink, Mail, Building2, Globe2,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+
+const CONTACT_TYPE_LABELS = {
+  investor: 'Inversionista',
+  strategic_partner: 'Aliado estratégico',
+  technology_partner: 'Aliado tecnológico',
+  professional: 'Profesional',
+  entrepreneur: 'Emprendedor',
+  company: 'Empresa',
+  other: 'Otro',
+};
+
+const SOURCE_LABELS = {
+  executive_summary: 'Executive Summary',
+  investor_pitch_deck: 'Investor Pitch Deck',
+  request_access: 'Formulario de acceso',
+};
 
 const STATUS_META = {
   pending: { label: 'Pendiente', color: '#D4AF37', bg: 'rgba(212,175,55,0.12)', border: 'rgba(212,175,55,0.35)', icon: Clock },
@@ -429,6 +446,12 @@ const DetailPanel = ({ request, onClose, onUpdate }) => {
 
       <InfoRow icon={Building2} label="Empresa · Rol" value={[request.company, request.role].filter(Boolean).join(' · ') || '—'} />
       <InfoRow icon={Globe2} label="País · Enfoque" value={[request.country, request.focus].filter(Boolean).join(' · ') || '—'} />
+      {request.contactType && (
+        <InfoRow icon={Users} label="Tipo de contacto" value={CONTACT_TYPE_LABELS[request.contactType] || request.contactType} />
+      )}
+      {request.source && (
+        <InfoRow icon={Sparkles} label="Origen del envío" value={SOURCE_LABELS[request.source] || request.source} />
+      )}
       <InfoRow icon={Clock} label="Recibida" value={new Date(request.submitted_at).toLocaleString('es-CO')} />
       {request.updated_at && request.updated_at !== request.submitted_at && (
         <InfoRow icon={RefreshCcw} label="Última actualización" value={new Date(request.updated_at).toLocaleString('es-CO')} />

@@ -39,6 +39,17 @@ InvestorRequestStatus = Literal["pending", "under_review", "approved", "rejected
 
 VALID_STATUSES = ("pending", "under_review", "approved", "rejected")
 
+# Contact / interest types for the Executive Summary CTA form.
+ContactType = Literal[
+    "investor",
+    "strategic_partner",
+    "technology_partner",
+    "professional",
+    "entrepreneur",
+    "company",
+    "other",
+]
+
 
 class InvestorRequestCreate(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -49,6 +60,8 @@ class InvestorRequestCreate(BaseModel):
     focus: Optional[str] = Field(default="", max_length=80)
     country: Optional[str] = Field(default="", max_length=80)
     message: Optional[str] = Field(default="", max_length=2000)
+    contactType: Optional[ContactType] = None
+    source: Optional[str] = Field(default="", max_length=60)  # e.g. "executive_summary"
 
 
 class InvestorRequest(BaseModel):
@@ -61,6 +74,8 @@ class InvestorRequest(BaseModel):
     focus: str = ""
     country: str = ""
     message: str = ""
+    contactType: Optional[ContactType] = None
+    source: str = ""
     status: InvestorRequestStatus = "pending"
     admin_notes: str = ""
     submitted_at: str = Field(

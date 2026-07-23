@@ -116,6 +116,28 @@ const PitchDeckPreview = () => {
               flexWrap: 'wrap'
             }}>
               <Link
+                to="/executive-summary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '1rem 1.75rem',
+                  background: 'linear-gradient(135deg, #0B1F3A 0%, #163156 100%)',
+                  color: '#FFFFFF',
+                  textDecoration: 'none',
+                  borderRadius: '100px',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  boxShadow: '0 10px 30px rgba(11, 31, 58, 0.25)'
+                }}
+                className="interactive"
+                data-testid="cta-executive-summary"
+              >
+                Executive Summary
+                <ArrowRight size={16} />
+              </Link>
+
+              <Link
                 to="/investor-pitch-deck"
                 style={{
                   display: 'inline-flex',
