@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Header from '../components/Header';
 import HeroSection from '../components/HeroSection';
-import CoreSection from '../components/CoreSection';
+import CircularCore from '../components/CircularCore';
 import ZeroMoment from '../components/ZeroMoment';
-import EcosystemSection from '../components/EcosystemSection';
+import OrbitalEcosystem from '../components/OrbitalEcosystem';
 import PuntoCeroLegalSection from '../components/PuntoCeroLegalSection';
-import LatinAmericaSection from '../components/LatinAmericaSection';
+import HumanImpactSection from '../components/HumanImpactSection';
+import LatinAmericaLiving from '../components/LatinAmericaLiving';
 import ManifestoSection from '../components/ManifestoSection';
 import InvestorsSection from '../components/InvestorsSection';
 import PartnersSection from '../components/PartnersSection';
@@ -122,11 +123,12 @@ const HomePage = () => {
       <div style={{ position: 'relative', zIndex: 1 }}>
         <Header />
         <HeroSection />
-        <CoreSection />
+        <CircularCore />
         <ZeroMoment />
-        <EcosystemSection />
+        <HumanImpactSection />
+        <OrbitalEcosystem />
         <PuntoCeroLegalSection />
-        <LatinAmericaSection />
+        <LatinAmericaLiving />
         <ManifestoSection />
         <InvestorsSection />
         <PartnersSection />
