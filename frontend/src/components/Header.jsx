@@ -7,28 +7,11 @@ const Header = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
 
   const navItems = [
-    { label: 'Plataforma', href: '#plataforma' },
-    { 
-      label: 'Ecosistema', 
-      href: '#ecosistema',
-      dropdown: [
-        { label: 'Visión Global', href: '#ecosistema' },
-        { label: 'Punto Cero Legal', href: '#punto-cero-legal' },
-        { label: 'Latinoamérica', href: '#latam' }
-      ]
-    },
-    { label: 'Tecnología', href: '#core' },
-    { 
-      label: 'Empresa', 
-      href: '#',
-      dropdown: [
-        { label: 'Inversionistas', href: '#inversionistas' },
-        { label: 'Partners', href: '#partners' },
-        { label: 'Comunidad', href: '#comunidad' },
-        { label: 'Prensa', href: '#prensa' },
-        { label: 'Carreras', href: '#carreras' }
-      ]
-    },
+    { label: 'Visión', href: '#vision' },
+    { label: 'Core', href: '#core' },
+    { label: 'Ecosistema', href: '#ecosistema' },
+    { label: 'Latinoamérica', href: '#latam' },
+    { label: 'Comunidad', href: '#comunidad' },
     { label: 'Contacto', href: '#contacto' }
   ];
 

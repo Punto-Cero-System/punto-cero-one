@@ -1,19 +1,16 @@
 import React, { useEffect, useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { ArrowDown } from 'lucide-react';
 
 const HeroSection = () => {
   const canvasRef = useRef(null);
-  const sectionRef = useRef(null);
-  const isInView = useInView(sectionRef, { once: false });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     let animationFrameId;
     let nodes = [];
-    let connections = [];
     let mouseX = 0;
     let mouseY = 0;
 
@@ -25,109 +22,57 @@ const HeroSection = () => {
 
     const initNodes = () => {
       nodes = [];
-      const nodeCount = Math.floor((canvas.width * canvas.height) / 25000);
-      
-      // Central core node
-      nodes.push({
-        x: canvas.width / 2,
-        y: canvas.height / 2,
-        vx: 0,
-        vy: 0,
-        radius: 8,
-        isCore: true,
-        pulsePhase: 0
-      });
-
-      // Surrounding nodes
-      for (let i = 0; i < nodeCount; i++) {
+      const count = Math.floor((canvas.width * canvas.height) / 30000);
+      for (let i = 0; i < count; i++) {
         nodes.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          vx: (Math.random() - 0.5) * 0.3,
-          vy: (Math.random() - 0.5) * 0.3,
-          radius: Math.random() * 3 + 1,
-          isCore: false,
+          vx: (Math.random() - 0.5) * 0.2,
+          vy: (Math.random() - 0.5) * 0.2,
+          radius: Math.random() * 1.5 + 0.5,
           pulsePhase: Math.random() * Math.PI * 2
         });
       }
     };
 
-    const drawNode = (node, time) => {
-      ctx.beginPath();
-      
-      if (node.isCore) {
-        // Animated core node
-        const pulse = Math.sin(time * 0.002 + node.pulsePhase) * 0.3 + 1;
-        const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius * pulse * 2);
-        gradient.addColorStop(0, 'rgba(0, 200, 150, 0.8)');
-        gradient.addColorStop(0.5, 'rgba(0, 200, 150, 0.4)');
-        gradient.addColorStop(1, 'rgba(0, 200, 150, 0)');
-        
-        ctx.fillStyle = gradient;
-        ctx.arc(node.x, node.y, node.radius * pulse * 2, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Inner core
-        ctx.fillStyle = '#00C896';
-        ctx.arc(node.x, node.y, node.radius * pulse, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        // Regular nodes
-        const pulse = Math.sin(time * 0.001 + node.pulsePhase) * 0.2 + 0.8;
-        ctx.fillStyle = `rgba(255, 255, 255, ${pulse * 0.6})`;
-        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    };
-
-    const drawConnection = (node1, node2, distance, maxDistance) => {
-      const opacity = (1 - distance / maxDistance) * 0.3;
-      ctx.beginPath();
-      ctx.strokeStyle = `rgba(0, 200, 150, ${opacity})`;
-      ctx.lineWidth = 1;
-      ctx.moveTo(node1.x, node1.y);
-      ctx.lineTo(node2.x, node2.y);
-      ctx.stroke();
-    };
-
     const animate = (time) => {
-      ctx.fillStyle = 'rgba(11, 31, 58, 0.1)';
+      ctx.fillStyle = 'rgba(11, 31, 58, 0.15)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Update and draw nodes
       nodes.forEach((node, i) => {
-        if (!node.isCore) {
-          // Update position
-          node.x += node.vx;
-          node.y += node.vy;
+        node.x += node.vx;
+        node.y += node.vy;
+        if (node.x < 0 || node.x > canvas.width) node.vx *= -1;
+        if (node.y < 0 || node.y > canvas.height) node.vy *= -1;
 
-          // Bounce off edges
-          if (node.x < 0 || node.x > canvas.width) node.vx *= -1;
-          if (node.y < 0 || node.y > canvas.height) node.vy *= -1;
-
-          // Mouse interaction
-          const dx = mouseX - node.x;
-          const dy = mouseY - node.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 150) {
-            const force = (150 - dist) / 150;
-            node.x -= (dx / dist) * force * 2;
-            node.y -= (dy / dist) * force * 2;
-          }
+        const dx = mouseX - node.x;
+        const dy = mouseY - node.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          const force = (120 - dist) / 120;
+          node.x -= (dx / dist) * force * 1.5;
+          node.y -= (dy / dist) * force * 1.5;
         }
 
-        drawNode(node, time);
+        const pulse = Math.sin(time * 0.001 + node.pulsePhase) * 0.2 + 0.8;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(0, 200, 150, ${pulse * 0.5})`;
+        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+        ctx.fill();
 
-        // Draw connections
         for (let j = i + 1; j < nodes.length; j++) {
           const other = nodes[j];
-          const dx = node.x - other.x;
-          const dy = node.y - other.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const maxDistance = node.isCore || other.isCore ? 300 : 150;
-
-          if (distance < maxDistance) {
-            drawConnection(node, other, distance, maxDistance);
+          const dx2 = node.x - other.x;
+          const dy2 = node.y - other.y;
+          const distance = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+          if (distance < 130) {
+            const opacity = (1 - distance / 130) * 0.25;
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(0, 200, 150, ${opacity})`;
+            ctx.lineWidth = 0.5;
+            ctx.moveTo(node.x, node.y);
+            ctx.lineTo(other.x, other.y);
+            ctx.stroke();
           }
         }
       });
@@ -143,7 +88,6 @@ const HeroSection = () => {
 
     canvas.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('resize', resize);
-    
     resize();
     animate(0);
 
@@ -154,22 +98,8 @@ const HeroSection = () => {
     };
   }, []);
 
-  const textVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: (i) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.1 + 0.5,
-        duration: 0.8,
-        ease: [0.6, 0.05, 0.01, 0.9]
-      }
-    })
-  };
-
   return (
     <section
-      ref={sectionRef}
       style={{
         position: 'relative',
         minHeight: '100vh',
@@ -177,164 +107,230 @@ const HeroSection = () => {
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
-        background: 'linear-gradient(180deg, #0B1F3A 0%, #0a1a2e 100%)'
+        background: 'radial-gradient(ellipse at center, #0d2543 0%, #0B1F3A 60%, #071527 100%)'
       }}
     >
-      {/* Animated background canvas */}
       <canvas
         ref={canvasRef}
         style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
+          inset: 0,
           width: '100%',
           height: '100%',
           zIndex: 1
         }}
       />
 
-      {/* Content */}
+      {/* Ambient orbital rings */}
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 180, repeat: Infinity, ease: 'linear' }}
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '900px',
+          height: '900px',
+          borderRadius: '50%',
+          border: '1px dashed rgba(0, 200, 150, 0.06)',
+          pointerEvents: 'none',
+          zIndex: 1
+        }}
+      />
+
       <div style={{
         position: 'relative',
         zIndex: 2,
-        maxWidth: '1200px',
+        maxWidth: '1400px',
+        width: '100%',
         padding: '2rem',
         textAlign: 'center'
       }}>
+        {/* Small tag */}
         <motion.div
-          initial="hidden"
-          animate="visible"
-          style={{ marginBottom: '3rem' }}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            padding: '0.5rem 1.25rem',
+            background: 'rgba(0, 200, 150, 0.08)',
+            border: '1px solid rgba(0, 200, 150, 0.25)',
+            borderRadius: '100px',
+            marginBottom: '3rem',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            color: '#00C896',
+            letterSpacing: '0.2em'
+          }}
+        >
+          <motion.div
+            animate={{ scale: [1, 1.4, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: '#00C896'
+            }}
+          />
+          LATIN AMERICAN TECHNOLOGY PLATFORM
+        </motion.div>
+
+        {/* THE BRAND — DOMINANT DISPLAY */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 0.4 }}
+          style={{
+            marginBottom: '2rem'
+          }}
         >
           <motion.h1
-            custom={0}
-            variants={textVariants}
+            initial={{ opacity: 0, y: 30, letterSpacing: '-0.06em' }}
+            animate={{ opacity: 1, y: 0, letterSpacing: '-0.04em' }}
+            transition={{ duration: 1.4, delay: 0.6, ease: [0.6, 0.05, 0.01, 0.9] }}
             style={{
               fontFamily: '"Space Grotesk", sans-serif',
-              fontSize: 'clamp(2.5rem, 8vw, 6rem)',
+              fontSize: 'clamp(3.5rem, 12vw, 10rem)',
               fontWeight: 700,
-              lineHeight: 1.1,
-              marginBottom: '1.5rem',
-              letterSpacing: '-0.02em'
+              lineHeight: 0.9,
+              margin: 0,
+              color: '#FFFFFF',
+              letterSpacing: '-0.04em'
             }}
           >
-            <span style={{ color: '#FFFFFF' }}>Todo comienza</span>
+            PUNTO
             <br />
-            <span style={{ 
+            <span style={{
               background: 'linear-gradient(135deg, #00C896 0%, #D4AF37 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
+              backgroundClip: 'text',
+              display: 'inline-block'
             }}>
-              en cero
+              CERO
             </span>
           </motion.h1>
 
-          <motion.p
-            custom={1}
-            variants={textVariants}
-            style={{
-              fontSize: 'clamp(1.1rem, 2vw, 1.5rem)',
-              lineHeight: 1.6,
-              color: 'rgba(255, 255, 255, 0.8)',
-              maxWidth: '800px',
-              margin: '0 auto 2rem',
-              fontWeight: 300
-            }}
-          >
-            Un núcleo tecnológico compartido.
-            <br />
-            Múltiples plataformas especializadas.
-            <br />
-            Un ecosistema conectado para Latinoamérica.
-          </motion.p>
-
           <motion.div
-            custom={2}
-            variants={textVariants}
+            initial={{ opacity: 0, letterSpacing: '0.2em' }}
+            animate={{ opacity: 1, letterSpacing: '0.5em' }}
+            transition={{ duration: 1.4, delay: 1.2 }}
             style={{
-              display: 'flex',
-              gap: '1.5rem',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              marginTop: '3rem'
+              fontSize: 'clamp(0.9rem, 1.5vw, 1.2rem)',
+              fontWeight: 400,
+              color: 'rgba(255, 255, 255, 0.6)',
+              marginTop: '1rem',
+              fontFamily: '"Space Grotesk", sans-serif'
             }}
           >
-            <motion.a
-              href="#ecosistema"
-              whileHover={{ scale: 1.05, boxShadow: '0 10px 40px rgba(0, 200, 150, 0.4)' }}
-              whileTap={{ scale: 0.98 }}
-              className="interactive"
-              style={{
-                padding: '1rem 2.5rem',
-                background: 'linear-gradient(135deg, #00C896 0%, #00a077 100%)',
-                color: '#FFFFFF',
-                textDecoration: 'none',
-                borderRadius: '12px',
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                border: 'none',
-                cursor: 'pointer',
-                display: 'inline-block'
-              }}
-            >
-              Explorar Ecosistema
-            </motion.a>
-
-            <motion.a
-              href="#contacto"
-              whileHover={{ 
-                scale: 1.05,
-                background: 'rgba(0, 200, 150, 0.1)',
-                borderColor: '#00C896'
-              }}
-              whileTap={{ scale: 0.98 }}
-              className="interactive"
-              style={{
-                padding: '1rem 2.5rem',
-                background: 'transparent',
-                color: '#FFFFFF',
-                textDecoration: 'none',
-                borderRadius: '12px',
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                border: '2px solid rgba(255, 255, 255, 0.3)',
-                cursor: 'pointer',
-                display: 'inline-block'
-              }}
-            >
-              Conectar
-            </motion.a>
+            S Y S T E M
           </motion.div>
+        </motion.div>
+
+        {/* Subtitle */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 1.4 }}
+          style={{
+            fontSize: 'clamp(1.05rem, 1.8vw, 1.4rem)',
+            lineHeight: 1.65,
+            color: 'rgba(255, 255, 255, 0.75)',
+            maxWidth: '760px',
+            margin: '3rem auto 0',
+            fontWeight: 300
+          }}
+        >
+          No es una aplicación. Es una <strong style={{ color: '#FFFFFF', fontWeight: 600 }}>plataforma</strong>.
+          Construimos la infraestructura tecnológica que permitirá a miles de{' '}
+          <span style={{ color: '#00C896' }}>profesionales</span>,{' '}
+          <span style={{ color: '#00C896' }}>emprendedores</span> y{' '}
+          <span style={{ color: '#00C896' }}>empresas</span>{' '}
+          latinoamericanas crecer juntas.
+        </motion.p>
+
+        {/* CTAs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 1.6 }}
+          style={{
+            display: 'flex',
+            gap: '1rem',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            marginTop: '3rem'
+          }}
+        >
+          <motion.a
+            href="#vision"
+            whileHover={{ scale: 1.05, boxShadow: '0 10px 40px rgba(0, 200, 150, 0.35)' }}
+            whileTap={{ scale: 0.98 }}
+            className="interactive"
+            style={{
+              padding: '1rem 2.25rem',
+              background: 'linear-gradient(135deg, #00C896 0%, #00a077 100%)',
+              color: '#FFFFFF',
+              textDecoration: 'none',
+              borderRadius: '100px',
+              fontSize: '1rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            Explorar la Visión
+          </motion.a>
+
+          <motion.a
+            href="#contacto"
+            whileHover={{ scale: 1.05, background: 'rgba(255, 255, 255, 0.05)' }}
+            whileTap={{ scale: 0.98 }}
+            className="interactive"
+            style={{
+              padding: '1rem 2.25rem',
+              background: 'transparent',
+              color: '#FFFFFF',
+              textDecoration: 'none',
+              borderRadius: '100px',
+              fontSize: '1rem',
+              fontWeight: 500,
+              border: '1px solid rgba(255, 255, 255, 0.2)'
+            }}
+          >
+            Solicitar Acceso al Investor Room
+          </motion.a>
         </motion.div>
 
         {/* Scroll indicator */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1, y: [0, 10, 0] }}
+          animate={{ opacity: 1, y: [0, 8, 0] }}
           transition={{ 
-            opacity: { delay: 2 },
-            y: { delay: 2, duration: 1.5, repeat: Infinity }
+            opacity: { delay: 2.2 },
+            y: { delay: 2.2, duration: 1.8, repeat: Infinity }
           }}
           style={{
             position: 'absolute',
-            bottom: '3rem',
+            bottom: '2.5rem',
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             gap: '0.5rem',
-            color: 'rgba(255, 255, 255, 0.5)',
-            fontSize: '0.9rem'
+            color: 'rgba(255, 255, 255, 0.4)',
+            fontSize: '0.75rem',
+            letterSpacing: '0.2em'
           }}
         >
-          <span>Descubre más</span>
-          <div style={{
-            width: 2,
-            height: 40,
-            background: 'linear-gradient(180deg, rgba(0, 200, 150, 0.8) 0%, transparent 100%)'
-          }} />
+          <ArrowDown size={16} />
         </motion.div>
       </div>
     </section>
