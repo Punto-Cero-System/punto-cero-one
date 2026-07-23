@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Menu, X, ChevronDown, Lock } from 'lucide-react';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -163,6 +164,37 @@ const Header = () => {
             ))}
           </div>
 
+          {/* Investor Room CTA */}
+          <motion.div
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.9 }}
+            whileHover={{ scale: 1.03 }}
+            className="desktop-nav-cta"
+          >
+            <Link
+              to="/investor-room"
+              className="interactive"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.6rem 1.15rem',
+                background: 'rgba(212, 175, 55, 0.1)',
+                border: '1px solid rgba(212, 175, 55, 0.3)',
+                borderRadius: '100px',
+                color: '#D4AF37',
+                textDecoration: 'none',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                letterSpacing: '0.05em'
+              }}
+            >
+              <Lock size={12} />
+              Investor Room
+            </Link>
+          </motion.div>
+
           {/* Mobile menu button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -242,6 +274,9 @@ const Header = () => {
       <style>{`
         @media (max-width: 768px) {
           .desktop-nav {
+            display: none !important;
+          }
+          .desktop-nav-cta {
             display: none !important;
           }
           .mobile-menu-btn {

@@ -9,6 +9,7 @@ import PuntoCeroLegalSection from '../components/PuntoCeroLegalSection';
 import LatinAmericaBlock from '../components/LatinAmericaBlock';
 import PeopleSection from '../components/PeopleSection';
 import InvestorContactBlock from '../components/InvestorContactBlock';
+import PitchDeckPreview from '../components/PitchDeckPreview';
 import Footer from '../components/Footer';
 import CustomCursor from '../components/CustomCursor';
 import SoundToggle from '../components/SoundToggle';
@@ -123,7 +124,10 @@ const HomePage = () => {
         {/* BLOCK 7: PEOPLE - LIGHT SECTION */}
         <PeopleSection />
 
-        {/* BLOCK 8: INVESTORS + CONTACT */}
+        {/* BLOCK 8a: PITCH DECK PREVIEW - LIGHT/WHITE SECTION for rhythm */}
+        <PitchDeckPreview />
+
+        {/* BLOCK 8b: INVESTORS + CONTACT */}
         <InvestorContactBlock />
 
         {/* Institutional Footer */}

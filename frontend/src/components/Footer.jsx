@@ -20,7 +20,7 @@ const Footer = () => {
       links: [
         { label: 'Latinoamérica', href: '#latam' },
         { label: 'Comunidad', href: '#comunidad' },
-        { label: 'Investor Room', href: '#contacto' },
+        { label: 'Investor Room', href: '/investor-room' },
         { label: 'Contacto', href: '#contacto' }
       ]
     },

@@ -367,7 +367,9 @@ const PuntoCeroLegalSection = () => {
               flexWrap: 'wrap'
             }}>
               <motion.a
-                href="mailto:puntocerosystem@gmail.com?subject=Demo - Punto Cero Legal"
+                href="https://puntocerolegal.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 whileHover={{ scale: 1.05, boxShadow: '0 20px 60px rgba(0, 200, 150, 0.4)' }}
                 whileTap={{ scale: 0.98 }}
                 className="interactive"
@@ -384,12 +386,12 @@ const PuntoCeroLegalSection = () => {
                   fontWeight: 600
                 }}
               >
-                Solicitar Demo
+                Visitar puntocerolegal.com
                 <ArrowRight size={18} />
               </motion.a>
 
               <motion.a
-                href="mailto:puntocerosystem@gmail.com?subject=Información - Punto Cero Legal"
+                href="mailto:puntocerosystem@gmail.com?subject=Demo - Punto Cero Legal"
                 whileHover={{ 
                   scale: 1.05,
                   background: 'rgba(0, 200, 150, 0.1)',
@@ -411,7 +413,7 @@ const PuntoCeroLegalSection = () => {
                   border: '2px solid rgba(255, 255, 255, 0.2)'
                 }}
               >
-                Más Información
+                Solicitar Demo
               </motion.a>
             </div>
           </motion.div>

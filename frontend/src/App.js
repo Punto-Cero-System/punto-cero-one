@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Lenis from '@studio-freight/lenis';
 import './App.css';
 import HomePage from './pages/HomePage';
+import InvestorRequestPage from './pages/InvestorRequestPage';
+import InvestorRoomPreview from './pages/InvestorRoomPreview';
 
 function App() {
   useEffect(() => {
@@ -36,6 +38,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/investor-room" element={<InvestorRoomPreview />} />
+          <Route path="/request-access" element={<InvestorRequestPage />} />
         </Routes>
       </BrowserRouter>
     </div>

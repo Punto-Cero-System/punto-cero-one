@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Mail, MessageCircle, ArrowRight, Instagram, Music, Youtube, Share2, Facebook, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Mail, MessageCircle, ArrowRight, Instagram, Music, Youtube, Share2, Facebook, Lock, Eye } from 'lucide-react';
 
 const InvestorContactBlock = () => {
   const sectionRef = useRef(null);
@@ -207,35 +208,49 @@ const InvestorContactBlock = () => {
             </div>
 
             <div style={{ textAlign: 'center' }}>
-              <motion.a
-                href="mailto:puntocerosystem@gmail.com?subject=Solicitud de Acceso - Investor Room"
-                whileHover={{ scale: 1.05, boxShadow: '0 20px 60px rgba(212, 175, 55, 0.4)' }}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
-                className="interactive"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '1.15rem 2rem',
-                  background: 'linear-gradient(135deg, #D4AF37 0%, #b8942d 100%)',
-                  color: '#0B1F3A',
-                  textDecoration: 'none',
-                  borderRadius: '100px',
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.02em'
-                }}
               >
-                Solicitar Acceso
-                <ArrowRight size={18} />
-              </motion.a>
-              <p style={{
-                fontSize: '0.8rem',
-                color: 'rgba(255, 255, 255, 0.4)',
-                marginTop: '1rem'
-              }}>
-                Conversaciones estratégicas preparadas
-              </p>
+                <Link
+                  to="/request-access"
+                  className="interactive"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '1.15rem 2rem',
+                    background: 'linear-gradient(135deg, #D4AF37 0%, #b8942d 100%)',
+                    color: '#0B1F3A',
+                    textDecoration: 'none',
+                    borderRadius: '100px',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.02em',
+                    boxShadow: '0 10px 40px rgba(212, 175, 55, 0.25)'
+                  }}
+                >
+                  Solicitar Acceso
+                  <ArrowRight size={18} />
+                </Link>
+              </motion.div>
+              <div style={{ marginTop: '0.75rem' }}>
+                <Link
+                  to="/investor-room"
+                  className="interactive"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    fontSize: '0.8rem',
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    textDecoration: 'none'
+                  }}
+                >
+                  <Eye size={12} />
+                  Ver preview del Investor Room
+                </Link>
+              </div>
             </div>
           </div>
         </motion.div>

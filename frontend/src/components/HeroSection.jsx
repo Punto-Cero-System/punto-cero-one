@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { ArrowDown } from 'lucide-react';
 
 const HeroSection = () => {
@@ -288,24 +289,28 @@ const HeroSection = () => {
             Explorar la Visión
           </motion.a>
 
-          <motion.a
-            href="#contacto"
-            whileHover={{ scale: 1.05, background: 'rgba(255, 255, 255, 0.05)' }}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
-            className="interactive"
-            style={{
-              padding: '1rem 2.25rem',
-              background: 'transparent',
-              color: '#FFFFFF',
-              textDecoration: 'none',
-              borderRadius: '100px',
-              fontSize: '1rem',
-              fontWeight: 500,
-              border: '1px solid rgba(255, 255, 255, 0.2)'
-            }}
           >
-            Solicitar Acceso al Investor Room
-          </motion.a>
+            <Link
+              to="/request-access"
+              className="interactive"
+              style={{
+                padding: '1rem 2.25rem',
+                background: 'transparent',
+                color: '#FFFFFF',
+                textDecoration: 'none',
+                borderRadius: '100px',
+                fontSize: '1rem',
+                fontWeight: 500,
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                display: 'inline-block'
+              }}
+            >
+              Solicitar Acceso al Investor Room
+            </Link>
+          </motion.div>
         </motion.div>
 
         {/* Scroll indicator */}
