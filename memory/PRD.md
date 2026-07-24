@@ -112,6 +112,29 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 - ✅ Formulario público `/request-access` conectado al backend.
 - ✅ **Testing agent: 33/33 backend tests passing (100%)**.
 
+### FASE 4 — Capital Strategy · Projection · Cash Flow · Feasibility (2026-02)
+- ✅ Ruta unificada `/capital-strategy` con **15 secciones** en una sola experiencia:
+  1. Hero (órbitas expansivas, título gradient)
+  2. Contexto estratégico + cadena de valor 6-pasos
+  3. Flujo de capital (10 estados encadenados)
+  4. Tres escenarios de capital (Mínimo · Validación · Aceleración) con tabs y tarjetas
+  5. Uso del capital — editor interactivo con 8 categorías (%, cálculo de $ en vivo, aviso si ≠ 100%)
+  6. Marco de proyección 36m (3 fases · 7 métricas · todas marcadas "POR VALIDAR")
+  7. Revenue Model editable (Clientes · ARPU · Growth → cálculo MRR/ARR)
+  8. OpEx Model editable (11 categorías → cálculo mensual, anual, 36m, burn)
+  9. Cash Flow Simulator con datos actuales/supuestos/proyectados/escenarios etiquetados
+  10. Tres escenarios financieros (Conservador · Base · Acelerado) con switcher animado
+  11. 11 KPIs preparados con "PENDIENTE"
+  12. Feasibility Study en 5 dimensiones (Técnica · Comercial · Financiera · Operativa · Expansión)
+  13. Milestones (8 etapas conectadas por línea gradient · etapa actual en emerald)
+  14. Readiness Summary (7 cards honestas)
+  15. Disclaimer institucional
+- ✅ **Nav investor-center unificado**: `InvestorCenterNav` con tabs Executive Summary · Pitch Deck · Capital Strategy (tab activo en gold) + back home + link externo a Punto Cero Legal.
+- ✅ **Persistencia**: valores editados en localStorage (capital total, allocation %, revenue/opex/cash-flow inputs, escenario activo) — sólo primitivos, nunca componentes React.
+- ✅ **Cero invención de datos**: todos los campos numéricos por defecto muestran "Pendiente"; etiquetas DATO REAL / SUPUESTO / PROYECCIÓN / ESCENARIO distinguen naturaleza de cada valor.
+- ✅ Cross-links: CTA "Capital Strategy" añadido en PitchDeckPreview (home) y en el FinalCTA de Executive Summary.
+- ✅ **Testing agent: 100% frontend flows passing (0 issues)**. Regresión de rutas anteriores intacta.
+
 ### FASE 3 — Investor Pitch Deck avanzado (2026-02)
 - ✅ **Descarga PDF institucional** (`GET /api/pitch-deck/download`, público) — generado en tiempo real con reportlab, 58KB, 13 páginas (12 slides + cierre), paleta navy/emerald/gold, órbitas decorativas, footer branded. Botón dorado "Descargar PDF" en el nav del deck.
 - ✅ **Analytics por slide** — hook `usePitchDeckAnalytics()` con IntersectionObserver (threshold 0.35) mide dwell time por slide y hace beacon POST a `/api/pitch-deck/events` al salir del viewport (mínimo 400ms). Session ID persistente en `sessionStorage`.
@@ -145,11 +168,12 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 
 ## Roadmap / Backlog
 
-### P1 — FASE 4-7: Estrategia de capital y modelo financiero
-- Capital strategy (P4)
-- 36-month financial projection (P5)
-- Cash flow model (P6)
-- Financial feasibility study (P7)
+### P1 — FASE 5: Advanced Private Investor Room
+- Rol `investor` diferenciado del rol `admin` con flujo "solicitud aprobada → invitación → creación de usuario investor".
+- Repositorio de documentos privados (Emergent Object Storage vía integration playbook) — Pitch Deck PDF, Executive Summary, modelo financiero, cash flow, feasibility, roadmap, KPIs, arquitectura técnica, documentos corporativos.
+- Permisos granulares por documento/carpeta.
+- Historial de accesos y descargas.
+- Persistencia opcional de los inputs financieros de FASE 4 en backend (hoy en localStorage).
 
 ### P2 — Investor Room privado (autenticado)
 - Rol `investor` diferenciado de `admin`.
