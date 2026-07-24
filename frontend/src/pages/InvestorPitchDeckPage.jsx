@@ -2020,8 +2020,29 @@ const PitchDeckNav = () => {
             </span>
           </div>
 
-          <a
-            href={`${API}/api/pitch-deck/download`}
+          <button
+            onClick={async (e) => {
+              e.preventDefault();
+              const url = `${API}/api/pitch-deck/download`;
+              const filename = 'Punto-Cero-System-Investor-Pitch-Deck.pdf';
+              try {
+                const res = await fetch(url, { credentials: 'omit' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const blob = await res.blob();
+                const objectUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = filename;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1500);
+              } catch (err) {
+                // Fallback: open in a new tab so the user can still get the PDF
+                window.open(url, '_blank', 'noopener,noreferrer');
+              }
+            }}
             data-testid="deck-download-pdf"
             className="interactive hide-mobile"
             style={{
@@ -2037,11 +2058,12 @@ const PitchDeckNav = () => {
               fontSize: '0.78rem',
               fontWeight: 700,
               letterSpacing: '0.02em',
+              cursor: 'pointer',
             }}
           >
             <Download size={12} />
             Descargar PDF
-          </a>
+          </button>
 
           <a
             href="https://puntocerolegal.com"
