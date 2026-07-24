@@ -719,14 +719,18 @@ const FoundersSection = () => {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.9rem',
-            padding: '0.85rem 1.75rem',
+            padding: '0.85rem 1.35rem',
             background: NAVY,
             color: '#FFFFFF',
             borderRadius: '100px',
             fontSize: '0.8rem',
             fontWeight: 600,
             letterSpacing: '0.08em',
-          }}>
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            maxWidth: '100%',
+          }}
+          className="founders-closing-pill">
             <span style={{ color: EMERALD, fontWeight: 700 }}>ONE FOUNDING VISION</span>
             <span style={{ opacity: 0.35 }}>·</span>
             <span>ONE TECHNOLOGY FOUNDATION</span>

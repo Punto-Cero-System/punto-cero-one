@@ -151,11 +151,12 @@ const ExecutiveSummaryPage = () => {
         @media (max-width: 900px) {
           .exec-dot-nav { display: none !important; }
         }
-        .exec-section { padding: 8rem 2rem; position: relative; }
+        .exec-section { padding: 5rem 1rem; position: relative; overflow-x: clip; }
+        @media (min-width: 600px) { .exec-section { padding: 7rem 2rem; } }
         @media (min-width: 900px) {
           .exec-section { padding: 10rem 4rem; }
         }
-        .exec-container { max-width: 1200px; margin: 0 auto; }
+        .exec-container { max-width: 1200px; margin: 0 auto; min-width: 0; }
         .exec-eyebrow {
           font-size: 0.7rem; letter-spacing: 0.3em; font-weight: 700;
           color: ${EMERALD}; display: inline-block; margin-bottom: 1.5rem;

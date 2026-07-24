@@ -287,9 +287,10 @@ const CapitalStrategyPage = () => {
       <style>{`
         @media (max-width: 1100px) { .capital-dot-nav { display: none !important; } }
         @media (max-width: 900px) { .capital-topnav-links { display: none !important; } }
-        .cap-section { padding: 7rem 1.5rem; position: relative; }
+        .cap-section { padding: 5rem 1rem; position: relative; overflow-x: clip; }
+        @media (min-width: 600px) { .cap-section { padding: 6rem 1.5rem; } }
         @media (min-width: 900px) { .cap-section { padding: 9rem 3rem; } }
-        .cap-container { max-width: 1200px; margin: 0 auto; }
+        .cap-container { max-width: 1200px; margin: 0 auto; min-width: 0; }
       `}</style>
     </div>
   );

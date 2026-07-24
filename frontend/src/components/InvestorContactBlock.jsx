@@ -283,7 +283,9 @@ const InvestorContactBlock = () => {
               cursor: 'pointer',
               textAlign: 'left',
               fontFamily: 'inherit',
-              color: '#FFFFFF'
+              color: '#FFFFFF',
+              minWidth: 0,
+              width: '100%',
             }}
           >
             <div style={{
@@ -323,7 +325,9 @@ const InvestorContactBlock = () => {
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '20px',
               textDecoration: 'none',
-              color: '#FFFFFF'
+              color: '#FFFFFF',
+              minWidth: 0,
+              width: '100%',
             }}
           >
             <div style={{

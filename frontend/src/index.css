@@ -2,6 +2,111 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================================
+   RESPONSIVE FOUNDATIONS · Prevent any horizontal overflow across the app
+   ========================================================================= */
+html, body {
+    max-width: 100%;
+    overflow-x: clip;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* Media never overflows its container */
+img, video, svg, canvas, iframe {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Prevent flex/grid children from forcing their parent to expand */
+main, section, article, header, footer, nav {
+    min-width: 0;
+}
+
+/* -------------------------------------------------------------------------
+   TABLET & MOBILE — universal fluidity for the many inline-styled grids
+   used across HomePage / ExecutiveSummary / PitchDeck / CapitalStrategy.
+   The inline styles use grid-template-columns of "1fr 1fr" / "1.1fr 1fr" /
+   "1fr 1fr 1fr" / "1.15fr 1fr" — collapse them to single column below 768px.
+   ------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* Collapse any 2-3 column inline grid to a single column */
+    [style*="gridTemplateColumns"][style*="1fr 1fr"],
+    [style*="grid-template-columns"][style*="1fr 1fr"],
+    [style*="grid-template-columns: 1fr 1fr"],
+    [style*="grid-template-columns: 1.1fr"],
+    [style*="grid-template-columns: 1.15fr"],
+    [style*="grid-template-columns: 1.2fr"],
+    [style*="grid-template-columns: 2fr"],
+    /* Collapse minmax() grids whose min is bigger than the viewport */
+    [style*="minmax(320px"],
+    [style*="minmax(340px"],
+    [style*="minmax(360px"],
+    [style*="minmax(380px"],
+    [style*="minmax(400px"],
+    [style*="minmax(420px"],
+    [style*="minmax(440px"],
+    [style*="minmax(500px"] {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+    }
+    /* Ensure oversized section paddings shrink on mobile */
+    section {
+        padding-left: 1.25rem !important;
+        padding-right: 1.25rem !important;
+    }
+    /* Clamp big fixed widths from inline styles that break mobile */
+    [style*="max-width: 1400px"],
+    [style*="maxWidth: '1400px'"] { max-width: 100% !important; }
+}
+
+/* On very small phones also collapse 300px minmax grids and shrink further */
+@media (max-width: 480px) {
+    section {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    [style*="minmax(280px"],
+    [style*="minmax(300px"] {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+    /* Fluid headings — cap oversized clamp() heroes that ignore container */
+    h1 { max-width: 100% !important; word-break: break-word; }
+    /* Reduce huge inline paddings that break tiny screens */
+    [style*="padding: 8rem"],
+    [style*="padding: 9rem"],
+    [style*="padding: 10rem"] { padding: 4rem 1rem !important; }
+}
+
+/* -------------------------------------------------------------------------
+   Utility classes to opt-in to responsive behavior from component code
+   ------------------------------------------------------------------------- */
+.responsive-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.responsive-hide-mobile {
+    display: initial;
+}
+@media (max-width: 768px) {
+    .responsive-hide-mobile { display: none !important; }
+}
+
+/* Custom cursor is a desktop nicety — disable on touch devices to avoid
+   pointer-events interfering with mobile taps */
+@media (hover: none) and (pointer: coarse) {
+    .custom-cursor,
+    [data-custom-cursor] {
+        display: none !important;
+    }
+    body { cursor: auto !important; }
+}
+
 body {
     margin: 0;
     font-family:
