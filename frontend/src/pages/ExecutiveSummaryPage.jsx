@@ -1124,7 +1124,7 @@ const HumanCard = ({ eyebrow, text, gold }) => (
 const FOUNDERS_EXEC = [
   {
     key: 'darwin',
-    photo: 'https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/tyanc7gv_ChatGPT%20Image%2024%20jul%202026%2C%2009_32_02%20a.m..png',
+    photo: 'https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/it8kuli6_ChatGPT_Image_3_mar_2026__10_24_41-removebg-preview.png',
     title: 'Abogado.',
     name: 'Darwin José Gómez Gómez',
     role: 'FOUNDER · CHAIRMAN · CTO',
@@ -1138,7 +1138,7 @@ const FOUNDERS_EXEC = [
   },
   {
     key: 'jonathan',
-    photo: 'https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/it8kuli6_ChatGPT_Image_3_mar_2026__10_24_41-removebg-preview.png',
+    photo: 'https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/tyanc7gv_ChatGPT%20Image%2024%20jul%202026%2C%2009_32_02%20a.m..png',
     title: 'Economista.',
     name: 'Jonathan Alejandro Cetina Guerrero',
     role: 'CO-FOUNDER · CEO',

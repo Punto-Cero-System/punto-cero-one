@@ -1582,7 +1582,7 @@ const Slide11 = () => {
                   boxShadow: '0 8px 20px rgba(0, 200, 150, 0.35)',
                   background: '#0B1F3A',
                 }}>
-                  <img src="https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/tyanc7gv_ChatGPT%20Image%2024%20jul%202026%2C%2009_32_02%20a.m..png"
+                  <img src="https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/it8kuli6_ChatGPT_Image_3_mar_2026__10_24_41-removebg-preview.png"
                     alt="Darwin José Gómez Gómez"
                     style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }} />
                 </div>
@@ -1594,7 +1594,7 @@ const Slide11 = () => {
                   background: '#0B1F3A',
                   marginLeft: '-14px',
                 }}>
-                  <img src="https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/it8kuli6_ChatGPT_Image_3_mar_2026__10_24_41-removebg-preview.png"
+                  <img src="https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/tyanc7gv_ChatGPT%20Image%2024%20jul%202026%2C%2009_32_02%20a.m..png"
                     alt="Jonathan Alejandro Cetina Guerrero"
                     style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }} />
                 </div>
