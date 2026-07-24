@@ -8,16 +8,24 @@ const AdminLoginPage = () => {
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/admin';
+  const from = location.state?.from?.pathname;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // If already logged in as admin, bounce to dashboard
+  const destinationFor = (u) => {
+    if (from) return from;
+    if (u?.role === 'admin') return '/admin';
+    if (u?.role === 'investor') return '/investor-portal';
+    return '/';
+  };
+
+  // If already logged in, bounce to the right destination
   React.useEffect(() => {
-    if (user && user.role === 'admin') navigate('/admin', { replace: true });
+    if (user && user.role) navigate(destinationFor(user), { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate]);
 
   const handleSubmit = async (e) => {
@@ -25,8 +33,8 @@ const AdminLoginPage = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email.trim().toLowerCase(), password);
-      navigate(from, { replace: true });
+      const u = await login(email.trim().toLowerCase(), password);
+      navigate(destinationFor(u), { replace: true });
     } catch (err) {
       setError(err.message || 'No se pudo iniciar sesión');
     } finally {

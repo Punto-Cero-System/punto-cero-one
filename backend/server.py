@@ -21,8 +21,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from auth import hash_password, verify_password
 from routes.auth_routes import router as auth_router
-from routes.investor_routes import public_router as investor_public_router
-from routes.investor_routes import admin_router as investor_admin_router
+from routes.investor_routes import (
+    public_router as investor_public_router,
+    admin_router as investor_admin_router,
+    admin_extra_router as investor_admin_extra_router,
+    investor_router,
+    public_auth_router as investor_public_auth_router,
+)
 from routes.pitch_deck_routes import public_router as pitch_public_router
 from routes.pitch_deck_routes import admin_router as pitch_admin_router
 
@@ -72,8 +77,11 @@ async def health():
 # -------------------- Routers --------------------
 app.include_router(meta_router)
 app.include_router(auth_router)
+app.include_router(investor_public_auth_router)
 app.include_router(investor_public_router)
 app.include_router(investor_admin_router)
+app.include_router(investor_admin_extra_router)
+app.include_router(investor_router)
 app.include_router(pitch_public_router)
 app.include_router(pitch_admin_router)
 
@@ -100,6 +108,12 @@ async def ensure_indexes():
     await db.pitch_deck_events.create_index("session_id")
     await db.pitch_deck_events.create_index("slide_number")
     await db.pitch_deck_events.create_index("created_at")
+    await db.investor_access_log.create_index("user_id")
+    await db.investor_access_log.create_index("created_at")
+    # Ensure the invitation_token can be queried quickly and is unique when present.
+    await db.users.create_index(
+        "invitation_token", unique=True, partialFilterExpression={"invitation_token": {"$type": "string"}}
+    )
 
 
 async def seed_admin():

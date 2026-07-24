@@ -406,15 +406,49 @@ const StatusBadge = ({ status }) => {
 };
 
 const DetailPanel = ({ request, onClose, onUpdate }) => {
+  const { authFetch } = useAuth();
   const [notes, setNotes] = useState(request.admin_notes || '');
   const [saving, setSaving] = useState(null);
+  const [inviting, setInviting] = useState(false);
+  const [invitation, setInvitation] = useState(null);
+  const [inviteError, setInviteError] = useState('');
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => setNotes(request.admin_notes || ''), [request.id, request.admin_notes]);
+  useEffect(() => {
+    setNotes(request.admin_notes || '');
+    setInvitation(null);
+    setInviteError('');
+    setCopied(false);
+  }, [request.id, request.admin_notes]);
 
   const handleChangeStatus = async (status) => {
     setSaving(status);
     await onUpdate(request.id, status, notes);
     setSaving(null);
+  };
+
+  const handleInvite = async () => {
+    setInviteError('');
+    setInviting(true);
+    try {
+      const res = await authFetch(`/api/admin/investor-requests/${request.id}/invite`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.detail || 'No se pudo generar la invitación.');
+      setInvitation(data);
+    } catch (e) {
+      setInviteError(e.message);
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const copyLink = async () => {
+    if (!invitation?.invitation_url) return;
+    try {
+      await navigator.clipboard.writeText(invitation.invitation_url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch { /* noop */ }
   };
 
   return (
@@ -525,6 +559,71 @@ const DetailPanel = ({ request, onClose, onUpdate }) => {
             );
           })}
         </div>
+      </div>
+
+      {/* Investor invitation (FASE 5) */}
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.5rem' }}>
+        <div style={{ fontSize: '0.68rem', color: '#D4AF37', letterSpacing: '0.2em', fontWeight: 700, marginBottom: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Shield size={12} /> INVITAR AL INVESTOR ROOM
+        </div>
+
+        {!invitation && (
+          <>
+            <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, marginBottom: '0.9rem' }}>
+              Genera una invitación de un solo uso. Se creará un usuario con rol <b>investor</b> y expirará en 7 días.
+            </div>
+            <button
+              onClick={handleInvite}
+              disabled={inviting}
+              data-testid="invite-investor-btn"
+              className="interactive"
+              style={{
+                padding: '0.75rem 1.4rem',
+                background: inviting ? 'rgba(212,175,55,0.35)' : 'linear-gradient(135deg, #D4AF37, #b8942d)',
+                color: '#0B1F3A', border: 'none', borderRadius: '100px',
+                fontSize: '0.82rem', fontWeight: 700, cursor: inviting ? 'wait' : 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'inherit',
+              }}
+            >
+              {inviting ? 'Generando…' : (<>Generar invitación <ArrowRight size={13} /></>)}
+            </button>
+            {inviteError && (
+              <div data-testid="invite-error" style={{ marginTop: '0.75rem', padding: '0.6rem 0.9rem', background: 'rgba(255,90,90,0.08)', border: '1px solid rgba(255,90,90,0.3)', borderRadius: '10px', color: '#ff9a9a', fontSize: '0.8rem' }}>
+                {inviteError}
+              </div>
+            )}
+          </>
+        )}
+
+        {invitation && (
+          <div data-testid="invite-result" style={{
+            padding: '1.15rem', background: 'rgba(212,175,55,0.08)',
+            border: '1px solid rgba(212,175,55,0.35)', borderRadius: '14px',
+          }}>
+            <div style={{ fontSize: '0.7rem', letterSpacing: '0.2em', color: '#D4AF37', fontWeight: 700, marginBottom: '0.5rem' }}>
+              INVITACIÓN GENERADA · CADUCA {new Date(invitation.expires_at).toLocaleDateString('es-CO')}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#FFFFFF', wordBreak: 'break-all', marginBottom: '0.75rem', padding: '0.6rem 0.75rem', background: 'rgba(0,0,0,0.25)', borderRadius: '8px', fontFamily: 'monospace' }} data-testid="invite-url">
+              {invitation.invitation_url}
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button onClick={copyLink} data-testid="invite-copy" className="interactive" style={{
+                padding: '0.5rem 1rem', background: '#FFFFFF', color: '#0B1F3A',
+                border: 'none', borderRadius: '100px', fontSize: '0.78rem', fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}>{copied ? '✓ Copiado' : 'Copiar enlace'}</button>
+              <a href={invitation.invitation_url} target="_blank" rel="noreferrer" data-testid="invite-open" style={{
+                padding: '0.5rem 1rem', background: 'transparent', color: '#FFFFFF',
+                border: '1px solid rgba(255,255,255,0.2)', borderRadius: '100px',
+                fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+              }}>Abrir <ExternalLink size={11} /></a>
+            </div>
+            <div style={{ marginTop: '0.75rem', fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', fontStyle: 'italic' }}>
+              Comparte este enlace con el inversionista para que configure su contraseña.
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

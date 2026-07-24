@@ -1083,13 +1083,12 @@ const CashFlowModel = () => {
         </div>
 
         <FadeIn>
-          <div style={{
-            marginTop: '3rem', padding: '1.5rem 1.75rem',
-            background: `${GOLD}12`, border: `1px solid ${GOLD}44`, borderRadius: '16px',
-            fontSize: '0.85rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6,
-          }}>
-            <b style={{ color: GOLD }}>Proyección multi-mes:</b> el modelo mensual completo (36 meses) puede ser instanciado replicando esta fórmula por cada período con los supuestos ajustados por escenario (conservador, base, acelerado). La estructura está lista para reemplazar supuestos por datos reales cuando estén disponibles.
-          </div>
+          <SimulationEngine
+            opening={opening}
+            capital={capital}
+            revenue={revenue}
+            expenses={expenses}
+          />
         </FadeIn>
       </div>
       <style>{`@media (max-width: 900px) { [data-two-col] { grid-template-columns: 1fr !important; } }`}</style>
@@ -1131,6 +1130,292 @@ const CashBigTile = ({ label, value, color, testid }) => (
     <div style={{ fontSize: '1.85rem', fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, color, letterSpacing: '-0.02em' }}>{value}</div>
   </div>
 );
+
+// ============================================================================
+// SIMULATION ENGINE — 36-month projection with scenario multipliers
+// ============================================================================
+const SCENARIO_MULT = {
+  conservative: { revenueMult: 0.6, opexMult: 1.1, growth: 0.03, label: 'Conservador', color: '#7CC4FF' },
+  base:         { revenueMult: 1.0, opexMult: 1.0, growth: 0.06, label: 'Base',        color: EMERALD  },
+  accelerated:  { revenueMult: 1.5, opexMult: 1.15, growth: 0.10, label: 'Acelerado',  color: GOLD     },
+};
+
+const runProjection = ({ opening, capital, revenue, expenses, scenarioKey }) => {
+  const s = SCENARIO_MULT[scenarioKey] || SCENARIO_MULT.base;
+  const openingN = parseFloat(opening) || 0;
+  const capitalN = parseFloat(capital) || 0;
+  const revenue0 = (parseFloat(revenue) || 0) * s.revenueMult;
+  const opex0 = (parseFloat(expenses) || 0) * s.opexMult;
+
+  const months = [];
+  let balance = openingN;
+  // Capital injection: 60% at month 0, 30% at month 3, 10% at month 6 (typical staged tranche)
+  const tranches = { 0: capitalN * 0.6, 3: capitalN * 0.3, 6: capitalN * 0.1 };
+  let totalRev = 0, totalOpex = 0, breakEvenMonth = null, minBalance = openingN, runwayMonth = null;
+
+  for (let m = 0; m < 36; m++) {
+    const growthFactor = Math.pow(1 + s.growth, m);
+    const monthRev = revenue0 * growthFactor;
+    // Opex grows slower (2% per month) to simulate discipline
+    const monthOpex = opex0 * Math.pow(1.02, m);
+    const injection = tranches[m] || 0;
+    const net = monthRev - monthOpex;
+    balance = balance + injection + net;
+
+    totalRev += monthRev;
+    totalOpex += monthOpex;
+    if (breakEvenMonth === null && monthRev >= monthOpex && m > 0) breakEvenMonth = m + 1;
+    if (balance < minBalance) minBalance = balance;
+    if (runwayMonth === null && balance <= 0) runwayMonth = m + 1;
+
+    months.push({
+      m: m + 1,
+      revenue: Math.round(monthRev),
+      opex: Math.round(monthOpex),
+      net: Math.round(net),
+      injection: Math.round(injection),
+      balance: Math.round(balance),
+    });
+  }
+
+  return {
+    scenarioKey,
+    scenarioLabel: s.label,
+    scenarioColor: s.color,
+    months,
+    ending: Math.round(balance),
+    minBalance: Math.round(minBalance),
+    totalRevenue: Math.round(totalRev),
+    totalOpex: Math.round(totalOpex),
+    breakEvenMonth,
+    runwayMonth, // month where balance goes ≤ 0 (null if never)
+    monthsRunway: runwayMonth ? runwayMonth : (balance > 0 ? 36 : 0),
+  };
+};
+
+const SimulationEngine = ({ opening, capital, revenue, expenses }) => {
+  const [scenarioKey, setScenarioKey] = useStoredState('sim_scenario', 'base');
+  const [result, setResult] = useStoredState('sim_result', null);
+  const [running, setRunning] = useState(false);
+
+  const canRun = opening !== '' || capital !== '' || revenue !== '' || expenses !== '';
+
+  const run = () => {
+    setRunning(true);
+    // Small delay to make the "execution" feel like a proper simulation
+    setTimeout(() => {
+      const r = runProjection({ opening, capital, revenue, expenses, scenarioKey });
+      setResult(r);
+      setRunning(false);
+    }, 500);
+  };
+
+  const clear = () => setResult(null);
+
+  const fmt$ = (v) => (v == null || isNaN(v) ? '—' : (v < 0 ? '-' : '') + '$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 0 }));
+
+  return (
+    <div data-testid="simulation-engine" style={{
+      marginTop: '3rem', padding: '2rem 2.25rem',
+      background: `linear-gradient(135deg, rgba(212,175,55,0.08), rgba(0,200,150,0.05))`,
+      border: `1px solid ${GOLD}44`, borderRadius: '24px', color: '#FFFFFF',
+    }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '1.5rem' }}>
+        <div>
+          <div style={{ fontSize: '0.65rem', color: GOLD, letterSpacing: '0.25em', fontWeight: 700, marginBottom: '0.6rem' }}>
+            PROYECCIÓN 36 MESES · MOTOR DE SIMULACIÓN
+          </div>
+          <h3 style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.55rem', fontWeight: 300, letterSpacing: '-0.02em', margin: 0 }}>
+            Ejecuta el modelo con tus supuestos.
+          </h3>
+          <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem', maxWidth: '500px' }}>
+            El motor aplica multiplicadores de escenario, crecimiento compuesto y tranches de capital para proyectar los próximos 36 meses.
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          {Object.entries(SCENARIO_MULT).map(([k, s]) => (
+            <button
+              key={k}
+              onClick={() => setScenarioKey(k)}
+              data-testid={`sim-scenario-${k}`}
+              className="interactive"
+              style={{
+                padding: '0.5rem 1rem',
+                background: scenarioKey === k ? s.color + '22' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${scenarioKey === k ? s.color : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: '100px',
+                color: scenarioKey === k ? s.color : '#FFFFFF',
+                fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >{s.label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+        <button
+          onClick={run}
+          disabled={!canRun || running}
+          data-testid="sim-run"
+          className="interactive"
+          style={{
+            padding: '0.9rem 1.75rem',
+            background: !canRun || running ? 'rgba(212,175,55,0.35)' : `linear-gradient(135deg, ${GOLD}, #b8942d)`,
+            color: NAVY, border: 'none', borderRadius: '100px',
+            fontSize: '0.9rem', fontWeight: 700, cursor: !canRun || running ? 'not-allowed' : 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: '0.55rem',
+            fontFamily: 'inherit', letterSpacing: '0.02em',
+          }}
+        >
+          <Rocket size={15} /> {running ? 'Ejecutando…' : 'Ejecutar proyección 36m'}
+        </button>
+        {result && (
+          <button onClick={clear} data-testid="sim-clear" className="interactive" style={{
+            padding: '0.9rem 1.25rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: '100px', color: '#FFFFFF', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>Limpiar resultado</button>
+        )}
+        {!canRun && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', paddingLeft: '0.5rem' }}>
+            <Info size={12} /> Introduce al menos un valor de cash flow para ejecutar.
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {result && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.4 }}
+            data-testid="sim-result"
+            style={{ marginTop: '2rem' }}
+          >
+            {/* Result KPIs */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <SimKpi label="Escenario" value={result.scenarioLabel} color={result.scenarioColor} testid="sim-kpi-scenario" />
+              <SimKpi label="Balance final (m36)" value={fmt$(result.ending)} color={result.ending >= 0 ? EMERALD : '#ff8080'} testid="sim-kpi-ending" />
+              <SimKpi label="Break-even" value={result.breakEvenMonth ? `Mes ${result.breakEvenMonth}` : 'No alcanzado'} color={result.breakEvenMonth ? GOLD : '#ff8080'} testid="sim-kpi-be" />
+              <SimKpi label="Runway (meses)" value={result.runwayMonth ? `${result.runwayMonth} meses` : '36+ meses'} color={result.runwayMonth ? '#ff8080' : EMERALD} testid="sim-kpi-runway" />
+              <SimKpi label="Revenue 36m" value={fmt$(result.totalRevenue)} color="#7CC4FF" testid="sim-kpi-rev" />
+              <SimKpi label="OpEx 36m" value={fmt$(result.totalOpex)} color="#B888FF" testid="sim-kpi-opex" />
+            </div>
+
+            {/* Chart */}
+            <BalanceChart months={result.months} color={result.scenarioColor} />
+
+            {/* Monthly table */}
+            <details style={{ marginTop: '1.5rem' }} data-testid="sim-monthly-table">
+              <summary style={{ cursor: 'pointer', color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', padding: '0.75rem 0', letterSpacing: '0.05em', fontWeight: 600 }}>
+                Ver tabla mensual (36 meses) ▾
+              </summary>
+              <div style={{ overflowX: 'auto', marginTop: '0.75rem', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', color: '#FFFFFF' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
+                      {['Mes', 'Revenue', 'OpEx', 'Injection', 'Net', 'Balance'].map((h) => (
+                        <th key={h} style={{ padding: '0.65rem 0.85rem', textAlign: 'right', fontWeight: 700, letterSpacing: '0.1em', fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)' }}>{h.toUpperCase()}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.months.map((r) => (
+                      <tr key={r.m} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                        <td style={{ padding: '0.5rem 0.85rem', textAlign: 'left', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{String(r.m).padStart(2, '0')}</td>
+                        <td style={{ padding: '0.5rem 0.85rem', textAlign: 'right', color: '#7CC4FF' }}>{fmt$(r.revenue)}</td>
+                        <td style={{ padding: '0.5rem 0.85rem', textAlign: 'right', color: '#B888FF' }}>{fmt$(r.opex)}</td>
+                        <td style={{ padding: '0.5rem 0.85rem', textAlign: 'right', color: GOLD }}>{r.injection ? fmt$(r.injection) : '—'}</td>
+                        <td style={{ padding: '0.5rem 0.85rem', textAlign: 'right', color: r.net >= 0 ? EMERALD : '#ff8080' }}>{fmt$(r.net)}</td>
+                        <td style={{ padding: '0.5rem 0.85rem', textAlign: 'right', color: r.balance >= 0 ? '#FFFFFF' : '#ff8080', fontWeight: 700 }}>{fmt$(r.balance)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <div style={{ marginTop: '1.5rem', fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', maxWidth: '720px' }}>
+              Resultado calculado con multiplicadores del escenario <b>{result.scenarioLabel}</b> (revenue × {SCENARIO_MULT[result.scenarioKey].revenueMult},
+              opex × {SCENARIO_MULT[result.scenarioKey].opexMult}, growth {(SCENARIO_MULT[result.scenarioKey].growth * 100).toFixed(0)}%/mes).
+              Capital distribuido en tranches (60% m1, 30% m4, 10% m7). Los valores son proyecciones basadas en supuestos — no constituyen garantía de resultados.
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const SimKpi = ({ label, value, color, testid }) => (
+  <div data-testid={testid} style={{
+    padding: '1rem 1.15rem', background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px',
+  }}>
+    <div style={{ fontSize: '0.58rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.55)', fontWeight: 700, marginBottom: '0.35rem' }}>
+      {label.toUpperCase()}
+    </div>
+    <div style={{ fontSize: '1.1rem', fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, color, letterSpacing: '-0.01em' }}>
+      {value}
+    </div>
+  </div>
+);
+
+// SVG line chart of ending balance across 36 months
+const BalanceChart = ({ months, color }) => {
+  const W = 800, H = 220, PAD_L = 60, PAD_R = 20, PAD_T = 20, PAD_B = 30;
+  const innerW = W - PAD_L - PAD_R;
+  const innerH = H - PAD_T - PAD_B;
+  const values = months.map((m) => m.balance);
+  const maxV = Math.max(...values, 0);
+  const minV = Math.min(...values, 0);
+  const range = maxV - minV || 1;
+  const x = (i) => PAD_L + (i / (months.length - 1)) * innerW;
+  const y = (v) => PAD_T + (1 - (v - minV) / range) * innerH;
+  const zeroY = y(0);
+
+  const points = months.map((m, i) => `${x(i)},${y(m.balance)}`).join(' ');
+  const areaPath = `M ${x(0)},${zeroY} L ${points.split(' ').join(' L ')} L ${x(months.length - 1)},${zeroY} Z`;
+
+  return (
+    <div data-testid="sim-chart" style={{
+      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '16px', padding: '1rem', overflow: 'hidden',
+    }}>
+      <div style={{ fontSize: '0.6rem', letterSpacing: '0.25em', color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: '0.5rem', paddingLeft: '0.5rem' }}>
+        BALANCE MENSUAL PROYECTADO
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* Horizontal gridlines every 25% */}
+        {[0.25, 0.5, 0.75].map((f) => (
+          <line key={f} x1={PAD_L} x2={W - PAD_R} y1={PAD_T + f * innerH} y2={PAD_T + f * innerH} stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
+        ))}
+        {/* Zero line */}
+        <line x1={PAD_L} x2={W - PAD_R} y1={zeroY} y2={zeroY} stroke="rgba(255,255,255,0.15)" strokeDasharray="2 4" />
+        <text x={PAD_L - 6} y={zeroY + 3} textAnchor="end" fontSize="9" fill="rgba(255,255,255,0.45)">0</text>
+        <text x={PAD_L - 6} y={PAD_T + 3} textAnchor="end" fontSize="9" fill="rgba(255,255,255,0.45)">MAX</text>
+        {/* Area */}
+        <path d={areaPath} fill="url(#areaGrad)" />
+        {/* Line */}
+        <polyline points={points} fill="none" stroke={color} strokeWidth="2" />
+        {/* Dots at m1, m12, m24, m36 */}
+        {[0, 11, 23, 35].map((i) => (
+          <g key={i}>
+            <circle cx={x(i)} cy={y(months[i].balance)} r="3.5" fill={color} />
+            <text x={x(i)} y={H - 10} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.5)">M{months[i].m}</text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+};
 
 // ============================================================================
 // 9 · FINANCIAL SCENARIOS (Conservative / Base / Accelerated)

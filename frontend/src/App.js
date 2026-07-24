@@ -8,9 +8,12 @@ import InvestorRoomPreview from './pages/InvestorRoomPreview';
 import InvestorPitchDeckPage from './pages/InvestorPitchDeckPage';
 import ExecutiveSummaryPage from './pages/ExecutiveSummaryPage';
 import CapitalStrategyPage from './pages/CapitalStrategyPage';
+import InvestorSetupPage from './pages/InvestorSetupPage';
+import InvestorPortalPage from './pages/InvestorPortalPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
+import ProtectedInvestorRoute from './components/ProtectedInvestorRoute';
 import { AuthProvider } from './contexts/AuthContext';
 
 function App() {
@@ -52,6 +55,15 @@ function App() {
             <Route path="/executive-summary" element={<ExecutiveSummaryPage />} />
             <Route path="/capital-strategy" element={<CapitalStrategyPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/investor/setup" element={<InvestorSetupPage />} />
+            <Route
+              path="/investor-portal"
+              element={
+                <ProtectedInvestorRoute>
+                  <InvestorPortalPage />
+                </ProtectedInvestorRoute>
+              }
+            />
             <Route
               path="/admin"
               element={

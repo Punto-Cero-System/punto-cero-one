@@ -112,6 +112,33 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 - ✅ Formulario público `/request-access` conectado al backend.
 - ✅ **Testing agent: 33/33 backend tests passing (100%)**.
 
+### FASE 5 — Investor Portal privado + motor de simulación 36m (2026-02)
+**Parte A · Simulador ejecutable en `/capital-strategy`**
+- ✅ Motor `runProjection()` que corre 36 meses con:
+  - Multiplicadores por escenario (Conservador · Base · Acelerado) — revenue × {0.6, 1.0, 1.5}, opex × {1.1, 1.0, 1.15}, growth {3%, 6%, 10%}/mes.
+  - Capital distribuido en tranches (60% m1, 30% m4, 10% m7).
+  - Crecimiento compuesto de revenue y opex.
+- ✅ Botón dorado **"Ejecutar proyección 36m"** dentro del Cash Flow con switcher de escenarios.
+- ✅ Output: 6 KPIs (escenario, balance final, break-even mes, runway meses, revenue 36m, opex 36m), chart SVG del balance mensual + tabla desplegable de 36 filas.
+- ✅ Persistencia del resultado en localStorage.
+
+**Parte B · Investor Portal privado con rol `investor`**
+- ✅ **Backend** (extensiones a `models.py` + `investor_routes.py`):
+  - `POST /api/admin/investor-requests/{id}/invite` — genera usuario investor + token único (secrets.token_urlsafe(32)) + expira en 168h. Idempotente: reutiliza usuario existente si aplica. Marca solicitud como `approved` y liga `investor_user_id`.
+  - `POST /api/auth/accept-invitation` — público, consume el token, setea password (bcrypt), remueve el token de la BD.
+  - `GET /api/investor/room` — protegido (rol=investor), devuelve catálogo curado + registra `room_visit` en access log.
+  - `POST /api/investor/access-log` — protegido, registra visita/descarga por documento.
+  - `GET /api/admin/investors` — lista de investors invitados con contadores (total/activos/pendientes).
+  - `GET /api/admin/access-log` — auditoría de accesos (filtrable por user_id).
+  - Nueva colección `investor_access_log` con índices en `user_id`, `created_at`.
+  - Índice parcial único en `users.invitation_token`.
+- ✅ **Frontend**:
+  - `/investor/setup?token=...` — página de activación con setup de contraseña + auto-login → auto-redirect al portal.
+  - `/investor-portal` — protegido con `ProtectedInvestorRoute`; hero personalizado con nombre del inversionista, badge "INVESTOR ROOM" en oro, catálogo curado de 5 recursos (Executive Summary · Pitch Deck 12 slides · Pitch Deck PDF · Capital Strategy · Punto Cero Legal), cada uno registra access log al hacer clic.
+  - **Botón "Generar invitación"** añadido en el drawer de admin → muestra URL copiable y link "Abrir" con expiración visible.
+  - `AdminLoginPage` ahora rutea correctamente por rol (admin→/admin, investor→/investor-portal).
+- ✅ **Testing**: 14 flujos backend verificados con curl (login → request → invite → accept → login investor → portal → access log → role isolation 403). E2E frontend verificado con screenshots (admin → invita → setup → auto-login → portal con 5 recursos visibles).
+
 ### FASE 4 — Capital Strategy · Projection · Cash Flow · Feasibility (2026-02)
 - ✅ Ruta unificada `/capital-strategy` con **15 secciones** en una sola experiencia:
   1. Hero (órbitas expansivas, título gradient)
@@ -168,12 +195,18 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 
 ## Roadmap / Backlog
 
-### P1 — FASE 5: Advanced Private Investor Room
-- Rol `investor` diferenciado del rol `admin` con flujo "solicitud aprobada → invitación → creación de usuario investor".
-- Repositorio de documentos privados (Emergent Object Storage vía integration playbook) — Pitch Deck PDF, Executive Summary, modelo financiero, cash flow, feasibility, roadmap, KPIs, arquitectura técnica, documentos corporativos.
-- Permisos granulares por documento/carpeta.
-- Historial de accesos y descargas.
-- Persistencia opcional de los inputs financieros de FASE 4 en backend (hoy en localStorage).
+### P1 — FASE 6: Investor Room documental (Object Storage)
+- Repositorio de documentos privados con Emergent Object Storage (Pitch Deck PDF versionado, modelo financiero .xlsx, feasibility .pdf, roadmap, KPIs, arquitectura técnica, corporate docs).
+- Upload/preview/download desde `/admin` con permisos granulares por documento.
+- Audit log extendido: descargas de archivos con path + tamaño.
+
+### P2
+- Notificaciones email cuando se genera una invitación (Resend playbook).
+- Persistencia opcional de inputs financieros de FASE 4 en backend para versionar supuestos.
+- Panel admin: lista completa de investors con re-generación de invitación / revocación.
+- Panel admin: vista rica del access log con filtros por usuario/fecha/recurso.
+- Refresh-token flow + rotación.
+- CORS explícito (hoy `*`).
 
 ### P2 — Investor Room privado (autenticado)
 - Rol `investor` diferenciado de `admin`.

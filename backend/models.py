@@ -18,6 +18,7 @@ class UserPublic(BaseModel):
     name: str
     role: UserRole
     created_at: str
+    must_change_password: bool = False
 
 
 class LoginInput(BaseModel):
@@ -30,6 +31,22 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
     expires_in_hours: int
     user: UserPublic
+
+
+class AcceptInvitationInput(BaseModel):
+    token: str = Field(min_length=10, max_length=200)
+    password: str = Field(min_length=8, max_length=200)
+
+
+class InvestorInvitationResponse(BaseModel):
+    """Returned to admin when generating an invitation."""
+    request_id: str
+    user_id: str
+    email: EmailStr
+    name: str
+    invitation_token: str
+    invitation_url: str  # public URL the admin can share
+    expires_at: str
 
 
 # ---------------------------
