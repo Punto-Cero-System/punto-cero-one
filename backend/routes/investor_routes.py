@@ -297,7 +297,7 @@ DOCUMENT_CATALOG = [
     {"id": "capital-strategy", "title": "Capital Strategy · Financial Model", "kind": "experience",
      "description": "Escenarios, uso de capital, cash flow simulator con motor 36m.", "path": "/capital-strategy"},
     {"id": "punto-cero-legal", "title": "Punto Cero Legal", "kind": "product",
-     "description": "Primer producto real · ~80% desarrollado.", "path": "https://puntocerolegal.com", "external": True},
+     "description": "Primer vertical comercial · LIVE en producción.", "path": "https://puntocerolegal.com", "external": True},
 ]
 
 

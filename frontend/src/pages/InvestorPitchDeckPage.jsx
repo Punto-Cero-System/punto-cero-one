@@ -712,7 +712,7 @@ const Slide05 = () => {
             }}>
               <Sparkles size={14} color="#00C896" />
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#00C896', letterSpacing: '0.15em' }}>
-                80% DESARROLLADO · EN CONSTRUCCIÓN
+                LIVE EN PRODUCCIÓN · PRIMER VERTICAL COMERCIAL
               </span>
             </div>
 
@@ -744,11 +744,11 @@ const Slide05 = () => {
               marginBottom: '2rem',
               fontWeight: 300
             }}>
-              Primera vertical. Primer producto real. Primera prueba de ejecución
+              Primera vertical. Primer producto real. Primera prueba comercial LIVE
               de la visión tecnológica de Punto Cero System.
             </p>
 
-            {/* Progress bar */}
+            {/* Status indicator */}
             <div style={{ marginBottom: '2.5rem' }}>
               <div style={{
                 display: 'flex',
@@ -756,10 +756,10 @@ const Slide05 = () => {
                 marginBottom: '0.75rem'
               }}>
                 <div style={{ fontSize: '0.7rem', letterSpacing: '0.15em', fontWeight: 700, color: '#0B1F3A' }}>
-                  DESARROLLO
+                  ESTADO OPERATIVO
                 </div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#00C896' }}>
-                  ~80%
+                  LIVE
                 </div>
               </div>
               <div style={{
@@ -771,7 +771,7 @@ const Slide05 = () => {
               }}>
                 <motion.div
                   initial={{ width: 0 }}
-                  animate={inView ? { width: '80%' } : { width: 0 }}
+                  animate={inView ? { width: '100%' } : { width: 0 }}
                   transition={{ duration: 1.5, delay: 0.5, ease: [0.6, 0.05, 0.01, 0.9] }}
                   style={{
                     height: '100%',
@@ -785,7 +785,7 @@ const Slide05 = () => {
                 color: 'rgba(30, 30, 30, 0.5)',
                 marginTop: '0.75rem'
               }}>
-                Objetivo inmediato: completar, preparar para lanzamiento y validar comercialmente.
+                Objetivo inmediato: escalar la adquisición de clientes y validar la tesis comercial.
               </div>
             </div>
 
@@ -1602,8 +1602,8 @@ const Slide11 = () => {
               fontWeight: 300
             }}>
               El proyecto ha requerido inversión personal, tiempo, trabajo y sacrificio.
-              Punto Cero Legal está aproximadamente en un <strong style={{ color: '#00C896', fontWeight: 700 }}>80% de desarrollo</strong>.
-              La principal limitación actual es el capital disponible y la capacidad de ejecución.
+              Punto Cero Legal está <strong style={{ color: '#00C896', fontWeight: 700 }}>LIVE en producción</strong> como primera vertical comercial.
+              La principal limitación actual es el capital disponible para escalar comercialmente y expandir el ecosistema.
             </p>
 
             <div style={{

@@ -59,8 +59,8 @@ SLIDES = [
         ],
     },
     {
-        "n": "05", "kicker": "04 · FIRST REAL PRODUCT", "title": "Punto Cero Legal · ~80% developed",
-        "subtitle": "The first commercial implementation of the shared technology vision.",
+        "n": "05", "kicker": "04 · FIRST REAL PRODUCT", "title": "Punto Cero Legal · LIVE in production",
+        "subtitle": "The first commercial vertical of the shared technology vision — already live.",
         "body": [
             "AI · CRM · Client & document management · Automation",
             "Dashboards · Users · Roles · Security · Reporting",
@@ -87,7 +87,7 @@ SLIDES = [
         "n": "08", "kicker": "07 · THE ECOSYSTEM", "title": "A living technology network.",
         "subtitle": "Long-term ecosystem vision — not a completed catalog of products.",
         "body": [
-            "Available: Legal (in progress)",
+            "Available: Legal (LIVE in production)",
             "Future vision: Medical · Dental · Commerce · Accounting · Business · Real Estate ·",
             "Insurance · Travel · Education · HR · Hospitality · Logistics · Construction · Agro",
         ],
@@ -96,9 +96,9 @@ SLIDES = [
         "n": "09", "kicker": "08 · THE ROADMAP", "title": "Now · Next · Expansion · Future",
         "subtitle": "Progressive execution — not simultaneous everything.",
         "body": [
-            "Now — Complete Punto Cero Legal · Prepare market validation",
-            "Next — Refine product · Infrastructure · Security · Team",
-            "Expansion — Commercial validation · New verticals · Regional launch",
+            "Now — Punto Cero Legal LIVE · Scale commercial acquisition",
+            "Next — Recurring revenue · Product refinement · Team expansion",
+            "Expansion — Market validation · New verticals · Regional launch",
         ],
     },
     {
@@ -111,12 +111,12 @@ SLIDES = [
         ],
     },
     {
-        "n": "11", "kicker": "10 · CURRENT STAGE", "title": "Early-stage · Real foundation · Limited resources",
+        "n": "11", "kicker": "10 · CURRENT STAGE", "title": "First vertical LIVE · Real foundation · Limited resources",
         "subtitle": "Built by a small founding team with significant personal investment.",
         "body": [
-            "A real technology foundation exists.",
-            "The first real product is already being built.",
-            "The next challenge is increasing execution capacity.",
+            "A real technology foundation is already operating in production.",
+            "The first real product — Punto Cero Legal — is LIVE.",
+            "The next challenge is scaling commercially and expanding the ecosystem.",
             "No invented traction · customers · revenue · KPIs.",
         ],
     },

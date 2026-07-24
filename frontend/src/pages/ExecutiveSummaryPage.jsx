@@ -737,7 +737,7 @@ const TechnologyCore = () => {
             background: NAVY, borderRadius: '24px', color: '#FFFFFF',
             display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '2rem',
           }} className="core-clarity-grid">
-            <ClarityCol label="TECNOLOGÍA ACTUAL" value="Core en desarrollo" color={EMERALD} />
+            <ClarityCol label="TECNOLOGÍA ACTUAL" value="Core validado en producción" color={EMERALD} />
             <ClarityCol label="PRODUCTO ACTUAL" value="Punto Cero Legal" color={GOLD} />
             <ClarityCol label="VERTICALES FUTURAS" value="Visión de expansión" color="rgba(255,255,255,0.7)" />
           </div>
@@ -766,7 +766,7 @@ const ArchitectureDiagram = () => (
     <ArchNode label="SHARED CORE" sub="Reusable technology" color={EMERALD} big />
     <ArchArrow />
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
-      <ArchNode label="Legal" tag="80% dev" color={GOLD} />
+      <ArchNode label="Legal" tag="LIVE" color={GOLD} />
       <ArchNode label="Medical" tag="Futuro" color="rgba(11,31,58,0.4)" />
       <ArchNode label="Commerce" tag="Futuro" color="rgba(11,31,58,0.4)" />
     </div>
@@ -826,25 +826,25 @@ const PuntoCeroLegal = () => {
               fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 300,
               letterSpacing: '-0.03em', lineHeight: 1.05, color: '#FFFFFF', marginBottom: '1.5rem',
             }}>
-              Aproximadamente <span style={{ fontWeight: 800, color: GOLD }}>80% desarrollado</span>.
+              <span style={{ fontWeight: 800, color: GOLD }}>LIVE en producción</span>.
             </h2>
             <p style={{ fontSize: '1.1rem', lineHeight: 1.7, fontWeight: 300, color: 'rgba(255,255,255,0.8)', marginBottom: '1.5rem' }}>
-              Punto Cero Legal no es una idea. Es la <b style={{ fontWeight: 600, color: '#FFFFFF' }}>primera implementación comercial real</b> de la visión tecnológica de Punto Cero System.
+              Punto Cero Legal no es una idea, ni un producto en construcción. Es la <b style={{ fontWeight: 600, color: '#FFFFFF' }}>primera vertical comercial LIVE</b> del ecosistema Punto Cero System.
             </p>
             <p style={{ fontSize: '0.95rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.6)', marginBottom: '2.5rem' }}>
-              Representa la primera aplicación práctica del core tecnológico compartido y la primera validación de la arquitectura reusable.
+              Representa la validación en producción del core tecnológico compartido y la primera prueba comercial de la arquitectura reusable.
             </p>
 
-            {/* Progress bar */}
+            {/* Status indicator */}
             <div style={{ marginBottom: '2.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.7rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
-                <span>PROGRESO DE DESARROLLO</span>
-                <span style={{ color: GOLD, fontWeight: 700 }}>80%</span>
+                <span>ESTADO OPERATIVO</span>
+                <span style={{ color: GOLD, fontWeight: 700 }}>LIVE</span>
               </div>
               <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '10px', overflow: 'hidden' }}>
                 <motion.div
                   initial={{ width: 0 }}
-                  whileInView={{ width: '80%' }}
+                  whileInView={{ width: '100%' }}
                   viewport={{ once: true }}
                   transition={{ duration: 1.8, ease: 'easeOut' }}
                   style={{ height: '100%', background: `linear-gradient(90deg, ${EMERALD}, ${GOLD})` }}
@@ -876,7 +876,7 @@ const PuntoCeroLegal = () => {
               backdropFilter: 'blur(8px)',
             }}>
               <div style={{ fontSize: '0.65rem', letterSpacing: '0.25em', color: EMERALD, fontWeight: 700, marginBottom: '1rem' }}>
-                CAPACIDADES ACTUALES O EN DESARROLLO
+                CAPACIDADES EN PRODUCCIÓN
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '2rem' }}>
                 {capabilities.map((c) => (
@@ -936,8 +936,8 @@ const VERTICALS = [
 ];
 
 const STATUS_MAP = {
-  available: { label: 'Disponible', color: EMERALD, ring: `${EMERALD}55`, bg: `${EMERALD}18` },
-  developing: { label: 'En desarrollo', color: GOLD, ring: `${GOLD}55`, bg: `${GOLD}18` },
+  available: { label: 'LIVE', color: EMERALD, ring: `${EMERALD}55`, bg: `${EMERALD}18` },
+  developing: { label: 'En preparación', color: GOLD, ring: `${GOLD}55`, bg: `${GOLD}18` },
   future: { label: 'Visión futura', color: 'rgba(11,31,58,0.4)', ring: 'rgba(11,31,58,0.15)', bg: 'rgba(11,31,58,0.03)' },
 };
 
@@ -951,8 +951,8 @@ const Ecosystem = () => {
             Un ecosistema <span className="exec-title-bold">vivo</span>, no un catálogo.
           </h2>
           <p className="exec-lead" style={{ marginBottom: '3rem' }}>
-            El ecosistema de largo plazo puede eventualmente incluir verticales especializadas.
-            Punto Cero Legal es el producto real actual. El resto representa la visión de expansión.
+            El ecosistema de largo plazo puede eventualmente incluir múltiples verticales especializadas.
+            Punto Cero Legal está LIVE en producción como primer vertical comercial. El resto representa la visión de expansión.
           </p>
 
           {/* Legend */}
@@ -1133,12 +1133,12 @@ const CurrentStage = () => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', marginTop: '4rem' }} className="stage-grid">
           <FadeIn>
             <p style={{ fontSize: '1.05rem', lineHeight: 1.7, fontWeight: 300, color: 'rgba(255,255,255,0.85)', marginBottom: '2rem' }}>
-              Punto Cero System es un proyecto tecnológico en <b style={{ fontWeight: 600, color: '#FFFFFF' }}>etapa temprana</b>,
-              desarrollado por un equipo fundador pequeño, con una inversión personal significativa en tiempo, dinero, trabajo y sacrificio.
+              Punto Cero System es un ecosistema tecnológico con su <b style={{ fontWeight: 600, color: '#FFFFFF' }}>primer vertical LIVE en producción</b>,
+              construido por un equipo fundador pequeño, con una inversión personal significativa en tiempo, dinero, trabajo y sacrificio.
             </p>
             <p style={{ fontSize: '0.95rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.65)', marginBottom: '2rem' }}>
-              Punto Cero Legal está aproximadamente al 80% de desarrollo.
-              La limitación actual no es la ausencia de visión — es la <b style={{ color: GOLD }}>capacidad de ejecución</b> y los recursos disponibles.
+              Punto Cero Legal está LIVE en producción como primera vertical comercial.
+              La limitación actual no es la ausencia de producto — es la <b style={{ color: GOLD }}>capacidad de ejecución comercial</b> y los recursos disponibles para escalar.
             </p>
 
             <div style={{
@@ -1153,9 +1153,9 @@ const CurrentStage = () => {
 
           <FadeIn delay={0.2}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <RealityRow number="01" label="Una base tecnológica real existe" />
-              <RealityRow number="02" label="El primer producto real ya se está construyendo" gold />
-              <RealityRow number="03" label="El próximo reto es aumentar la capacidad de ejecución" />
+              <RealityRow number="01" label="Una base tecnológica real ya está operando en producción" />
+              <RealityRow number="02" label="El primer producto real está LIVE — Punto Cero Legal" gold />
+              <RealityRow number="03" label="El próximo reto es escalar comercialmente y expandir el ecosistema" />
             </div>
           </FadeIn>
         </div>

@@ -347,7 +347,7 @@ const Hero = () => (
 
       <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2.5rem' }}>
         <HeroStat label="Foundation" value="Existente" color={EMERALD} />
-        <HeroStat label="First product" value="80% dev" color={GOLD} />
+        <HeroStat label="First product" value="LIVE" color={GOLD} />
         <HeroStat label="Valores financieros" value="Pendientes" color={MUTED} />
       </div>
     </motion.div>
@@ -382,8 +382,8 @@ const Context = () => (
         <Eyebrow>01 · CONTEXTO ESTRATÉGICO</Eyebrow>
         <SectionTitle>El capital no financia una idea. Acelera una <b style={{ fontWeight: 700 }}>fundación existente</b>.</SectionTitle>
         <Lead>
-          Punto Cero System es un proyecto tecnológico en etapa temprana. Una base tecnológica real ya existe.
-          Punto Cero Legal, el primer vertical comercial, está aproximadamente al 80% de desarrollo.
+          Punto Cero System es un ecosistema tecnológico con una base real ya en operación.
+          Punto Cero Legal, el <b style={{ fontWeight: 700 }}>primer vertical comercial, está LIVE en producción</b>.
           El proyecto ha sido construido por un equipo fundador pequeño, con una inversión personal significativa de tiempo y recursos.
         </Lead>
         <div style={{ marginTop: '1.5rem', padding: '1.15rem 1.35rem', background: `${GOLD}0F`, border: `1px solid ${GOLD}33`, borderRadius: '14px', fontSize: '0.9rem', color: NAVY, lineHeight: 1.6 }}>
@@ -395,9 +395,9 @@ const Context = () => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           {[
             'Technology foundation',
-            'Product completion',
-            'Market preparation',
-            'Commercial validation',
+            'First vertical LIVE',
+            'Commercial traction',
+            'Market validation',
             'Recurring revenue',
             'Ecosystem expansion',
           ].map((step, i, arr) => (
@@ -478,28 +478,28 @@ const CAPITAL_SCENARIOS = [
   {
     key: 'minimum', name: 'Capital Mínimo', kicker: 'ESCENARIO 01',
     color: '#7CC4FF', badge: 'MÍNIMO',
-    objective: 'Completar y preparar Punto Cero Legal para lanzamiento.',
-    outcome: 'PUNTO CERO LEGAL LISTO PARA MERCADO',
+    objective: 'Sostener Punto Cero Legal en producción e iniciar tracción comercial.',
+    outcome: 'PUNTO CERO LEGAL CON PRIMERA TRACCIÓN COMERCIAL',
     uses: [
-      'Desarrollo de producto', 'Ingeniería', 'Refinamiento UX/UI',
+      'Operación en producción', 'Ingeniería de mantenimiento', 'Refinamiento UX/UI',
       'Infraestructura', 'Costos de IA / APIs', 'Seguridad',
-      'Testing', 'Preparación legal', 'Preparación operativa',
+      'Adquisición inicial', 'Marketing base', 'Operaciones',
     ],
-    milestones: ['Producto completo', 'Preparado para lanzamiento'],
+    milestones: ['Operación sostenida', 'Primeros clientes de pago'],
   },
   {
     key: 'validation', name: 'Capital de Validación', kicker: 'ESCENARIO 02',
     color: EMERALD, badge: 'VALIDACIÓN',
-    objective: 'Completar producto, lanzar y validar el modelo comercial.',
-    outcome: 'DE PRODUCTO A VALIDACIÓN DE MERCADO',
+    objective: 'Escalar la adquisición de clientes y validar el modelo comercial.',
+    outcome: 'DE PRODUCTO LIVE A MODELO COMERCIAL VALIDADO',
     uses: [
-      'Finalización de producto', 'Expansión de equipo técnico',
-      'Infraestructura', 'Adquisición de clientes', 'Ventas',
+      'Expansión de equipo técnico', 'Producto y features',
+      'Infraestructura de escala', 'Adquisición de clientes', 'Ventas',
       'Marketing', 'Customer support', 'Operaciones', 'Validación comercial',
     ],
     milestones: [
-      'Producto completo', 'Market launch', 'Primeros clientes de pago',
-      'Ingresos recurrentes iniciales', 'Feedback de clientes', 'Producto validado',
+      'Base de clientes creciente', 'Ingresos recurrentes iniciales',
+      'Product-market fit signals', 'Feedback de clientes', 'Modelo comercial validado',
     ],
   },
   {
@@ -514,7 +514,7 @@ const CAPITAL_SCENARIOS = [
     ],
     milestones: [
       'Equipo consolidado', 'Alianzas estratégicas', 'Expansión regional',
-      'Nuevas verticales en desarrollo', 'Ecosistema en crecimiento',
+      'Nuevas verticales en preparación', 'Ecosistema en crecimiento',
     ],
   },
 ];
@@ -1599,8 +1599,8 @@ const FEASIBILITY_DIMENSIONS = [
   {
     key: 'technical', label: 'Técnica', icon: Cpu, color: EMERALD,
     question: '¿Puede la fundación tecnológica existente completarse y escalarse?',
-    evidence: 'Punto Cero Legal ~80% desarrollado. Core tecnológico reusable en construcción.',
-    status: 'IN_PROGRESS',
+    evidence: 'Punto Cero Legal LIVE en producción. Core tecnológico reusable validado por el primer vertical comercial.',
+    status: 'LIVE',
   },
   {
     key: 'commercial', label: 'Comercial', icon: Store, color: GOLD,
@@ -1629,7 +1629,8 @@ const FEASIBILITY_DIMENSIONS = [
 ];
 
 const STATUS_LABEL = {
-  IN_PROGRESS: { label: 'En construcción', color: EMERALD },
+  LIVE: { label: 'LIVE en producción', color: EMERALD },
+  IN_PROGRESS: { label: 'En preparación', color: EMERALD },
   HYPOTHESIS: { label: 'Hipótesis · por validar', color: GOLD },
   THESIS: { label: 'Tesis estratégica', color: '#B888FF' },
 };
@@ -1691,10 +1692,10 @@ const Feasibility = () => (
 // 12 · MILESTONES (8-stage capital deployment)
 // ============================================================================
 const MILESTONES = [
-  { n: 1, label: 'Technology Foundation', desc: 'Base tecnológica en construcción', color: EMERALD, current: true },
-  { n: 2, label: 'Punto Cero Legal Completed', desc: 'Producto listo para lanzamiento' },
-  { n: 3, label: 'Market Launch', desc: 'Lanzamiento comercial inicial' },
-  { n: 4, label: 'First Paying Customers', desc: 'Primeros clientes de pago' },
+  { n: 1, label: 'Technology Foundation', desc: 'Base tecnológica validada en producción' },
+  { n: 2, label: 'Punto Cero Legal LIVE', desc: 'Primer vertical comercial en producción' },
+  { n: 3, label: 'Commercial Traction', desc: 'Escalar adquisición de clientes', current: true },
+  { n: 4, label: 'First Paying Customers', desc: 'Primeros clientes de pago recurrentes' },
   { n: 5, label: 'Commercial Validation', desc: 'Modelo comercial validado' },
   { n: 6, label: 'Recurring Revenue', desc: 'Ingresos recurrentes estables' },
   { n: 7, label: 'Expansion', desc: 'Ampliación de equipo, mercado y features' },
@@ -1779,12 +1780,12 @@ const Milestones = () => (
 // 13 · READINESS SUMMARY
 // ============================================================================
 const READINESS = [
-  { label: 'Etapa actual', value: 'Proyecto tecnológico en etapa temprana', color: EMERALD },
-  { label: 'Producto real', value: 'Punto Cero Legal · ~80% desarrollado', color: GOLD },
-  { label: 'Activo estratégico', value: 'Shared technology core en construcción', color: '#7CC4FF' },
+  { label: 'Etapa actual', value: 'Ecosistema con primer vertical LIVE en producción', color: EMERALD },
+  { label: 'Producto real', value: 'Punto Cero Legal · LIVE en producción', color: GOLD },
+  { label: 'Activo estratégico', value: 'Shared technology core validado en producción', color: '#7CC4FF' },
   { label: 'Oportunidad', value: 'Múltiples verticales · visión LatAm 18 países', color: '#B888FF' },
-  { label: 'Propósito del capital', value: 'Aumentar capacidad de ejecución', color: EMERALD },
-  { label: 'Próximo milestone', value: 'Completar, lanzar y validar Punto Cero Legal', color: GOLD },
+  { label: 'Propósito del capital', value: 'Crecimiento comercial y expansión del ecosistema', color: EMERALD },
+  { label: 'Próximo milestone', value: 'Escalar adquisición de clientes y validar tesis comercial', color: GOLD },
   { label: 'Visión largo plazo', value: 'Ecosistema tecnológico latinoamericano conectado', color: '#7CC4FF' },
 ];
 

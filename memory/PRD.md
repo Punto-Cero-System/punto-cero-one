@@ -180,8 +180,8 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
   4. Oportunidad (18 países como visión de expansión, sin claim de operación actual)
   5. Visión (Esto no es una aplicación. Es una plataforma. — jerarquía en pills apiladas)
   6. Shared Technology Core (9 capacidades + diagrama de arquitectura + 3 columnas de claridad)
-  7. Punto Cero Legal (80% con progress bar animada + CTA externo)
-  8. Ecosistema (15 verticales en órbita, Legal='Disponible', resto='Visión futura')
+  7. Punto Cero Legal (LIVE en producción — primer vertical comercial + CTA externo)
+  8. Ecosistema (15 verticales en órbita, Legal='LIVE', resto='Visión futura')
   9. Comunidad (tecnología + personas + conocimiento + oportunidades)
   10. Etapa Actual (transparencia institucional, sin inventar tracción)
   11. Próxima Etapa (flujo horizontal + capital habilitante)
@@ -238,3 +238,12 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 - **Diseño**: círculos, órbitas, whitespace generoso, sin cards SaaS cuadradas.
 - **Enlaces externos**: `puntocerolegal.com` siempre externo.
 - Todo texto UI en español.
+
+## Narrativa Estratégica (2026-02 · Reposicionamiento)
+- **Punto Cero Legal**: nunca "80% desarrollado", "en construcción" o "por completar". Siempre **"LIVE en producción"**, **"primer vertical comercial LIVE"** del ecosistema.
+- **Ask de capital**: no financia la finalización de un producto — financia **crecimiento comercial, validación de mercado y expansión del ecosistema**.
+- **Milestones**: 1) Technology Foundation ✓ · 2) Legal LIVE ✓ · 3) Commercial Traction (current) · 4) First Paying Customers · 5) Commercial Validation · 6) Recurring Revenue · 7) Expansion · 8) New Vertical.
+- **Aplicado en**: `CapitalStrategyPage.jsx`, `ExecutiveSummaryPage.jsx` (§7 + §9), `InvestorPitchDeckPage.jsx` (slide 05 + slide de etapa actual), `pdf_service.py` (slides 05, 08, 09, 11), `investor_routes.py` (DOCUMENT_CATALOG), homepage `PuntoCeroLegalSection.jsx` (ya mostraba LIVE).
+
+## Changelog reciente
+- **2026-02 · Narrative Overhaul**: reposicionamiento completo de Punto Cero Legal a "LIVE en producción". Actualizado hero stat, contexto estratégico, escenarios de capital (objetivos y milestones), evidencia de feasibility, readiness summary, 8 milestones, sección 6/7/9 de Executive Summary, slide 05 y slide 11 del pitch deck, PDF backend y descripciones del catálogo del investor room.
