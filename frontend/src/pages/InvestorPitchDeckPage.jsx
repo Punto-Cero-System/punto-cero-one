@@ -1569,6 +1569,46 @@ const Slide11 = () => {
             animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
             transition={{ duration: 0.8 }}
           >
+            {/* Founder mini-cluster */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '0.9rem',
+              marginBottom: '2rem',
+            }}>
+              <div style={{ display: 'flex' }}>
+                <div style={{
+                  width: '54px', height: '54px', borderRadius: '50%',
+                  overflow: 'hidden',
+                  border: '2px solid #00C896',
+                  boxShadow: '0 8px 20px rgba(0, 200, 150, 0.35)',
+                  background: '#0B1F3A',
+                }}>
+                  <img src="https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/tyanc7gv_ChatGPT%20Image%2024%20jul%202026%2C%2009_32_02%20a.m..png"
+                    alt="Darwin José Gómez Gómez"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }} />
+                </div>
+                <div style={{
+                  width: '54px', height: '54px', borderRadius: '50%',
+                  overflow: 'hidden',
+                  border: '2px solid #D4AF37',
+                  boxShadow: '0 8px 20px rgba(212, 175, 55, 0.35)',
+                  background: '#0B1F3A',
+                  marginLeft: '-14px',
+                }}>
+                  <img src="https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/it8kuli6_ChatGPT_Image_3_mar_2026__10_24_41-removebg-preview.png"
+                    alt="Jonathan Alejandro Cetina Guerrero"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }} />
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.6rem', letterSpacing: '0.22em', fontWeight: 700, color: '#00C896', marginBottom: '0.15rem' }}>
+                  EL EQUIPO FUNDADOR
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>
+                  Darwin J. Gómez · Jonathan A. Cetina
+                </div>
+              </div>
+            </div>
+
             <h2 style={{
               fontFamily: '"Space Grotesk", sans-serif',
               fontSize: 'clamp(1.8rem, 4vw, 2.8rem)',
@@ -1590,8 +1630,9 @@ const Slide11 = () => {
               marginBottom: '2rem',
               fontWeight: 300
             }}>
-              Punto Cero System es un proyecto en etapa temprana, desarrollado inicialmente
-              por dos personas: el fundador y Alejandro, colaborador de largo plazo.
+              Punto Cero System fue iniciado por un equipo fundador enfocado:
+              <b style={{ color: '#FFFFFF', fontWeight: 700 }}> Darwin José Gómez Gómez</b> (Founder, Chairman & CTO) y
+              <b style={{ color: '#FFFFFF', fontWeight: 700 }}> Jonathan Alejandro Cetina Guerrero</b> (Co-Founder & CEO, Economista · Relaciones Económicas Internacionales).
             </p>
 
             <p style={{
@@ -1684,9 +1725,9 @@ const Slide12 = () => {
   const inView = useInView(ref, { once: false, amount: 0.2 });
 
   const objectives = [
-    'Completar Punto Cero Legal',
-    'Prepararlo para el mercado',
-    'Validar el producto',
+    'Escalar Punto Cero Legal',
+    'Adquirir clientes de pago',
+    'Validar el modelo comercial',
     'Fortalecer el núcleo tecnológico',
     'Ampliar el equipo',
     'Construir la siguiente vertical'

@@ -23,6 +23,7 @@ const SECTIONS = [
   { id: 'legal', label: 'Punto Cero Legal' },
   { id: 'ecosystem', label: 'Ecosistema' },
   { id: 'community', label: 'Comunidad' },
+  { id: 'founders', label: 'Fundadores' },
   { id: 'stage', label: 'Etapa Actual' },
   { id: 'next', label: 'Próxima Etapa' },
   { id: 'future', label: 'Visión Largo Plazo' },
@@ -138,6 +139,7 @@ const ExecutiveSummaryPage = () => {
       <PuntoCeroLegal />
       <Ecosystem />
       <Community />
+      <FoundingTeam />
       <CurrentStage />
       <NextStage />
       <LongTermVision />
@@ -1117,6 +1119,318 @@ const HumanCard = ({ eyebrow, text, gold }) => (
 );
 
 // ============================================================================
+// SECTION 9 — THE FOUNDING TEAM · Las personas detrás de la visión
+// ============================================================================
+const FOUNDERS_EXEC = [
+  {
+    key: 'darwin',
+    photo: 'https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/tyanc7gv_ChatGPT%20Image%2024%20jul%202026%2C%2009_32_02%20a.m..png',
+    title: 'Abogado.',
+    name: 'Darwin José Gómez Gómez',
+    role: 'FOUNDER · CHAIRMAN · CTO',
+    roleEs: 'Presidente Fundador y Director de Tecnología',
+    tagline: 'VISIÓN · GOBERNANZA · TECNOLOGÍA',
+    responsibilities: [
+      'Visión fundacional', 'Gobernanza estratégica', 'Dirección tecnológica',
+      'Arquitectura de plataforma', 'Desarrollo del core', 'Liderazgo técnico', 'Innovación e infraestructura',
+    ],
+    accent: EMERALD,
+  },
+  {
+    key: 'jonathan',
+    photo: 'https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/it8kuli6_ChatGPT_Image_3_mar_2026__10_24_41-removebg-preview.png',
+    title: 'Economista.',
+    name: 'Jonathan Alejandro Cetina Guerrero',
+    role: 'CO-FOUNDER · CEO',
+    roleEs: 'Director Ejecutivo Global',
+    tagline: 'RELACIONES ECONÓMICAS INTERNACIONALES · LIDERAZGO EJECUTIVO · EXPANSIÓN GLOBAL',
+    responsibilities: [
+      'Liderazgo ejecutivo global', 'Estrategia de negocio', 'Perspectiva económica internacional',
+      'Desarrollo del ecosistema', 'Estrategia comercial', 'Relaciones estratégicas',
+      'Expansión internacional', 'Relaciones con inversionistas',
+    ],
+    accent: GOLD,
+  },
+];
+
+const ExecFounderPortrait = ({ founder, delay = 0 }) => (
+  <FadeIn delay={delay}>
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      maxWidth: '280px',
+      aspectRatio: '1 / 1',
+      margin: '0 auto',
+    }} data-testid={`exec-founder-portrait-${founder.key}`}>
+      {/* Rotating dashed ring */}
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
+        style={{
+          position: 'absolute', inset: '-12px', borderRadius: '50%',
+          border: `1px dashed ${founder.accent}55`, pointerEvents: 'none',
+        }}
+      />
+      {/* Solid thin ring */}
+      <div style={{
+        position: 'absolute', inset: '-4px', borderRadius: '50%',
+        border: `1px solid ${founder.accent}44`, pointerEvents: 'none',
+      }} />
+      {/* Orbiting node */}
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 16, repeat: Infinity, ease: 'linear' }}
+        style={{ position: 'absolute', inset: '-12px', borderRadius: '50%', pointerEvents: 'none' }}
+      >
+        <div style={{
+          position: 'absolute', top: '-5px', left: '50%',
+          transform: 'translateX(-50%)', width: '9px', height: '9px',
+          borderRadius: '50%', background: founder.accent,
+          boxShadow: `0 0 14px ${founder.accent}dd`,
+        }} />
+      </motion.div>
+      {/* Glow */}
+      <div style={{
+        position: 'absolute', inset: '-30px', borderRadius: '50%',
+        background: `radial-gradient(circle, ${founder.accent}25 0%, transparent 65%)`,
+        filter: 'blur(18px)', pointerEvents: 'none',
+      }} />
+      {/* Portrait */}
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden',
+        background: `linear-gradient(160deg, ${NAVY} 0%, #071527 100%)`,
+        boxShadow: `0 20px 60px rgba(11,31,58,0.4), 0 0 0 1px ${founder.accent}44`,
+      }}>
+        <img src={founder.photo} alt={founder.name} loading="lazy" style={{
+          width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%',
+        }} />
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `linear-gradient(180deg, transparent 60%, rgba(11,31,58,0.55) 100%)`,
+        }} />
+      </div>
+      {/* Role chip */}
+      <div style={{
+        position: 'absolute', bottom: '-12px', left: '50%', transform: 'translateX(-50%)',
+        padding: '0.4rem 0.95rem', background: '#FFFFFF',
+        border: `1px solid ${founder.accent}55`, borderRadius: '100px',
+        boxShadow: '0 8px 22px rgba(11,31,58,0.15)',
+        fontSize: '0.6rem', fontWeight: 700, color: NAVY, letterSpacing: '0.18em',
+        whiteSpace: 'nowrap',
+      }}>{founder.role}</div>
+    </div>
+  </FadeIn>
+);
+
+const FoundingTeam = () => (
+  <section id="founders" className="exec-section" style={{ background: '#F7F5F0', position: 'relative' }}>
+    {/* Decorative background orbits */}
+    <div style={{
+      position: 'absolute', top: '15%', right: '-180px',
+      width: '440px', height: '440px', borderRadius: '50%',
+      border: `1px solid ${EMERALD}18`, pointerEvents: 'none',
+    }} />
+    <div style={{
+      position: 'absolute', bottom: '10%', left: '-220px',
+      width: '520px', height: '520px', borderRadius: '50%',
+      border: `1px solid ${GOLD}18`, pointerEvents: 'none',
+    }} />
+
+    <div className="exec-container" style={{ position: 'relative' }}>
+      <FadeIn>
+        <div className="exec-eyebrow">09 · EL EQUIPO FUNDADOR</div>
+        <h2 className="exec-title">
+          The team behind the <span className="exec-title-bold">vision</span>.
+        </h2>
+        <p className="exec-lead" style={{ marginBottom: '4rem' }}>
+          Punto Cero System está siendo construido por un equipo fundador enfocado que ha invertido tiempo, recursos y dedicación personal significativos para crear la base tecnológica y el primer vertical comercial LIVE del ecosistema.
+        </p>
+      </FadeIn>
+
+      {/* Composition · Portrait · Origin · Portrait */}
+      <div className="exec-founders-composition" style={{
+        display: 'grid', gridTemplateColumns: '1fr auto 1fr',
+        gap: '2.5rem', alignItems: 'center', marginBottom: '5rem',
+        position: 'relative',
+      }}>
+        <ExecFounderPortrait founder={FOUNDERS_EXEC[0]} delay={0.1} />
+
+        <div style={{ position: 'relative' }}>
+          {/* Connectors */}
+          <div className="exec-founders-connector" style={{
+            position: 'absolute', top: '50%', right: '100%', width: '110px', height: '2px',
+            background: `linear-gradient(90deg, transparent, ${EMERALD}, ${EMERALD})`,
+            transform: 'translateY(-50%)', pointerEvents: 'none',
+          }} />
+          <div className="exec-founders-connector" style={{
+            position: 'absolute', top: '50%', left: '100%', width: '110px', height: '2px',
+            background: `linear-gradient(-90deg, transparent, ${GOLD}, ${GOLD})`,
+            transform: 'translateY(-50%)', pointerEvents: 'none',
+          }} />
+
+          <FadeIn delay={0.3}>
+            <div style={{
+              position: 'relative', width: '150px', height: '150px', margin: '0 auto',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {[0, 1, 2].map((i) => (
+                <motion.div key={i}
+                  animate={{ scale: [1, 1.35, 1], opacity: [0.55, 0, 0.55] }}
+                  transition={{ duration: 3.6, repeat: Infinity, delay: i * 1.2, ease: 'easeOut' }}
+                  style={{
+                    position: 'absolute', width: '100%', height: '100%',
+                    borderRadius: '50%', border: `1px solid ${EMERALD}55`,
+                  }}
+                />
+              ))}
+              <div style={{
+                width: '92px', height: '92px', borderRadius: '50%',
+                background: `radial-gradient(circle at 30% 30%, ${EMERALD}, ${NAVY})`,
+                boxShadow: `0 0 32px ${EMERALD}55, inset 0 0 16px rgba(0,0,0,0.3)`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexDirection: 'column', color: '#FFFFFF',
+              }}>
+                <div style={{
+                  fontFamily: '"Space Grotesk", sans-serif',
+                  fontSize: '2rem', fontWeight: 700, lineHeight: 1, color: GOLD,
+                }}>0</div>
+                <div style={{
+                  fontSize: '0.5rem', letterSpacing: '0.28em',
+                  fontWeight: 700, marginTop: '0.2rem', color: '#FFFFFF',
+                }}>PUNTO CERO</div>
+              </div>
+            </div>
+            <div style={{
+              marginTop: '1.35rem', textAlign: 'center', fontSize: '0.6rem',
+              letterSpacing: '0.28em', color: 'rgba(11,31,58,0.5)', fontWeight: 700,
+            }}>THE ORIGIN POINT</div>
+          </FadeIn>
+        </div>
+
+        <ExecFounderPortrait founder={FOUNDERS_EXEC[1]} delay={0.2} />
+      </div>
+
+      {/* Founder details */}
+      <div className="exec-founders-details" style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem',
+      }}>
+        {FOUNDERS_EXEC.map((f, i) => (
+          <FadeIn key={f.key} delay={0.35 + i * 0.15}>
+            <div style={{
+              padding: '1.85rem 1.65rem 2rem',
+              background: '#FFFFFF', borderRadius: '24px',
+              border: `1px solid rgba(11,31,58,0.05)`,
+              boxShadow: '0 16px 44px rgba(11,31,58,0.06)',
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+                background: `linear-gradient(90deg, transparent, ${f.accent}, transparent)`,
+              }} />
+              <div style={{
+                fontSize: '0.65rem', color: f.accent, fontWeight: 700,
+                letterSpacing: '0.22em', marginBottom: '0.6rem',
+              }}>{f.title}</div>
+              <h3 style={{
+                fontFamily: '"Space Grotesk", sans-serif',
+                fontSize: '1.35rem', fontWeight: 700, lineHeight: 1.15,
+                color: NAVY, letterSpacing: '-0.02em', marginBottom: '0.5rem',
+              }}>{f.name}</h3>
+              <div style={{
+                fontSize: '0.78rem', color: NAVY, fontWeight: 600, marginBottom: '0.3rem',
+              }}>{f.roleEs}</div>
+              <div style={{
+                fontSize: '0.62rem', color: 'rgba(11,31,58,0.55)', fontWeight: 700,
+                letterSpacing: '0.14em', marginBottom: '1.35rem',
+              }}>{f.tagline}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                {f.responsibilities.map((r) => (
+                  <span key={r} style={{
+                    padding: '0.3rem 0.7rem', background: `${f.accent}14`,
+                    border: `1px solid ${f.accent}33`, borderRadius: '100px',
+                    fontSize: '0.66rem', color: NAVY, fontWeight: 600,
+                  }}>{r}</span>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+        ))}
+      </div>
+
+      {/* Institutional message */}
+      <FadeIn delay={0.5}>
+        <div style={{
+          marginTop: '4rem', padding: '2.75rem 2.5rem',
+          background: NAVY, color: '#FFFFFF', borderRadius: '28px',
+          display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '2.5rem',
+          alignItems: 'center', position: 'relative', overflow: 'hidden',
+        }} className="exec-founders-message">
+          <div style={{
+            position: 'absolute', top: '-100px', right: '-100px',
+            width: '340px', height: '340px', borderRadius: '50%',
+            border: `1px solid ${GOLD}25`, pointerEvents: 'none',
+          }} />
+          <div>
+            <div style={{
+              fontSize: '0.68rem', color: GOLD, fontWeight: 700,
+              letterSpacing: '0.25em', marginBottom: '1.25rem',
+            }}>MENSAJE INSTITUCIONAL</div>
+            <div style={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', fontWeight: 300, lineHeight: 1.3,
+              letterSpacing: '-0.02em', marginBottom: '1rem',
+            }}>
+              La <b style={{ color: GOLD, fontWeight: 700 }}>base fue construida</b> por los fundadores.
+            </div>
+            <div style={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', fontWeight: 300, lineHeight: 1.3,
+              letterSpacing: '-0.02em', color: 'rgba(255,255,255,0.85)',
+            }}>
+              La próxima etapa se construirá con un <b style={{ color: EMERALD, fontWeight: 700 }}>ecosistema más amplio</b> de personas, talento, aliados y capital.
+            </div>
+          </div>
+
+          <div style={{
+            padding: '1.35rem 1.5rem',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '18px',
+          }}>
+            <div style={{
+              fontSize: '0.62rem', color: EMERALD, fontWeight: 700,
+              letterSpacing: '0.25em', marginBottom: '0.85rem',
+            }}>CAPACIDADES A INCORPORAR</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+              {[
+                'Software developers', 'Product professionals', 'UX/UI designers',
+                'Talento comercial', 'International business', 'Especialistas de industria',
+                'Aliados estratégicos', 'Inversionistas',
+              ].map((c) => (
+                <span key={c} style={{
+                  padding: '0.3rem 0.7rem', background: 'rgba(0,200,150,0.08)',
+                  border: `1px solid ${EMERALD}33`, borderRadius: '100px',
+                  fontSize: '0.66rem', color: '#FFFFFF', fontWeight: 600,
+                }}>{c}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </FadeIn>
+    </div>
+
+    <style>{`
+      @media (max-width: 900px) {
+        .exec-founders-composition { grid-template-columns: 1fr !important; gap: 2rem !important; }
+        .exec-founders-connector { display: none !important; }
+        .exec-founders-details { grid-template-columns: 1fr !important; }
+        .exec-founders-message { grid-template-columns: 1fr !important; gap: 1.5rem !important; }
+      }
+    `}</style>
+  </section>
+);
+
+// ============================================================================
 // SECTION 10 — CURRENT STAGE (transparency)
 // ============================================================================
 const CurrentStage = () => {
@@ -1124,7 +1438,7 @@ const CurrentStage = () => {
     <section id="stage" className="exec-section" style={{ background: NAVY, color: '#FFFFFF' }}>
       <div className="exec-container">
         <FadeIn>
-          <div className="exec-eyebrow" style={{ color: GOLD }}>09 · ETAPA ACTUAL · TRANSPARENCIA</div>
+          <div className="exec-eyebrow" style={{ color: GOLD }}>10 · ETAPA ACTUAL · TRANSPARENCIA</div>
           <h2 className="exec-title" style={{ color: '#FFFFFF' }}>
             Una realidad <span className="exec-title-bold" style={{ color: GOLD }}>construida</span> con recursos limitados.
           </h2>
@@ -1207,7 +1521,7 @@ const NextStage = () => {
     <section id="next" className="exec-section" style={{ background: '#F7F5F0' }}>
       <div className="exec-container">
         <FadeIn>
-          <div className="exec-eyebrow">10 · PRÓXIMA ETAPA</div>
+          <div className="exec-eyebrow">11 · PRÓXIMA ETAPA</div>
           <h2 className="exec-title">
             De fundamento tecnológico a <span className="exec-title-bold">plataforma escalable</span>.
           </h2>
@@ -1299,7 +1613,7 @@ const LongTermVision = () => {
     }}>
       <div className="exec-container" style={{ textAlign: 'center' }}>
         <FadeIn>
-          <div className="exec-eyebrow" style={{ color: GOLD }}>11 · VISIÓN LARGO PLAZO</div>
+          <div className="exec-eyebrow" style={{ color: GOLD }}>12 · VISIÓN LARGO PLAZO</div>
           <h2 className="exec-title" style={{ color: '#FFFFFF', maxWidth: '900px', margin: '0 auto 1.5rem' }}>
             No estamos construyendo aplicaciones aisladas. Estamos construyendo una <span className="exec-title-bold" style={{ color: GOLD }}>infraestructura</span>.
           </h2>
@@ -1402,7 +1716,7 @@ const FinalCTA = () => {
       <div className="exec-container">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '5rem', alignItems: 'flex-start' }} className="cta-grid">
           <FadeIn>
-            <div className="exec-eyebrow">12 · CONVERSACIÓN ESTRATÉGICA</div>
+            <div className="exec-eyebrow">13 · CONVERSACIÓN ESTRATÉGICA</div>
             <h2 className="exec-title">
               Comienza una <span className="exec-title-bold">conversación estratégica</span>.
             </h2>

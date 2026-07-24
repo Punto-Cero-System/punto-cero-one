@@ -7,6 +7,7 @@ import CircularCore from '../components/CircularCore';
 import OrbitalEcosystem from '../components/OrbitalEcosystem';
 import PuntoCeroLegalSection from '../components/PuntoCeroLegalSection';
 import LatinAmericaBlock from '../components/LatinAmericaBlock';
+import FoundersSection from '../components/FoundersSection';
 import PeopleSection from '../components/PeopleSection';
 import InvestorContactBlock from '../components/InvestorContactBlock';
 import PitchDeckPreview from '../components/PitchDeckPreview';
@@ -121,7 +122,10 @@ const HomePage = () => {
         {/* BLOCK 5+6: LATIN AMERICA + TIMELINE */}
         <LatinAmericaBlock />
 
-        {/* BLOCK 7: PEOPLE - LIGHT SECTION */}
+        {/* BLOCK 7a: FOUNDERS - The people behind the vision */}
+        <FoundersSection />
+
+        {/* BLOCK 7b: PEOPLE - LIGHT SECTION */}
         <PeopleSection />
 
         {/* BLOCK 8a: PITCH DECK PREVIEW - LIGHT/WHITE SECTION for rhythm */}

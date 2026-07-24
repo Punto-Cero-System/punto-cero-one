@@ -111,12 +111,14 @@ SLIDES = [
         ],
     },
     {
-        "n": "11", "kicker": "10 · CURRENT STAGE", "title": "First vertical LIVE · Real foundation · Limited resources",
+        "n": "11", "kicker": "10 · CURRENT STAGE", "title": "First vertical LIVE · Real foundation · Founding team",
         "subtitle": "Built by a small founding team with significant personal investment.",
         "body": [
+            "Founding leadership:",
+            "Darwin Jose Gomez Gomez — Founder, Chairman & CTO (Vision · Governance · Technology)",
+            "Jonathan Alejandro Cetina Guerrero — Co-Founder & CEO (International Economic Relations · Executive Leadership · Global Expansion)",
             "A real technology foundation is already operating in production.",
             "The first real product — Punto Cero Legal — is LIVE.",
-            "The next challenge is scaling commercially and expanding the ecosystem.",
             "No invented traction · customers · revenue · KPIs.",
         ],
     },
