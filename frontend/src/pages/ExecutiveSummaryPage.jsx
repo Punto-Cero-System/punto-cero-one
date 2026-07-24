@@ -1430,6 +1430,9 @@ const FinalCTA = () => {
               <Link to="/investor-pitch-deck" data-testid="cta-open-pitch" className="interactive" style={pillLinkStyle}>
                 Investor Pitch Deck <ArrowRight size={14} />
               </Link>
+              <Link to="/capital-strategy" data-testid="cta-open-capital" className="interactive" style={pillLinkStyle}>
+                Capital Strategy <ArrowRight size={14} />
+              </Link>
               <a href="https://puntocerolegal.com" target="_blank" rel="noreferrer" data-testid="cta-open-legal" className="interactive" style={pillLinkStyle}>
                 Punto Cero Legal <ExternalLink size={13} />
               </a>

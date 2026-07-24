@@ -138,6 +138,27 @@ const PitchDeckPreview = () => {
               </Link>
 
               <Link
+                to="/capital-strategy"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '1rem 1.75rem',
+                  background: 'linear-gradient(135deg, #00C896 0%, #009d75 100%)',
+                  color: '#FFFFFF',
+                  textDecoration: 'none',
+                  borderRadius: '100px',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  boxShadow: '0 10px 30px rgba(0, 200, 150, 0.25)'
+                }}
+                className="interactive"
+                data-testid="cta-capital-strategy"
+              >
+                Capital Strategy
+                <ArrowRight size={16} />
+              </Link>
+              <Link
                 to="/investor-pitch-deck"
                 style={{
                   display: 'inline-flex',
