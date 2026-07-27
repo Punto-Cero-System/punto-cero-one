@@ -9,6 +9,7 @@ import InvestorPitchDeckPage from './pages/InvestorPitchDeckPage';
 import ExecutiveSummaryPage from './pages/ExecutiveSummaryPage';
 import CapitalStrategyPage from './pages/CapitalStrategyPage';
 import CapitalHubPage from './pages/CapitalHubPage';
+import JoinPage from './pages/JoinPage';
 import InvestorSetupPage from './pages/InvestorSetupPage';
 import InvestorPortalPage from './pages/InvestorPortalPage';
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -56,6 +57,7 @@ function App() {
             <Route path="/executive-summary" element={<ExecutiveSummaryPage />} />
             <Route path="/capital-strategy" element={<CapitalStrategyPage />} />
             <Route path="/capital" element={<CapitalHubPage />} />
+            <Route path="/join" element={<JoinPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route path="/investor/setup" element={<InvestorSetupPage />} />
             <Route

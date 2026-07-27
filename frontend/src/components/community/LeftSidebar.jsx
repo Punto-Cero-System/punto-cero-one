@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import AppIcon from './AppIcon';
+import { WeatherWidget, CalendarWidget, PodcastWidget, CompaniesShoutout } from './Widgets';
 
 const NAVY = '#0B1F3A';
 
@@ -12,8 +13,7 @@ const NAVY = '#0B1F3A';
 const LeftSidebar = () => {
   return (
     <aside data-testid="community-left-sidebar" style={{
-      display: 'flex', flexDirection: 'column', gap: '1rem',
-      position: 'sticky', top: '96px',
+      display: 'flex', flexDirection: 'column', gap: '0.85rem',
     }}>
       {/* Profile card */}
       <div style={{
@@ -42,7 +42,7 @@ const LeftSidebar = () => {
             Todo empieza aquí
           </div>
           <Link
-            to="/request-access"
+            to="/join"
             data-testid="left-sidebar-join"
             style={{
               display: 'block', marginTop: '0.9rem',
@@ -78,6 +78,12 @@ const LeftSidebar = () => {
         <QuickLink icon="capital" label="Capital" to="/capital" />
         <QuickLink icon="legal" label="Punto Cero Legal" href="https://puntocerolegal.com" external />
       </SidebarBlock>
+
+      {/* Fill remaining vertical space with small integrated widgets */}
+      <WeatherWidget />
+      <CalendarWidget />
+      <PodcastWidget />
+      <CompaniesShoutout />
     </aside>
   );
 };

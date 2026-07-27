@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, TrendingUp } from 'lucide-react';
 import AppIcon from './AppIcon';
+import {
+  MarketsWidget, AIOfTheDayWidget, PollWidget,
+  CoursesWidget, LaunchesWidget, MarketplaceWidget,
+} from './Widgets';
 
 const NAVY = '#0B1F3A';
 const GOLD = '#D4AF37';
@@ -14,8 +18,7 @@ const GOLD = '#D4AF37';
 const RightWidgets = () => {
   return (
     <aside data-testid="community-right-widgets" style={{
-      display: 'flex', flexDirection: 'column', gap: '1rem',
-      position: 'sticky', top: '96px',
+      display: 'flex', flexDirection: 'column', gap: '0.85rem',
     }}>
       {/* Noticias */}
       <Widget title="Noticias del ecosistema" icon="news">
@@ -50,6 +53,14 @@ const RightWidgets = () => {
         <ToolRow icon="capital" label="Simulador de Capital" hint="Escenarios financieros" />
         <ToolRow icon="learn" label="Academia" hint="Próximamente" />
       </Widget>
+
+      {/* Integrated modules — fill any remaining space with life */}
+      <MarketsWidget />
+      <AIOfTheDayWidget />
+      <PollWidget />
+      <LaunchesWidget />
+      <CoursesWidget />
+      <MarketplaceWidget />
 
       {/* CTA Capital */}
       <Link to="/capital" data-testid="widgets-capital-cta" style={{ textDecoration: 'none' }}>

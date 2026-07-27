@@ -1,58 +1,39 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import CustomCursor from '../components/CustomCursor';
 
-// Landing content — reused inside sliders (do NOT remove).
-import HeroSection from '../components/HeroSection';
-import VisionSection from '../components/VisionSection';
-import CircularCore from '../components/CircularCore';
-import OrbitalEcosystem from '../components/OrbitalEcosystem';
-import PuntoCeroLegalSection from '../components/PuntoCeroLegalSection';
-import LatinAmericaBlock from '../components/LatinAmericaBlock';
+// Founders / people components — reused inside the SECONDARY slider (feed).
 import FoundersSection from '../components/FoundersSection';
 import PeopleSection from '../components/PeopleSection';
 import CareersSection from '../components/CareersSection';
 
-// Community layout & new components.
+// Community layout & building blocks.
 import CommunityLayout from '../components/community/CommunityLayout';
 import LeftSidebar from '../components/community/LeftSidebar';
 import RightWidgets from '../components/community/RightWidgets';
 import FeedComposer from '../components/community/FeedComposer';
 import FeedItem from '../components/community/FeedItem';
+import { InlineWidgetStrip } from '../components/community/Widgets';
 import SlideCarousel from '../components/SlideCarousel';
+
+// Redesigned primary slider content (professional, feed-friendly).
+import { PRIMARY_SLIDES } from '../components/PrimarySlides';
 
 /**
  * HomePage — Punto Cero One community home.
- *
- * Composition:
- *  · Header (LinkedIn-style)
- *  · Slider Principal (full-width, top) — reuses existing landing blocks 1-6
- *  · CommunityLayout (3 columns)
- *      · LeftSidebar (profile / activity / groups / quick access)
- *      · Center feed: composer + mixed feed (posts, videos, news, jobs, events)
- *        with an embedded second slider (Founding team → Community → 18 countries)
- *      · RightWidgets (news, trends, events, companies, tools, capital CTA)
- *  · Footer
+ * ── Primary slider on top (redesigned, 6 modern slides, 12s autoplay).
+ * ── 3-column community layout (left sidebar / feed / right widgets).
+ * ── Feed alternates content with inline widget strips + a secondary embedded
+ *    slider that reuses the founders / people / careers components.
  */
+const SECONDARY_SLIDES = [
+  { key: 'founders', node: <FoundersSection /> },
+  { key: 'people', node: <PeopleSection /> },
+  { key: 'careers', node: <CareersSection /> },
+];
+
 const HomePage = () => {
-  // Slider 1 — reuses existing landing components (Hero → Vision → Core → Ecosystem → Legal → LatinAmerica).
-  const primarySlides = useMemo(() => ([
-    { key: 'hero', node: <HeroSection /> },
-    { key: 'vision', node: <VisionSection /> },
-    { key: 'core', node: <CircularCore /> },
-    { key: 'ecosystem', node: <OrbitalEcosystem /> },
-    { key: 'legal', node: <PuntoCeroLegalSection /> },
-    { key: 'latam', node: <LatinAmericaBlock /> },
-  ]), []);
-
-  // Slider 2 — reuses existing "people & vision" components, embedded inside the feed.
-  const secondarySlides = useMemo(() => ([
-    { key: 'founders', node: <FoundersSection /> },
-    { key: 'people', node: <PeopleSection /> },
-    { key: 'careers', node: <CareersSection /> },
-  ]), []);
-
   return (
     <>
       <CustomCursor />
@@ -63,9 +44,9 @@ const HomePage = () => {
           top={
             <SlideCarousel
               id="pc-slider-primary"
-              slides={primarySlides}
-              autoplayMs={10000}
-              height="clamp(560px, 82vh, 880px)"
+              slides={PRIMARY_SLIDES}
+              autoplayMs={12000}
+              height="clamp(520px, 74vh, 720px)"
               label="Slider principal · visión Punto Cero One"
             />
           }
@@ -82,6 +63,8 @@ const HomePage = () => {
                 body="El primer vertical comercial del ecosistema ya está operativo. La base tecnológica compartida validada por un producto real."
                 cta={{ label: 'Ir a puntocerolegal.com', href: 'https://puntocerolegal.com', external: true, testid: 'legal-external' }}
               />
+
+              <InlineWidgetStrip />
 
               <FeedItem
                 kind="news"
@@ -101,7 +84,7 @@ const HomePage = () => {
                 cover="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&auto=format&fit=crop&q=80"
               />
 
-              {/* Slider 2 embedded as a feed item */}
+              {/* Secondary slider embedded as a feed item */}
               <FeedItem
                 kind="slider"
                 author="The Founding Team"
@@ -112,8 +95,8 @@ const HomePage = () => {
                 node={
                   <SlideCarousel
                     id="pc-slider-team"
-                    slides={secondarySlides}
-                    autoplayMs={11000}
+                    slides={SECONDARY_SLIDES}
+                    autoplayMs={12000}
                     height="clamp(520px, 68vh, 720px)"
                     label="Slider equipo fundador y comunidad"
                   />
@@ -127,7 +110,7 @@ const HomePage = () => {
                 title="Buscamos desarrolladores full-stack (senior)"
                 body="Únete al equipo que construye la infraestructura tecnológica de Latinoamérica. Stack: React · FastAPI · MongoDB · IA."
                 meta={{ company: 'Punto Cero System', location: 'Remoto · LatAm' }}
-                cta={{ label: 'Postular / conocer más', to: '/request-access', testid: 'jobs-apply' }}
+                cta={{ label: 'Postular / conocer más', to: '/join', testid: 'jobs-apply' }}
               />
 
               <FeedItem
@@ -137,8 +120,10 @@ const HomePage = () => {
                 title="Investor Roundtable · Bogotá"
                 body="Encuentro presencial con inversionistas, aliados y fundadores. Cupo limitado por invitación."
                 meta={{ date: '12 marzo 2026', location: 'Bogotá, Colombia' }}
-                cta={{ label: 'Solicitar invitación', to: '/request-access', testid: 'event-request' }}
+                cta={{ label: 'Solicitar invitación', to: '/join', testid: 'event-request' }}
               />
+
+              <InlineWidgetStrip />
 
               <FeedItem
                 kind="company"
