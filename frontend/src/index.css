@@ -3,6 +3,38 @@
 @tailwind utilities;
 
 /* =========================================================================
+   PUNTO CERO ONE · DESIGN TOKENS
+   Ecosystem palette + typography anchor.
+   ========================================================================= */
+:root {
+    /* Brand */
+    --pc-navy: #0B1F3A;
+    --pc-navy-deep: #0A0F1C;
+    --pc-emerald: #00C896;
+    --pc-gold: #D4AF37;
+
+    /* Cosmic ring gradient (from official logo) */
+    --pc-cosmic-1: #3B82F6;
+    --pc-cosmic-2: #8B5CF6;
+    --pc-cosmic-3: #EC4899;
+    --pc-cosmic: linear-gradient(90deg, var(--pc-cosmic-1), var(--pc-cosmic-2), var(--pc-cosmic-3));
+
+    /* Surfaces */
+    --pc-bg-light: #F4F6FB;
+    --pc-surface: #FFFFFF;
+    --pc-border: rgba(11,31,58,0.06);
+    --pc-text: #0B1F3A;
+    --pc-text-muted: rgba(11,31,58,0.65);
+
+    /* Radii + shadows */
+    --pc-radius-sm: 10px;
+    --pc-radius: 16px;
+    --pc-radius-lg: 24px;
+    --pc-shadow-card: 0 4px 20px rgba(11,31,58,0.04);
+    --pc-shadow-hover: 0 12px 40px rgba(11,31,58,0.08);
+}
+
+/* =========================================================================
    RESPONSIVE FOUNDATIONS · Prevent any horizontal overflow across the app
    ========================================================================= */
 html, body {

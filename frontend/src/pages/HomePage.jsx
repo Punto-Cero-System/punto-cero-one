@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useMemo } from 'react';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
+import CustomCursor from '../components/CustomCursor';
+
+// Landing content — reused inside sliders (do NOT remove).
 import HeroSection from '../components/HeroSection';
 import VisionSection from '../components/VisionSection';
 import CircularCore from '../components/CircularCore';
@@ -9,134 +12,157 @@ import PuntoCeroLegalSection from '../components/PuntoCeroLegalSection';
 import LatinAmericaBlock from '../components/LatinAmericaBlock';
 import FoundersSection from '../components/FoundersSection';
 import PeopleSection from '../components/PeopleSection';
-import InvestorContactBlock from '../components/InvestorContactBlock';
-import PitchDeckPreview from '../components/PitchDeckPreview';
-import Footer from '../components/Footer';
-import CustomCursor from '../components/CustomCursor';
-import SoundToggle from '../components/SoundToggle';
+import CareersSection from '../components/CareersSection';
 
+// Community layout & new components.
+import CommunityLayout from '../components/community/CommunityLayout';
+import LeftSidebar from '../components/community/LeftSidebar';
+import RightWidgets from '../components/community/RightWidgets';
+import FeedComposer from '../components/community/FeedComposer';
+import FeedItem from '../components/community/FeedItem';
+import SlideCarousel from '../components/SlideCarousel';
+
+/**
+ * HomePage — Punto Cero One community home.
+ *
+ * Composition:
+ *  · Header (LinkedIn-style)
+ *  · Slider Principal (full-width, top) — reuses existing landing blocks 1-6
+ *  · CommunityLayout (3 columns)
+ *      · LeftSidebar (profile / activity / groups / quick access)
+ *      · Center feed: composer + mixed feed (posts, videos, news, jobs, events)
+ *        with an embedded second slider (Founding team → Community → 18 countries)
+ *      · RightWidgets (news, trends, events, companies, tools, capital CTA)
+ *  · Footer
+ */
 const HomePage = () => {
-  const [soundEnabled, setSoundEnabled] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  // Slider 1 — reuses existing landing components (Hero → Vision → Core → Ecosystem → Legal → LatinAmerica).
+  const primarySlides = useMemo(() => ([
+    { key: 'hero', node: <HeroSection /> },
+    { key: 'vision', node: <VisionSection /> },
+    { key: 'core', node: <CircularCore /> },
+    { key: 'ecosystem', node: <OrbitalEcosystem /> },
+    { key: 'legal', node: <PuntoCeroLegalSection /> },
+    { key: 'latam', node: <LatinAmericaBlock /> },
+  ]), []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+  // Slider 2 — reuses existing "people & vision" components, embedded inside the feed.
+  const secondarySlides = useMemo(() => ([
+    { key: 'founders', node: <FoundersSection /> },
+    { key: 'people', node: <PeopleSection /> },
+    { key: 'careers', node: <CareersSection /> },
+  ]), []);
 
   return (
     <>
-      <div className="noise-overlay" />
       <CustomCursor />
-      <SoundToggle soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} />
+      <Header />
 
-      {/* Loading screen */}
-      {isLoading && (
-        <motion.div
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: 1, delay: 1.5 }}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: '#0B1F3A',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            gap: '2rem',
-            pointerEvents: 'none'
-          }}
-        >
-          <motion.div
-            initial={{ scale: 0, rotate: 0 }}
-            animate={{ scale: [0, 1.2, 1], rotate: [0, 180, 360] }}
-            transition={{ duration: 1.5, ease: [0.6, 0.05, 0.01, 0.9] }}
-            style={{
-              width: 120,
-              height: 120,
-              borderRadius: '50%',
-              border: '3px solid #00C896',
-              position: 'relative',
-              boxShadow: '0 0 60px rgba(0, 200, 150, 0.6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              style={{
-                fontSize: '3rem',
-                fontWeight: 700,
-                color: '#00C896',
-                fontFamily: '"Space Grotesk", sans-serif'
-              }}
-            >
-              0
-            </motion.span>
-          </motion.div>
+      <main id="top" style={{ paddingTop: '58px', background: '#F4F6FB', minHeight: '100vh' }}>
+        <CommunityLayout
+          top={
+            <SlideCarousel
+              id="pc-slider-primary"
+              slides={primarySlides}
+              autoplayMs={10000}
+              height="clamp(560px, 82vh, 880px)"
+              label="Slider principal · visión Punto Cero One"
+            />
+          }
+          left={<LeftSidebar />}
+          center={
+            <>
+              <FeedComposer />
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.5 }}
-            style={{
-              fontFamily: '"Space Grotesk", sans-serif',
-              fontSize: '1.2rem',
-              fontWeight: 600,
-              color: '#FFFFFF'
-            }}
-          >
-            <span style={{ color: '#FFFFFF' }}>PUNTO</span>
-            <span style={{ color: '#00C896' }}> CERO</span>
-          </motion.div>
-        </motion.div>
-      )}
+              <FeedItem
+                kind="update"
+                author="Punto Cero One"
+                timestamp="Hace 5 min · Actualización oficial"
+                title="Punto Cero Legal · LIVE en producción"
+                body="El primer vertical comercial del ecosistema ya está operativo. La base tecnológica compartida validada por un producto real."
+                cta={{ label: 'Ir a puntocerolegal.com', href: 'https://puntocerolegal.com', external: true, testid: 'legal-external' }}
+              />
 
-      {/* Main content - Only 8 blocks */}
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <Header />
+              <FeedItem
+                kind="news"
+                author="Investor Center"
+                timestamp="Hoy"
+                title="Nuevo Executive Summary + Pitch Deck disponibles"
+                body="13 secciones editoriales y 12 slides cinematográficos con descarga en PDF. La narrativa de capital se reposiciona hacia crecimiento comercial."
+                cta={{ label: 'Explorar Capital', to: '/capital', testid: 'capital-hub' }}
+              />
 
-        {/* BLOCK 1: HERO */}
-        <HeroSection />
+              <FeedItem
+                kind="video"
+                author="Comunidad · Videos"
+                timestamp="Trending"
+                title="La visión detrás de Punto Cero One (video)"
+                body="Introducción cinematográfica al ecosistema tecnológico latinoamericano."
+                cover="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&auto=format&fit=crop&q=80"
+              />
 
-        {/* BLOCK 2: VISION - From point to ecosystem */}
-        <VisionSection />
+              {/* Slider 2 embedded as a feed item */}
+              <FeedItem
+                kind="slider"
+                author="The Founding Team"
+                timestamp="Historia del ecosistema"
+                title="Las personas detrás de la visión → 18 países"
+                body="Recorrido por el equipo fundador, la comunidad y la ambición regional para Latinoamérica."
+                padded={false}
+                node={
+                  <SlideCarousel
+                    id="pc-slider-team"
+                    slides={secondarySlides}
+                    autoplayMs={11000}
+                    height="clamp(520px, 68vh, 720px)"
+                    label="Slider equipo fundador y comunidad"
+                  />
+                }
+              />
 
-        {/* BLOCK 3: TECHNOLOGY CORE */}
-        <CircularCore />
+              <FeedItem
+                kind="job"
+                author="Empresas del ecosistema"
+                timestamp="Nuevo"
+                title="Buscamos desarrolladores full-stack (senior)"
+                body="Únete al equipo que construye la infraestructura tecnológica de Latinoamérica. Stack: React · FastAPI · MongoDB · IA."
+                meta={{ company: 'Punto Cero System', location: 'Remoto · LatAm' }}
+                cta={{ label: 'Postular / conocer más', to: '/request-access', testid: 'jobs-apply' }}
+              />
 
-        {/* BLOCK 4: VERTICALS ECOSYSTEM (includes Punto Cero Legal) */}
-        <OrbitalEcosystem />
-        <PuntoCeroLegalSection />
+              <FeedItem
+                kind="event"
+                author="Eventos · Comunidad"
+                timestamp="Próximo"
+                title="Investor Roundtable · Bogotá"
+                body="Encuentro presencial con inversionistas, aliados y fundadores. Cupo limitado por invitación."
+                meta={{ date: '12 marzo 2026', location: 'Bogotá, Colombia' }}
+                cta={{ label: 'Solicitar invitación', to: '/request-access', testid: 'event-request' }}
+              />
 
-        {/* BLOCK 5+6: LATIN AMERICA + TIMELINE */}
-        <LatinAmericaBlock />
+              <FeedItem
+                kind="company"
+                author="Empresas"
+                timestamp="Destacado"
+                title="Punto Cero Legal está contratando aliados legales"
+                body="Abogados y firmas interesadas en integrarse a la plataforma para servir clientes en Latinoamérica."
+                cta={{ label: 'Escribir al equipo', href: 'mailto:puntocerosystem@gmail.com', testid: 'company-mail' }}
+              />
 
-        {/* BLOCK 7a: FOUNDERS - The people behind the vision */}
-        <FoundersSection />
+              <FeedItem
+                kind="post"
+                author="Comunidad"
+                timestamp="Trending"
+                title="Empezar desde cero no es una desventaja"
+                body="Es donde comienza la transformación. Comparte con la comunidad qué transformación estás construyendo desde tu propio Punto Cero."
+              />
+            </>
+          }
+          right={<RightWidgets />}
+        />
+      </main>
 
-        {/* BLOCK 7b: PEOPLE - LIGHT SECTION */}
-        <PeopleSection />
-
-        {/* BLOCK 8a: PITCH DECK PREVIEW - LIGHT/WHITE SECTION for rhythm */}
-        <PitchDeckPreview />
-
-        {/* BLOCK 8b: INVESTORS + CONTACT */}
-        <InvestorContactBlock />
-
-        {/* Institutional Footer */}
-        <Footer />
-      </div>
+      <Footer />
     </>
   );
 };
