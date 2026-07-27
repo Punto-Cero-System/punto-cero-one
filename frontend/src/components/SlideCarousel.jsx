@@ -55,15 +55,17 @@ const SlideCarousel = ({
     return () => cancelAnimationFrame(rafRef.current);
   }, [paused, total, autoplayMs, index]);
 
-  // Keyboard navigation
+  // Keyboard navigation — only when the carousel is hovered/focused (avoids
+  // multiple carousels on the same page reacting to the same arrow keys).
   useEffect(() => {
+    if (!paused) return;
     const onKey = (e) => {
       if (e.key === 'ArrowRight') next();
-      if (e.key === 'ArrowLeft') prev();
+      else if (e.key === 'ArrowLeft') prev();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [next, prev]);
+  }, [paused, next, prev]);
 
   if (!total) return null;
 
