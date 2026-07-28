@@ -43,8 +43,12 @@ const RightWidgets = () => {
 
       {/* Empresas */}
       <Widget title="Empresas del ecosistema" icon="companies">
-        <CompanyRow tag="Legal" name="Punto Cero Legal" href="https://puntocerolegal.com" external />
-        <CompanyRow tag="Capital" name="Punto Cero Capital" to="/capital" />
+        <CompanyRow tag="Legal · vertical" name="Punto Cero Legal" href="https://puntocerolegal.com" external />
+      </Widget>
+
+      {/* Investor Center · Strategic Growth (NO es vertical) */}
+      <Widget title="Investor Center" icon="capital">
+        <CompanyRow tag="Strategic growth · institucional" name="Punto Cero · Capital" to="/capital" />
       </Widget>
 
       {/* IA · Herramientas */}

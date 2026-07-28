@@ -15,7 +15,7 @@ import AppIcon from './community/AppIcon';
  *  - `PRIMARY_SLIDES` — array ready to feed into <SlideCarousel slides={...} />
  */
 
-const SlideShell = ({ background, children, id }) => (
+const SlideShell = ({ background, image, imageOverlay, children, id }) => (
   <div
     data-slide-id={id}
     style={{
@@ -27,6 +27,24 @@ const SlideShell = ({ background, children, id }) => (
       color: '#FFFFFF',
     }}
   >
+    {image && (
+      <>
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `url(${image})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'saturate(1.1) contrast(1.05)',
+          opacity: 0.55,
+          zIndex: 0,
+        }} />
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: imageOverlay || 'linear-gradient(120deg, rgba(11,31,58,0.85) 0%, rgba(11,31,58,0.55) 55%, rgba(11,31,58,0.9) 100%)',
+          zIndex: 1,
+        }} />
+      </>
+    )}
     {children}
   </div>
 );
@@ -119,7 +137,12 @@ const ghostBtnStyle = {
    SLIDE 1 — Community hero
    ========================================================================= */
 const Slide1Community = () => (
-  <SlideShell id="community" background="linear-gradient(140deg, #0B1F3A 0%, #1E1B4B 45%, #4C1D95 100%)">
+  <SlideShell
+    id="community"
+    background="linear-gradient(140deg, #0B1F3A 0%, #1E1B4B 45%, #4C1D95 100%)"
+    image="https://images.unsplash.com/photo-1552664730-d307ca884978?w=1600&auto=format&fit=crop&q=80"
+    imageOverlay="linear-gradient(105deg, rgba(11,31,58,0.9) 0%, rgba(30,27,75,0.72) 55%, rgba(76,29,149,0.55) 100%)"
+  >
     {/* Decorative orbits */}
     <div style={{
       position: 'absolute', top: '-160px', right: '-160px', width: 520, height: 520,
@@ -195,7 +218,12 @@ const Slide1Community = () => (
    SLIDE 2 — De un punto a un ecosistema
    ========================================================================= */
 const Slide2Vision = () => (
-  <SlideShell id="vision" background="linear-gradient(160deg, #0A0F1C 0%, #0B1F3A 100%)">
+  <SlideShell
+    id="vision"
+    background="linear-gradient(160deg, #0A0F1C 0%, #0B1F3A 100%)"
+    image="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80"
+    imageOverlay="linear-gradient(115deg, rgba(10,15,28,0.92) 0%, rgba(11,31,58,0.7) 60%, rgba(0,200,150,0.35) 100%)"
+  >
     <div style={{
       position: 'absolute', top: '20%', right: '10%', width: 320, height: 320,
       borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,200,150,0.18) 0%, transparent 65%)',
@@ -250,7 +278,12 @@ const VERTICALS = [
 ];
 
 const Slide3Ecosystem = () => (
-  <SlideShell id="ecosystem" background="linear-gradient(135deg, #1E1B4B 0%, #0B1F3A 60%, #0A0F1C 100%)">
+  <SlideShell
+    id="ecosystem"
+    background="linear-gradient(135deg, #1E1B4B 0%, #0B1F3A 60%, #0A0F1C 100%)"
+    image="https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&auto=format&fit=crop&q=80"
+    imageOverlay="linear-gradient(105deg, rgba(11,31,58,0.9) 0%, rgba(30,27,75,0.75) 55%, rgba(59,130,246,0.4) 100%)"
+  >
     <div style={{
       position: 'absolute', top: '-100px', left: '-100px', width: 480, height: 480,
       borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 65%)',
@@ -301,7 +334,12 @@ const Slide3Ecosystem = () => (
    SLIDE 4 — Punto Cero Legal LIVE
    ========================================================================= */
 const Slide4Legal = () => (
-  <SlideShell id="legal" background="linear-gradient(135deg, #052E1F 0%, #0B1F3A 55%, #052E1F 100%)">
+  <SlideShell
+    id="legal"
+    background="linear-gradient(135deg, #052E1F 0%, #0B1F3A 55%, #052E1F 100%)"
+    image="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1600&auto=format&fit=crop&q=80"
+    imageOverlay="linear-gradient(105deg, rgba(5,46,31,0.9) 0%, rgba(11,31,58,0.7) 55%, rgba(0,200,150,0.45) 100%)"
+  >
     <div style={{
       position: 'absolute', bottom: '10%', right: '5%', width: 380, height: 380,
       borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,200,150,0.24) 0%, transparent 65%)',
@@ -365,7 +403,12 @@ const COUNTRIES_TOP = ['México', 'Colombia', 'Perú', 'Chile', 'Argentina', 'Br
 const COUNTRIES_MORE = ['Ecuador', 'Venezuela', 'Uruguay', 'Paraguay', 'Bolivia', 'Panamá', 'Costa Rica', 'Rep. Dominicana', 'Guatemala', 'Honduras', 'Nicaragua', 'El Salvador'];
 
 const Slide5Latam = () => (
-  <SlideShell id="latam" background="linear-gradient(135deg, #0B1F3A 0%, #1E3A8A 55%, #4C1D95 100%)">
+  <SlideShell
+    id="latam"
+    background="linear-gradient(135deg, #0B1F3A 0%, #1E3A8A 55%, #4C1D95 100%)"
+    image="https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1600&auto=format&fit=crop&q=80"
+    imageOverlay="linear-gradient(115deg, rgba(11,31,58,0.9) 0%, rgba(30,58,138,0.72) 55%, rgba(212,175,55,0.4) 100%)"
+  >
     <div style={{
       position: 'absolute', top: '5%', right: '10%', width: 340, height: 340,
       borderRadius: '50%', border: '1px solid rgba(212,175,55,0.35)',
@@ -429,7 +472,12 @@ const PHASES = [
 ];
 
 const Slide6Evolution = () => (
-  <SlideShell id="evolution" background="linear-gradient(135deg, #0B1F3A 0%, #1E1B4B 40%, #0A0F1C 100%)">
+  <SlideShell
+    id="evolution"
+    background="linear-gradient(135deg, #0B1F3A 0%, #1E1B4B 40%, #0A0F1C 100%)"
+    image="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1600&auto=format&fit=crop&q=80"
+    imageOverlay="linear-gradient(115deg, rgba(11,31,58,0.9) 0%, rgba(30,27,75,0.75) 55%, rgba(236,72,153,0.4) 100%)"
+  >
     <div style={{
       position: 'absolute', top: '-120px', right: '-120px', width: 440, height: 440,
       borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.13) 0%, transparent 65%)',

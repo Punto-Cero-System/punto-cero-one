@@ -100,7 +100,7 @@ const SlideCarousel = ({
           <div className="pc-slide-inner" style={{
             width: '100%', height: '100%',
             display: 'flex', alignItems: 'stretch', justifyContent: 'stretch',
-            overflow: 'hidden',
+            overflow: 'hidden auto',
           }}>
             {slides[index].node}
           </div>
