@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, ArrowLeft, Sparkles } from 'lucide-react';
+import { Mail, ArrowLeft, Sparkles, Lock } from 'lucide-react';
 import BrandMark from '../components/BrandMark';
+import { AUTH_PROVIDERS } from '../services/authService';
+import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 
 const NAVY = '#0B1F3A';
 
@@ -42,10 +44,23 @@ const JoinPage = () => {
   const [email, setEmail] = useState('');
   const [notice, setNotice] = useState('');
   const navigate = useNavigate();
+  const { user } = useCommunityAuth();
 
-  const handleSocial = (provider) => {
-    // Backend integration point — hook up here when auth service is provisioned.
-    setNotice(`Conectando con ${provider}… disponible próximamente.`);
+  // If already authenticated, bounce to the community home.
+  useEffect(() => {
+    if (user && typeof user === 'object') {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
+
+  const handleSocial = (providerKey, label) => {
+    const provider = AUTH_PROVIDERS[providerKey];
+    if (provider?.available && provider.startLogin) {
+      // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+      provider.startLogin();
+      return;
+    }
+    setNotice(`${label} estará disponible próximamente. Usa Google para ingresar ahora.`);
     setTimeout(() => setNotice(''), 3500);
   };
 
@@ -122,28 +137,48 @@ const JoinPage = () => {
 
         {/* Social auth buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-          {SOCIALS.map((s) => (
-            <motion.button
-              key={s.key}
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleSocial(s.label.replace('Continuar con ', ''))}
-              data-testid={`join-${s.key}`}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: '0.65rem', width: '100%',
-                padding: '0.85rem 1rem', borderRadius: 12,
-                background: s.color, color: s.text,
-                border: `1px solid ${s.ring}`,
-                fontSize: '0.88rem', fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: `0 4px 14px ${s.ring}`,
-              }}
-            >
-              {s.icon}
-              <span>{s.label}</span>
-            </motion.button>
-          ))}
+          {SOCIALS.map((s) => {
+            const available = AUTH_PROVIDERS[s.key]?.available;
+            return (
+              <motion.button
+                key={s.key}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleSocial(s.key, s.label.replace('Continuar con ', ''))}
+                data-testid={`join-${s.key}`}
+                aria-label={s.label}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  gap: '0.65rem', width: '100%',
+                  padding: '0.85rem 1rem', borderRadius: 12,
+                  background: s.color, color: s.text,
+                  border: `1px solid ${s.ring}`,
+                  fontSize: '0.88rem', fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: `0 4px 14px ${s.ring}`,
+                  position: 'relative',
+                  opacity: available ? 1 : 0.82,
+                }}
+              >
+                {s.icon}
+                <span>{s.label}</span>
+                {!available && (
+                  <span
+                    style={{
+                      position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em',
+                      padding: '0.2rem 0.45rem', borderRadius: 999,
+                      background: 'rgba(0,0,0,0.08)', color: s.text, opacity: 0.7,
+                    }}
+                    data-testid={`join-${s.key}-soon`}
+                  >
+                    <Lock size={9} /> PRONTO
+                  </span>
+                )}
+              </motion.button>
+            );
+          })}
         </div>
 
         {/* Divider */}

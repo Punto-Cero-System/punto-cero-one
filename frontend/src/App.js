@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Lenis from '@studio-freight/lenis';
 import './App.css';
 import HomePage from './pages/HomePage';
@@ -16,7 +16,9 @@ import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import ProtectedInvestorRoute from './components/ProtectedInvestorRoute';
+import AuthCallback from './components/AuthCallback';
 import { AuthProvider } from './contexts/AuthContext';
+import { CommunityAuthProvider } from './contexts/CommunityAuthContext';
 
 function App() {
   useEffect(() => {
@@ -49,37 +51,55 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/investor-room" element={<InvestorRoomPreview />} />
-            <Route path="/request-access" element={<InvestorRequestPage />} />
-            <Route path="/investor-pitch-deck" element={<InvestorPitchDeckPage />} />
-            <Route path="/executive-summary" element={<ExecutiveSummaryPage />} />
-            <Route path="/capital-strategy" element={<CapitalStrategyPage />} />
-            <Route path="/capital" element={<CapitalHubPage />} />
-            <Route path="/join" element={<JoinPage />} />
-            <Route path="/admin/login" element={<AdminLoginPage />} />
-            <Route path="/investor/setup" element={<InvestorSetupPage />} />
-            <Route
-              path="/investor-portal"
-              element={
-                <ProtectedInvestorRoute>
-                  <InvestorPortalPage />
-                </ProtectedInvestorRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminDashboardPage />
-                </ProtectedAdminRoute>
-              }
-            />
-          </Routes>
+          <CommunityAuthProvider>
+            <AppRouter />
+          </CommunityAuthProvider>
         </AuthProvider>
       </BrowserRouter>
     </div>
+  );
+}
+
+/**
+ * AppRouter — synchronously reads the URL fragment to detect an OAuth callback
+ * (`#session_id=...`) BEFORE any protected route runs. This avoids the race
+ * where ProtectedRoute would kick the user to /admin/login prior to session
+ * exchange.  Uses `useLocation().hash` (reactive) — never window.location.hash.
+ */
+function AppRouter() {
+  const location = useLocation();
+  if (location.hash?.includes('session_id=')) {
+    return <AuthCallback />;
+  }
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/investor-room" element={<InvestorRoomPreview />} />
+      <Route path="/request-access" element={<InvestorRequestPage />} />
+      <Route path="/investor-pitch-deck" element={<InvestorPitchDeckPage />} />
+      <Route path="/executive-summary" element={<ExecutiveSummaryPage />} />
+      <Route path="/capital-strategy" element={<CapitalStrategyPage />} />
+      <Route path="/capital" element={<CapitalHubPage />} />
+      <Route path="/join" element={<JoinPage />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/investor/setup" element={<InvestorSetupPage />} />
+      <Route
+        path="/investor-portal"
+        element={
+          <ProtectedInvestorRoute>
+            <InvestorPortalPage />
+          </ProtectedInvestorRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedAdminRoute>
+            <AdminDashboardPage />
+          </ProtectedAdminRoute>
+        }
+      />
+    </Routes>
   );
 }
 

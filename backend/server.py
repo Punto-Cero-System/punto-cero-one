@@ -30,6 +30,7 @@ from routes.investor_routes import (
 )
 from routes.pitch_deck_routes import public_router as pitch_public_router
 from routes.pitch_deck_routes import admin_router as pitch_admin_router
+from routes.community_auth_routes import router as community_auth_router
 
 
 # -------------------- Logging --------------------
@@ -84,6 +85,7 @@ app.include_router(investor_admin_extra_router)
 app.include_router(investor_router)
 app.include_router(pitch_public_router)
 app.include_router(pitch_admin_router)
+app.include_router(community_auth_router)
 
 
 # -------------------- CORS --------------------
@@ -110,6 +112,10 @@ async def ensure_indexes():
     await db.pitch_deck_events.create_index("created_at")
     await db.investor_access_log.create_index("user_id")
     await db.investor_access_log.create_index("created_at")
+    # Community auth
+    await db.user_sessions.create_index("session_token", unique=True)
+    await db.user_sessions.create_index("user_id")
+    await db.user_sessions.create_index("expires_at")
     # Ensure the invitation_token can be queried quickly and is unique when present.
     await db.users.create_index(
         "invitation_token", unique=True, partialFilterExpression={"invitation_token": {"$type": "string"}}

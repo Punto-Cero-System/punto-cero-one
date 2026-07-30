@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import AppIcon from './AppIcon';
 import { WeatherWidget, CalendarWidget, PodcastWidget, CompaniesShoutout } from './Widgets';
+import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 
 const NAVY = '#0B1F3A';
 
@@ -11,6 +12,9 @@ const NAVY = '#0B1F3A';
  * Sticky on desktop, hidden on mobile (< 900px handled by CommunityLayout).
  */
 const LeftSidebar = () => {
+  const { user } = useCommunityAuth();
+  const isAuthed = !!user && typeof user === 'object';
+
   return (
     <aside data-testid="community-left-sidebar" style={{
       display: 'flex', flexDirection: 'column', gap: '0.85rem',
@@ -26,34 +30,50 @@ const LeftSidebar = () => {
           background: 'linear-gradient(120deg, #0B1F3A 0%, #1E3A8A 40%, #7C3AED 80%, #EC4899 100%)',
         }} />
         <div style={{ padding: '0 1rem 1.15rem', textAlign: 'center', marginTop: -30 }}>
-          <div style={{
-            width: 60, height: 60, borderRadius: '50%',
-            background: '#0A0F1C', margin: '0 auto',
-            border: '3px solid #FFFFFF',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: '"Space Grotesk", sans-serif',
-            color: '#FFFFFF', fontWeight: 700, fontSize: '1.35rem',
-            letterSpacing: '-0.02em',
-          }}>0</div>
-          <div style={{ marginTop: '0.6rem', fontWeight: 700, fontSize: '0.95rem', color: NAVY }}>
-            Bienvenido a Punto Cero One
+          {isAuthed && user.picture ? (
+            <img
+              src={user.picture}
+              alt={user.name}
+              referrerPolicy="no-referrer"
+              data-testid="left-sidebar-avatar"
+              style={{
+                width: 60, height: 60, borderRadius: '50%',
+                border: '3px solid #FFFFFF', objectFit: 'cover',
+                boxShadow: '0 4px 12px rgba(11,31,58,0.15)',
+              }}
+            />
+          ) : (
+            <div data-testid="left-sidebar-avatar-fallback" style={{
+              width: 60, height: 60, borderRadius: '50%',
+              background: '#0A0F1C', margin: '0 auto',
+              border: '3px solid #FFFFFF',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: '"Space Grotesk", sans-serif',
+              color: '#FFFFFF', fontWeight: 700, fontSize: '1.35rem',
+              letterSpacing: '-0.02em',
+            }}>{isAuthed ? (user.name || user.email || '0').charAt(0).toUpperCase() : '0'}</div>
+          )}
+          <div data-testid="left-sidebar-name" style={{ marginTop: '0.6rem', fontWeight: 700, fontSize: '0.95rem', color: NAVY }}>
+            {isAuthed ? user.name : 'Bienvenido a Punto Cero One'}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'rgba(11,31,58,0.55)', marginTop: '0.15rem' }}>
-            Todo empieza aquí
+            {isAuthed ? (user.headline || user.email) : 'Todo empieza aquí'}
           </div>
-          <Link
-            to="/join"
-            data-testid="left-sidebar-join"
-            style={{
-              display: 'block', marginTop: '0.9rem',
-              padding: '0.55rem 0.9rem',
-              background: NAVY, color: '#FFFFFF',
-              borderRadius: 100, fontSize: '0.78rem', fontWeight: 600,
-              textDecoration: 'none', textAlign: 'center',
-            }}
-          >
-            Unirse a la comunidad
-          </Link>
+          {!isAuthed && (
+            <Link
+              to="/join"
+              data-testid="left-sidebar-join"
+              style={{
+                display: 'block', marginTop: '0.9rem',
+                padding: '0.55rem 0.9rem',
+                background: NAVY, color: '#FFFFFF',
+                borderRadius: 100, fontSize: '0.78rem', fontWeight: 600,
+                textDecoration: 'none', textAlign: 'center',
+              }}
+            >
+              Unirse a la comunidad
+            </Link>
+          )}
         </div>
       </div>
 

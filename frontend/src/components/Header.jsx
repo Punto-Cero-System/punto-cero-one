@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Search, Bell, MessageCircle, ChevronDown, LogIn } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Search, Bell, MessageCircle, ChevronDown, LogIn, LogOut } from 'lucide-react';
 import BrandMark from './BrandMark';
 import AppIcon from './community/AppIcon';
+import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 
 const NAVY = '#0B1F3A';
 const GOLD = '#D4AF37';
@@ -25,8 +26,18 @@ const NAV_ITEMS = [
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useCommunityAuth();
+  const isAuthed = !!user && typeof user === 'object';
+
+  const handleLogout = async () => {
+    setProfileMenuOpen(false);
+    try { await logout(); } catch { /* noop */ }
+    navigate('/', { replace: true });
+  };
 
   return (
     <motion.header
@@ -110,27 +121,99 @@ const Header = () => {
             💎 Capital
           </Link>
 
-          {/* Profile */}
-          <button
-            className="interactive pc-header-profile"
-            data-testid="header-profile"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-              padding: '0.35rem 0.55rem 0.35rem 0.4rem',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 100, color: '#FFFFFF',
-              fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
-            }}
-          >
-            <span style={{
-              width: 26, height: 26, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #0B1F3A, #7C3AED)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: '0.75rem',
-            }}>0</span>
-            <ChevronDown size={12} />
-          </button>
+          {/* Profile / Join */}
+          {isAuthed ? (
+            <div style={{ position: 'relative' }}>
+              <button
+                className="interactive pc-header-profile"
+                data-testid="header-profile"
+                onClick={() => setProfileMenuOpen((v) => !v)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                  padding: '0.35rem 0.55rem 0.35rem 0.4rem',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 100, color: '#FFFFFF',
+                  fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                {user.picture ? (
+                  <img
+                    src={user.picture}
+                    alt={user.name}
+                    referrerPolicy="no-referrer"
+                    style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <span style={{
+                    width: 26, height: 26, borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #0B1F3A, #7C3AED)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: '0.75rem',
+                  }}>{(user.name || user.email || '0').charAt(0).toUpperCase()}</span>
+                )}
+                <span data-testid="header-profile-name" className="pc-header-profile-name" style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user.name?.split(' ')[0] || 'Perfil'}
+                </span>
+                <ChevronDown size={12} />
+              </button>
+              <AnimatePresence>
+                {profileMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    data-testid="header-profile-menu"
+                    style={{
+                      position: 'absolute', right: 0, top: 'calc(100% + 6px)',
+                      minWidth: 220,
+                      background: '#0A0F1C',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: 12,
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+                      padding: '0.5rem',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ padding: '0.6rem 0.75rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#FFFFFF' }}>{user.name}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)' }}>{user.email}</div>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      data-testid="header-logout"
+                      style={{
+                        marginTop: 4, width: '100%', textAlign: 'left',
+                        padding: '0.55rem 0.75rem', background: 'transparent',
+                        border: 'none', color: '#FFFFFF', cursor: 'pointer',
+                        fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 8,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <LogOut size={14} /> Cerrar sesión
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <Link
+              to="/join"
+              data-testid="header-join-btn"
+              className="interactive pc-header-join"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                padding: '0.5rem 0.9rem',
+                background: 'linear-gradient(135deg, #00C896 0%, #06B6D4 100%)',
+                color: NAVY, borderRadius: 100,
+                fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.02em',
+                textDecoration: 'none',
+                boxShadow: '0 6px 18px rgba(0,200,150,0.35)',
+              }}
+            >
+              <LogIn size={14} /> Unirse
+            </Link>
+          )}
 
           {/* Mobile toggle */}
           <button
