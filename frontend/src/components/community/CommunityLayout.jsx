@@ -34,6 +34,12 @@ const CommunityLayout = ({ top, left, center, right }) => {
         .pc-community-col { min-width: 0; }
         .pc-community-center { display: flex; flex-direction: column; gap: 1rem; }
 
+        @media (max-width: 1280px) {
+          .pc-community-grid {
+            grid-template-columns: 240px minmax(0, 1fr) 300px;
+            gap: 1.15rem;
+          }
+        }
         @media (max-width: 1200px) {
           .pc-community-grid {
             grid-template-columns: 240px minmax(0, 1fr);
@@ -44,7 +50,8 @@ const CommunityLayout = ({ top, left, center, right }) => {
         @media (max-width: 900px) {
           .pc-community-grid {
             grid-template-columns: 1fr;
-            padding: 1rem 0.75rem 3rem;
+            padding: 1rem 0.75rem 5rem;
+            gap: 1rem;
           }
           .pc-community-left { display: none; }
         }

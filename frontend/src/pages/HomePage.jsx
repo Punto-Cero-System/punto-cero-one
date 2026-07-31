@@ -1,33 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Settings, LayoutGrid, Check } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import CustomCursor from '../components/CustomCursor';
 
-// Community layout & building blocks.
 import CommunityLayout from '../components/community/CommunityLayout';
-import LeftSidebar from '../components/community/LeftSidebar';
-import RightWidgets from '../components/community/RightWidgets';
-import LiveFeed from '../components/community/LiveFeed';
-import { InlineWidgetStrip } from '../components/community/Widgets';
+import WorkspacePanel from '../components/community/workspace/WorkspacePanel';
+import MobileWorkspaceDrawer from '../components/community/workspace/MobileWorkspaceDrawer';
 import SlideCarousel from '../components/SlideCarousel';
-
-// Redesigned primary slider content (professional, feed-friendly).
 import { PRIMARY_SLIDES } from '../components/PrimarySlides';
+import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 
 /**
- * HomePage — Punto Cero One community home.
- * ── Primary slider on top (6 slides, 12s autoplay).
- * ── 3-column community layout (left sidebar / feed / right widgets).
- * ── Center column is a fully-real LiveFeed. Founders/history moved to
- *    the dedicated /nuestra-historia institutional page.
+ * HomePage — evolved into "Mi Espacio", the personal workspace.
+ *
+ * - Anonymous users: the workspace runs on the default template (same look as
+ *   the previous LinkedIn-style home). The slider sits on top.
+ * - Authenticated users: the same layout, but every widget is toggle-able,
+ *   reorderable and persisted per-account (WorkspaceContext + /api/workspace).
+ *
+ * The visual identity stays intact — this page reuses the exact widgets
+ * previously composed inside LeftSidebar / RightWidgets / LiveFeed, but each
+ * one is now addressable by ID inside the Widget Registry.
  */
 const HomePage = () => {
+  const { user } = useCommunityAuth();
+  const { ready } = useWorkspace();
+  const isAuthed = !!user && typeof user === 'object';
+  const [editing, setEditing] = useState(false);
+  const navigate = useNavigate();
+
   return (
     <>
       <CustomCursor />
       <Header />
-
       <main id="top" style={{ paddingTop: '58px', background: '#F4F6FB', minHeight: '100vh' }}>
         <CommunityLayout
           top={
@@ -39,53 +48,78 @@ const HomePage = () => {
               label="Slider principal · visión Punto Cero One"
             />
           }
-          left={<LeftSidebar />}
-          center={
+          left={
             <>
-              {/* Welcome transition band */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.2 }}
-                data-testid="feed-welcome-bar"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.85rem',
-                  padding: '0.85rem 1.1rem', borderRadius: 16,
-                  background: 'linear-gradient(120deg, rgba(11,31,58,0.94) 0%, rgba(76,29,149,0.85) 100%)',
-                  color: '#FFFFFF',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  boxShadow: '0 10px 40px rgba(11,31,58,0.15)',
-                }}
-              >
-                <span style={{
-                  width: 10, height: 10, borderRadius: '50%',
-                  background: '#00C896', boxShadow: '0 0 10px #00C896',
-                  animation: 'pcBeat 1.8s ease-in-out infinite', flexShrink: 0,
-                }} />
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, letterSpacing: '-0.005em' }}>
-                    Bienvenido a la comunidad
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.62)' }}>
-                    Publica tu primer punto cero y conecta con el ecosistema
-                  </div>
-                </div>
-                <style>{`@keyframes pcBeat { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: 0.55; } }`}</style>
-              </motion.div>
-
-              {/* REAL FEED — powered by /api/feed/* */}
-              <LiveFeed />
-
-              <InlineWidgetStrip />
+              {isAuthed && (
+                <WorkspaceToolbar
+                  editing={editing}
+                  onToggle={() => setEditing((v) => !v)}
+                  onConfig={() => navigate('/mi-espacio/configuracion')}
+                />
+              )}
+              {ready && <WorkspacePanel panel="left" editing={editing} testid="community-left-sidebar" />}
             </>
           }
-          right={<RightWidgets />}
+          center={
+            <>
+              <MobileWorkspaceDrawer editing={editing} onToggleEdit={() => setEditing((v) => !v)} />
+              {ready && <WorkspacePanel panel="center" editing={editing} gap="1rem" />}
+            </>
+          }
+          right={ready && <WorkspacePanel panel="right" editing={editing} testid="community-right-widgets" />}
         />
       </main>
-
       <Footer />
     </>
   );
 };
+
+/**
+ * Compact toolbar shown at the top of the left panel for authenticated
+ * users. Two actions: toggle edit-mode in place, or jump into the
+ * dedicated Configuración page.
+ */
+const WorkspaceToolbar = ({ editing, onToggle, onConfig }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+    data-testid="workspace-toolbar"
+    style={{
+      display: 'flex', alignItems: 'center', gap: '0.4rem',
+      padding: '0.55rem 0.6rem', borderRadius: 14,
+      background: '#FFFFFF',
+      border: '1px solid rgba(11,31,58,0.06)',
+      boxShadow: '0 4px 20px rgba(11,31,58,0.04)',
+    }}>
+    <div style={{
+      fontSize: '0.6rem', letterSpacing: '0.2em', fontWeight: 800,
+      color: 'rgba(11,31,58,0.55)', flex: 1,
+    }}>MI ESPACIO</div>
+    <button onClick={onToggle}
+      data-testid="workspace-toggle-edit"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        padding: '0.35rem 0.6rem', borderRadius: 100,
+        background: editing ? 'rgba(0,200,150,0.12)' : 'rgba(11,31,58,0.04)',
+        border: `1px solid ${editing ? 'rgba(0,200,150,0.3)' : 'rgba(11,31,58,0.08)'}`,
+        color: editing ? '#00A277' : '#0B1F3A',
+        fontSize: '0.68rem', fontWeight: 800, cursor: 'pointer',
+      }}>
+      {editing ? <Check size={12} /> : <LayoutGrid size={12} />}
+      {editing ? 'Listo' : 'Editar'}
+    </button>
+    <button onClick={onConfig}
+      data-testid="workspace-open-config"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        padding: '0.35rem 0.6rem', borderRadius: 100,
+        background: 'rgba(11,31,58,0.04)',
+        border: '1px solid rgba(11,31,58,0.08)',
+        color: '#0B1F3A', fontSize: '0.68rem', fontWeight: 800,
+        cursor: 'pointer',
+      }}>
+      <Settings size={12} /> Config
+    </button>
+  </motion.div>
+);
 
 export default HomePage;

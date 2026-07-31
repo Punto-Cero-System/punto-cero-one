@@ -18,7 +18,7 @@ const GOLD = '#D4AF37';
  * kept only for the mobile menu when the item stays on the homepage.
  */
 const NAV_ITEMS = [
-  { key: 'home', label: 'Inicio', to: '/', icon: 'home' },
+  { key: 'home', label: 'Mi Espacio', to: '/', icon: 'home' },
   { key: 'news', label: 'Noticias', to: '/noticias', icon: 'news' },
   { key: 'video', label: 'Videos', to: '/videos', icon: 'video' },
   { key: 'jobs', label: 'Empleos', to: '/empleos', icon: 'jobs' },
@@ -171,6 +171,16 @@ const Header = () => {
                         color: '#FFFFFF', fontSize: '0.82rem', borderRadius: 8,
                       }}
                     >Ver mi perfil</Link>
+                    <Link
+                      to="/mi-espacio/configuracion"
+                      onClick={() => setProfileMenuOpen(false)}
+                      data-testid="header-workspace-config-link"
+                      style={{
+                        width: '100%', display: 'inline-flex', alignItems: 'center', gap: 8,
+                        padding: '0.55rem 0.75rem', textDecoration: 'none',
+                        color: '#FFFFFF', fontSize: '0.82rem', borderRadius: 8,
+                      }}
+                    >Configuración · Mi Espacio</Link>
                     <button
                       onClick={handleLogout}
                       data-testid="header-logout"

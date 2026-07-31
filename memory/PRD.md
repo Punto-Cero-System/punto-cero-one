@@ -515,3 +515,67 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
   - Modificados: `backend/server.py`, `backend/services/feed_engine/engine.py`, `frontend/src/App.js`, `frontend/src/pages/MarketplacePage.jsx`, `frontend/src/pages/CompanyProfilePage.jsx`, `frontend/src/components/community/UserHoverCard.jsx`.
 
 
+- **2026-07 · Wave 4B — Mi Espacio (Workspace personalizable)**:
+
+  ### Filosofía
+  - `Inicio` evolucionó a **Mi Espacio** — escritorio profesional del usuario. NO es una página nueva, es la misma HomePage extendida con arquitectura basada en widgets.
+  - Cero duplicación: cada bloque de la UI existente (LeftSidebar + RightWidgets + LiveFeed + LiveWidgets + Widgets) ahora es addressable por ID en el **Widget Registry** (`services/workspaceRegistry.jsx`).
+  - Nada se rompe: usuarios anónimos ven exactamente la misma experiencia que antes (template default cargado sin llamadas al backend).
+
+  ### Backend
+  - `routes/workspace_routes.py` — endpoints `/api/workspace/me` (GET/PUT/PATCH) y `/reset`.
+  - Colección nueva `user_workspaces` con índice unique en `user_id`.
+  - Persistencia total en MongoDB, cero localStorage.
+  - Validación: dedupe IDs, sanitiza panels, coerce `theme` a `auto|light|dark`, garantiza layout_version.
+
+  ### Frontend · Arquitectura
+  - `services/workspaceRegistry.jsx` — catálogo canónico de ~28 widgets con id/title/category/defaultPanel/defaultOrder. Fuente única de verdad, agregar un widget = una línea.
+  - `services/workspaceService.js` — cliente REST (getMine/save/patch/reset).
+  - `contexts/WorkspaceContext.jsx` — estado global, autosave debounced 500ms, exponencial de helpers (toggleWidget, moveWidget, reorderPanel, resetWorkspace).
+  - `components/community/workspace/WorkspacePanel.jsx` — renderer de un panel a partir de la lista de IDs, integrado con edit-mode.
+  - `components/community/workspace/WorkspaceWidgetShell.jsx` — chrome de edición (colapsar / ocultar) que aparece solo cuando el usuario entra en modo edición.
+  - `components/community/workspace/MobileWorkspaceDrawer.jsx` — drawer deslizante que muestra left/right panel en viewport ≤ 1200px (una única base de código, sin componentes duplicados).
+  - `components/community/MobileBottomNav.jsx` — bottom navigation en < 900px, reutilizando los NAV_ITEMS del Header.
+  - `pages/MiEspacioConfigPage.jsx` — sección Configuración › Mi Espacio con:
+    - Vista por panel (left/center/right) con acciones subir/bajar/colapsar/ocultar/mover.
+    - Catálogo por categoría (navigation, productivity, media, finance, community, capital) para agregar widgets no colocados.
+    - Botón "Restaurar por defecto" que hace POST /reset.
+
+  ### Widgets modularizados (reutilizan componentes existentes)
+  - Left: ProfileCard, NuestraHistoria, Activity, Groups, QuickLinks, Weather-mini, Calendar-mini, Podcast-mini.
+  - Center: WelcomeBand, Feed (LiveFeed intacto), InlineStats.
+  - Right: RssLive, TrendingLive, TrendingEditorial, Events, Companies, InvestorCenter, AiTools, CryptoLive, FxLive, WeatherLive, YoutubeLive, Markets, AIOfTheDay, Poll, Launches, Courses, Marketplace, SuggestedPeople, CapitalCta.
+
+  ### Responsive · una sola base de código
+  - Desktop (≥ 1280px): 3 columnas completas.
+  - Laptop (1024–1279px): 3 columnas más compactas.
+  - Tablet (900–1200px): 2 columnas (left+center) + drawer para panel derecho.
+  - Mobile (< 900px): 1 columna (center) + drawer para ambos paneles + bottom nav fijo.
+  - MobileWorkspaceDrawer es sticky para autenticados con opción "Editar" y acceso a Config.
+
+  ### Rutas nuevas
+  - `/` → HomePage (Mi Espacio)
+  - `/mi-espacio` (alias) → HomePage
+  - `/mi-espacio/configuracion` → MiEspacioConfigPage
+  - Header: primer nav item ahora se llama "Mi Espacio". Nuevo item en el profile dropdown: "Configuración · Mi Espacio".
+
+  ### Testing
+  - `/app/backend/tests/test_wave4_workspace.py` — 7/7 pass (auth, defaults, PUT/PATCH persistence, dedupe, reset, validation).
+  - Regresión completa Wave 3 + Wave 4A + Wave 4B: 54/54 pass.
+  - Build de producción (`yarn build`) exitoso, 281kB gzipped.
+
+  ### Archivos tocados
+  - Nuevos:
+    - `backend/routes/workspace_routes.py`
+    - `backend/tests/test_wave4_workspace.py`
+    - `frontend/src/services/workspaceService.js`
+    - `frontend/src/services/workspaceRegistry.jsx`
+    - `frontend/src/contexts/WorkspaceContext.jsx`
+    - `frontend/src/pages/MiEspacioConfigPage.jsx`
+    - `frontend/src/components/community/MobileBottomNav.jsx`
+    - `frontend/src/components/community/workspace/` (10 archivos: WorkspacePanel, WorkspaceWidgetShell, MobileWorkspaceDrawer, ProfileCardWidget, NuestraHistoriaWidget, ActivityWidget, GroupsWidget, QuickLinksWidget, WelcomeBandWidget, FeedWidget, TrendingWidget, TrendingEditorialWidget, EventsWidget, CompaniesWidget, InvestorCenterWidget, AiToolsWidget, SuggestedPeopleWidget, CapitalCtaWidget, blocks.jsx, rightBlocks.jsx)
+  - Modificados: `backend/server.py`, `frontend/src/App.js`, `frontend/src/pages/HomePage.jsx`, `frontend/src/components/Header.jsx`, `frontend/src/components/community/CommunityLayout.jsx`.
+  - **CERO cambios a los widgets subyacentes** (LiveFeed, LiveWidgets, Widgets, RightWidgets, LeftSidebar quedan intactos).
+
+
+

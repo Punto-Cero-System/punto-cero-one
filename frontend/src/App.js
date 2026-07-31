@@ -34,9 +34,12 @@ import { PrivacyPage, CookiesPage, TermsPage, ProfessionalAgreementPage } from '
 import MarketplacePage from './pages/MarketplacePage';
 import CompanyProfilePage from './pages/CompanyProfilePage';
 import HashtagPage from './pages/HashtagPage';
+import MiEspacioConfigPage from './pages/MiEspacioConfigPage';
+import MobileBottomNav from './components/community/MobileBottomNav';
 import { AuthProvider } from './contexts/AuthContext';
 import { CommunityAuthProvider } from './contexts/CommunityAuthContext';
 import { RealtimeProvider } from './contexts/RealtimeContext';
+import { WorkspaceProvider } from './contexts/WorkspaceContext';
 
 function App() {
   useEffect(() => {
@@ -71,7 +74,10 @@ function App() {
         <AuthProvider>
           <CommunityAuthProvider>
             <RealtimeProvider>
-              <AppRouter />
+              <WorkspaceProvider>
+                <AppRouter />
+                <MobileBottomNav />
+              </WorkspaceProvider>
             </RealtimeProvider>
           </CommunityAuthProvider>
         </AuthProvider>
@@ -94,6 +100,8 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/mi-espacio" element={<HomePage />} />
+      <Route path="/mi-espacio/configuracion" element={<MiEspacioConfigPage />} />
       <Route path="/investor-room" element={<InvestorRoomPreview />} />
       <Route path="/request-access" element={<InvestorRequestPage />} />
       <Route path="/investor-pitch-deck" element={<InvestorPitchDeckPage />} />

@@ -48,6 +48,7 @@ from routes.widget_routes import router as widget_router
 from routes.company_media_routes import router as company_media_router
 from routes.email_routes import router as email_router
 from routes.follows_routes import router as follows_router
+from routes.workspace_routes import router as workspace_router
 from models_category import DEFAULT_CATEGORIES
 
 
@@ -121,6 +122,7 @@ app.include_router(realtime_router)
 app.include_router(widget_router)
 app.include_router(email_router)
 app.include_router(follows_router)
+app.include_router(workspace_router)
 
 
 # -------------------- CORS --------------------
@@ -213,6 +215,11 @@ async def ensure_indexes():
         await db.follows.create_index([("entity_type", 1), ("entity_id", 1)])
     except Exception as e:
         logger.warning(f"follows index warning: {e}")
+    # Wave 4B — Mi Espacio user workspaces
+    try:
+        await db.user_workspaces.create_index("user_id", unique=True)
+    except Exception as e:
+        logger.warning(f"user_workspaces index warning: {e}")
     # Wave 3 — external widgets cache (TTL index for auto-eviction)
     try:
         await db.widget_cache.create_index(
