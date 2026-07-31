@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, TrendingUp } from 'lucide-react';
@@ -7,9 +7,44 @@ import {
   MarketsWidget, AIOfTheDayWidget, PollWidget,
   CoursesWidget, LaunchesWidget, MarketplaceWidget,
 } from './Widgets';
+import { feedService } from '../../services/feedService';
 
 const NAVY = '#0B1F3A';
 const GOLD = '#D4AF37';
+
+const LiveTrendingWidget = () => {
+  const [items, setItems] = useState(null);
+  useEffect(() => {
+    feedService.trending().then((d) => setItems(d.hashtags || [])).catch(() => setItems([]));
+  }, []);
+  if (!items) return null;
+  if (items.length === 0) {
+    return (
+      <Widget title="Tendencias" icon="ai">
+        <div style={{ padding: '0.5rem 0.85rem', fontSize: '0.75rem', color: 'rgba(11,31,58,0.55)' }}>
+          Aún no hay hashtags en tendencia. Publica con #tuTema para arrancar la conversación.
+        </div>
+      </Widget>
+    );
+  }
+  return (
+    <Widget title="Tendencias" icon="ai">
+      {items.map((h) => (
+        <Link key={h.tag} to={`/?hashtag=${encodeURIComponent(h.tag)}`}
+          data-testid={`right-widget-trend-${h.tag}`}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '0.4rem 0.85rem', textDecoration: 'none',
+            color: NAVY, fontSize: '0.82rem', fontWeight: 600,
+            borderTop: '1px solid rgba(11,31,58,0.05)',
+          }}>
+          <span style={{ color: '#00A277' }}>#{h.tag}</span>
+          <span style={{ fontSize: '0.68rem', color: 'rgba(11,31,58,0.5)' }}>{h.posts_7d} · 7d</span>
+        </Link>
+      ))}
+    </Widget>
+  );
+};
 
 /**
  * RightWidgets — LinkedIc/Facebook-style widgets column.
@@ -27,8 +62,9 @@ const RightWidgets = () => {
         <NewsRow title="Roadmap 2026 publicado" hint="Ver en Capital · Roadmap" />
       </Widget>
 
-      {/* Tendencias */}
-      <Widget title="Tendencias" icon="ai">
+      {/* Tendencias — LIVE from /api/feed/trending, falls back to editorial defaults */}
+      <LiveTrendingWidget />
+      <Widget title="Tendencias editoriales" icon="ai">
         <TrendRow n={1} label="#PuntoCeroLegal" meta="Producto LIVE" />
         <TrendRow n={2} label="#Latam18" meta="Ecosistema regional" />
         <TrendRow n={3} label="#StartFromZero" meta="Cultura fundadora" />

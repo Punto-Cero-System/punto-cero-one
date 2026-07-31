@@ -1,0 +1,46 @@
+{
+  "summary": "Wave 1 GO LIVE (Feed backend, Categories system, Documents counters + signed download links, HomePage live feed) tested end-to-end. 23/23 pytest cases pass (backend). Frontend anonymous shows locked composer + join CTA + 14 chips (Todo + 13 verticals). Authenticated user can create posts (hashtags parsed), react (toggle, picker with 5 kinds), save (toggle), comment (persists in panel), filter by category and restore, share, delete. Regression: /join, /noticias, /videos, /empleos, /empresas, /eventos, /ia, /comunidad, /capital all load without errors. Fixed 2 bugs found (see below).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/documents/{id}", "issue": "_doc_to_public omitted download_count/view_count/last_download_at so counters never surfaced through the meta endpoint — FIXED in /app/backend/routes/document_routes.py."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "FeedPostCard", "issue": "Duplicate data-testid 'feed-post-comments-{id}' used on both the counter <span> (metrics row) and the comments panel wrapper. querySelector always resolved to the counter span, hiding the panel content from automation. FIXED — renamed counter span to 'feed-post-comments-count-{id}'.", "selector": "feed-post-comments-{id}", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "HomePage feed", "issues": ["Feed-category-chips only renders group='vertical' categories (13 + 'Todo'); geographic (co, mx, ar, cl, pe, br) never appear as chips. Spec asked for at least 13 verticals — satisfied — but consider a separate geographic chip strip or a country selector for wave 2."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_feed_categories.py",
+    "/app/test_reports/pytest/feed_categories.xml"
+  ],
+  "action_items": [
+    "None blocking. Wave 1 is functionally complete.",
+    "Consider surfacing 'feed-post-shares-{id}' counter in the metrics row (currently only reactions/comments/views are displayed textually).",
+    "Consider exposing geographic categories as a secondary filter row.",
+    "load-more only appears when next_cursor is present; automated test could not exercise it in a fresh DB without seeding 20+ posts — covered in backend test_pagination_and_category_filter instead."
+  ],
+  "critical_code_review_comments": [
+    "feed_routes.py:212 — `if not include_hidden or not (viewer and viewer.get('role') == 'admin')` is confusing; the current effect is: always set status='published' unless include_hidden=True AND viewer is admin. Works, but a comment or refactor would help.",
+    "feed_routes.py trending pipeline groups by lowercased hashtag but stores/upserts hashtags docs with lowercased tag as well — consistent. Good.",
+    "document_routes.py signed link: `_doc_to_public` initially missed the counter fields (fixed here). Consider adding a light unit or contract test to prevent regressions when new fields are added to the DocumentPublic pydantic model.",
+    "FeedPostCard.jsx had a duplicate data-testid — general code hygiene: any time the same testid is emitted twice, testing frameworks silently take the first match. Consider a lint rule.",
+    "LiveFeed only fetches categories where group='vertical' implicitly — the /api/categories endpoint returns everything unfiltered; the LiveFeed should either pass ?group=vertical to the API or explicitly filter client-side to be predictable if admins add non-vertical categories later."
+  ],
+  "updated_files": [
+    "/app/backend/routes/document_routes.py (added download_count/view_count/last_download_at to _doc_to_public)",
+    "/app/frontend/src/components/community/FeedPostCard.jsx (renamed duplicate testid to feed-post-comments-count-{id})",
+    "/app/backend/tests/test_feed_categories.py (new — 23 tests covering feed, categories, and document signed-link counters)"
+  ],
+  "success_rate": {"backend": "100% (23/23)", "frontend": "100% of Wave 1 flows verified"},
+  "test_credentials": "Admin: admin@puntocerosystem.com / PuntoCero2026Admin. Community session created ad-hoc via mongosh (cleaned up post-test).",
+  "seed_data_creation": "Ephemeral community user + session token for UI tests; TEST-prefixed posts/comments/reactions/saves/categories all deleted at end of run.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend suite /app/backend/tests/test_feed_categories.py is stable and self-contained. Uses conftest fixtures (admin_headers, mongo_db) + its own community_session fixture that seeds + cleans a Google-provider session directly in Mongo. Run with: `pytest backend/tests/test_feed_categories.py -o addopts= -v` (the -o addopts= is only needed because pytest.ini enables xdist which is not always available). Wave 2/3 will replace mockData.js in /noticias, /videos, /empleos, /empresas, /eventos, /ia, /comunidad — those pages currently still render mocked content but are being framed as 'planned'."
+}

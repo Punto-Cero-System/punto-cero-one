@@ -13,7 +13,7 @@ import CareersSection from '../components/CareersSection';
 import CommunityLayout from '../components/community/CommunityLayout';
 import LeftSidebar from '../components/community/LeftSidebar';
 import RightWidgets from '../components/community/RightWidgets';
-import FeedComposer from '../components/community/FeedComposer';
+import LiveFeed from '../components/community/LiveFeed';
 import FeedItem from '../components/community/FeedItem';
 import { InlineWidgetStrip } from '../components/community/Widgets';
 import SlideCarousel from '../components/SlideCarousel';
@@ -21,19 +21,19 @@ import SlideCarousel from '../components/SlideCarousel';
 // Redesigned primary slider content (professional, feed-friendly).
 import { PRIMARY_SLIDES } from '../components/PrimarySlides';
 
-/**
- * HomePage — Punto Cero One community home.
- * ── Primary slider on top (redesigned, 6 modern slides, 12s autoplay).
- * ── 3-column community layout (left sidebar / feed / right widgets).
- * ── Feed alternates content with inline widget strips + a secondary embedded
- *    slider that reuses the founders / people / careers components.
- */
 const SECONDARY_SLIDES = [
   { key: 'founders', node: <FoundersSection /> },
   { key: 'people', node: <PeopleSection /> },
   { key: 'careers', node: <CareersSection /> },
 ];
 
+/**
+ * HomePage — Punto Cero One community home.
+ * ── Primary slider on top (redesigned, 6 modern slides, 12s autoplay).
+ * ── 3-column community layout (left sidebar / feed / right widgets).
+ * ── Center column is a fully-real LiveFeed (backend at /api/feed/*) with a
+ *    couple of editorial "always-on" items woven in for ecosystem context.
+ */
 const HomePage = () => {
   return (
     <>
@@ -54,7 +54,7 @@ const HomePage = () => {
           left={<LeftSidebar />}
           center={
             <>
-              {/* Welcome transition band — bridges the cinematic slider into the feed */}
+              {/* Welcome transition band */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -85,38 +85,10 @@ const HomePage = () => {
                 <style>{`@keyframes pcBeat { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: 0.55; } }`}</style>
               </motion.div>
 
-              <FeedComposer />
+              {/* REAL FEED — powered by /api/feed/* */}
+              <LiveFeed />
 
-              <FeedItem
-                kind="update"
-                author="Punto Cero One"
-                timestamp="Hace 5 min · Actualización oficial"
-                title="Punto Cero Legal · LIVE en producción"
-                body="El primer vertical comercial del ecosistema ya está operativo. La base tecnológica compartida validada por un producto real."
-                cta={{ label: 'Ir a puntocerolegal.com', href: 'https://puntocerolegal.com', external: true, testid: 'legal-external' }}
-              />
-
-              <InlineWidgetStrip />
-
-              <FeedItem
-                kind="news"
-                author="Investor Center"
-                timestamp="Hoy"
-                title="Nuevo Executive Summary + Pitch Deck disponibles"
-                body="13 secciones editoriales y 12 slides cinematográficos con descarga en PDF. La narrativa de capital se reposiciona hacia crecimiento comercial."
-                cta={{ label: 'Explorar Capital', to: '/capital', testid: 'capital-hub' }}
-              />
-
-              <FeedItem
-                kind="video"
-                author="Comunidad · Videos"
-                timestamp="Trending"
-                title="La visión detrás de Punto Cero One (video)"
-                body="Introducción cinematográfica al ecosistema tecnológico latinoamericano."
-                cover="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&auto=format&fit=crop&q=80"
-              />
-
-              {/* Secondary slider embedded as a feed item */}
+              {/* Editorial ecosystem slider (always-on, non-feed item) */}
               <FeedItem
                 kind="slider"
                 author="The Founding Team"
@@ -135,44 +107,7 @@ const HomePage = () => {
                 }
               />
 
-              <FeedItem
-                kind="job"
-                author="Empresas del ecosistema"
-                timestamp="Nuevo"
-                title="Buscamos desarrolladores full-stack (senior)"
-                body="Únete al equipo que construye la infraestructura tecnológica de Latinoamérica. Stack: React · FastAPI · MongoDB · IA."
-                meta={{ company: 'Punto Cero System', location: 'Remoto · LatAm' }}
-                cta={{ label: 'Postular / conocer más', to: '/join', testid: 'jobs-apply' }}
-              />
-
-              <FeedItem
-                kind="event"
-                author="Eventos · Comunidad"
-                timestamp="Próximo"
-                title="Investor Roundtable · Bogotá"
-                body="Encuentro presencial con inversionistas, aliados y fundadores. Cupo limitado por invitación."
-                meta={{ date: '12 marzo 2026', location: 'Bogotá, Colombia' }}
-                cta={{ label: 'Solicitar invitación', to: '/join', testid: 'event-request' }}
-              />
-
               <InlineWidgetStrip />
-
-              <FeedItem
-                kind="company"
-                author="Empresas"
-                timestamp="Destacado"
-                title="Punto Cero Legal está contratando aliados legales"
-                body="Abogados y firmas interesadas en integrarse a la plataforma para servir clientes en Latinoamérica."
-                cta={{ label: 'Escribir al equipo', href: 'mailto:puntocerosystem@gmail.com', testid: 'company-mail' }}
-              />
-
-              <FeedItem
-                kind="post"
-                author="Comunidad"
-                timestamp="Trending"
-                title="Empezar desde cero no es una desventaja"
-                body="Es donde comienza la transformación. Comparte con la comunidad qué transformación estás construyendo desde tu propio Punto Cero."
-              />
             </>
           }
           right={<RightWidgets />}

@@ -32,6 +32,9 @@ from routes.pitch_deck_routes import public_router as pitch_public_router
 from routes.pitch_deck_routes import admin_router as pitch_admin_router
 from routes.community_auth_routes import router as community_auth_router
 from routes.document_routes import router as document_router
+from routes.feed_routes import router as feed_router
+from routes.category_routes import router as category_router
+from models_category import DEFAULT_CATEGORIES
 
 
 # -------------------- Logging --------------------
@@ -88,6 +91,8 @@ app.include_router(pitch_public_router)
 app.include_router(pitch_admin_router)
 app.include_router(community_auth_router)
 app.include_router(document_router)
+app.include_router(feed_router)
+app.include_router(category_router)
 
 
 # -------------------- CORS --------------------
@@ -152,10 +157,33 @@ async def seed_admin():
         logger.info(f"Admin password refreshed: {admin_email}")
 
 
+async def seed_default_categories():
+    """Idempotent taxonomy seed. New keys are inserted, existing ones untouched."""
+    now = datetime.now(timezone.utc).isoformat()
+    for cat in DEFAULT_CATEGORIES:
+        existing = await db.categories.find_one({"key": cat["key"]}, {"_id": 0})
+        if existing:
+            continue
+        doc = {
+            "key": cat["key"],
+            "label": cat["label"],
+            "group": cat.get("group", "vertical"),
+            "icon": cat.get("icon"),
+            "color": cat.get("color"),
+            "order": cat.get("order", 100),
+            "active": True,
+            "parent_key": cat.get("parent_key"),
+            "created_at": now,
+            "updated_at": now,
+        }
+        await db.categories.insert_one(doc)
+
+
 @app.on_event("startup")
 async def _startup():
     await ensure_indexes()
     await seed_admin()
+    await seed_default_categories()
     # Initialize object storage lazily on first use — no crash if backend unavailable.
     try:
         from services.object_storage import get_storage

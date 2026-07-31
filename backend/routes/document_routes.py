@@ -55,6 +55,9 @@ class DocumentPublic(BaseModel):
     uploaded_by: str
     uploaded_by_name: Optional[str] = None
     created_at: str
+    download_count: int = 0
+    view_count: int = 0
+    last_download_at: Optional[str] = None
 
 
 class DocumentListResponse(BaseModel):
@@ -88,6 +91,9 @@ def _doc_to_public(doc: dict) -> DocumentPublic:
         uploaded_by=doc.get("uploaded_by", ""),
         uploaded_by_name=doc.get("uploaded_by_name"),
         created_at=doc.get("created_at", _now_iso()),
+        download_count=int(doc.get("download_count", 0)),
+        view_count=int(doc.get("view_count", 0)),
+        last_download_at=doc.get("last_download_at"),
     )
 
 
@@ -226,6 +232,11 @@ async def download_document(
             "document_id": doc_id,
             "created_at": _now_iso(),
         })
+    # Per-document counters (visible to admins).
+    await db.documents.update_one(
+        {"id": doc_id},
+        {"$inc": {"download_count": 1}, "$set": {"last_download_at": _now_iso()}},
+    )
 
     filename = doc.get("original_filename") or f"{doc_id}"
     return Response(
@@ -236,6 +247,102 @@ async def download_document(
             "Cache-Control": "private, max-age=60",
         },
     )
+
+
+@router.post("/{doc_id}/download-link")
+async def create_download_link(
+    doc_id: str,
+    request: Request,
+    user: dict = Depends(get_current_user),
+    ttl_minutes: int = 15,
+):
+    """Generates a short-lived signed URL (default 15 minutes) that can be
+    opened once without a bearer token — safe to share via chat/email.
+
+    Signature is a random opaque token stored server-side. On redemption the
+    token is consumed atomically; there's no HMAC math to maintain.
+    """
+    import secrets
+    from datetime import timedelta
+    db = request.app.state.db
+    doc = await db.documents.find_one({"id": doc_id, "is_deleted": False}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    await _ensure_can_read(db, user, doc)
+    token = secrets.token_urlsafe(24)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=max(1, min(60, ttl_minutes)))
+    await db.document_signed_links.insert_one({
+        "token": token,
+        "document_id": doc_id,
+        "created_by": user["id"],
+        "created_at": _now_iso(),
+        "expires_at": expires_at.isoformat(),
+        "consumed_at": None,
+    })
+    base = os.environ.get("PUBLIC_APP_URL", "").rstrip("/")
+    url = f"{base}/api/documents/signed/{token}" if base else f"/api/documents/signed/{token}"
+    return {"url": url, "token": token, "expires_at": expires_at.isoformat()}
+
+
+@router.get("/signed/{token}")
+async def download_via_signed_link(token: str, request: Request):
+    db = request.app.state.db
+    link = await db.document_signed_links.find_one({"token": token}, {"_id": 0})
+    if not link:
+        raise HTTPException(status_code=404, detail="Enlace inválido")
+    try:
+        expires_at = datetime.fromisoformat(link["expires_at"])
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Enlace corrupto")
+    if expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail="Enlace expirado")
+    if link.get("consumed_at"):
+        raise HTTPException(status_code=410, detail="Enlace ya utilizado")
+    doc = await db.documents.find_one({"id": link["document_id"], "is_deleted": False}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+
+    try:
+        data, content_type = get_storage().get(doc["storage_path"])
+    except ObjectStorageError as e:
+        raise HTTPException(status_code=502, detail=f"Fallo del almacenamiento: {e}")
+
+    await db.document_signed_links.update_one(
+        {"token": token}, {"$set": {"consumed_at": _now_iso()}},
+    )
+    await db.documents.update_one(
+        {"id": doc["id"]},
+        {"$inc": {"download_count": 1}, "$set": {"last_download_at": _now_iso()}},
+    )
+
+    filename = doc.get("original_filename") or f"{doc['id']}"
+    return Response(
+        content=data,
+        media_type=doc.get("content_type") or content_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@router.post("/{doc_id}/view")
+async def register_document_view(
+    doc_id: str,
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    db = request.app.state.db
+    doc = await db.documents.find_one({"id": doc_id, "is_deleted": False}, {"_id": 0, "id": 1})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    await db.documents.update_one(
+        {"id": doc_id},
+        {"$inc": {"view_count": 1}, "$set": {"last_view_at": _now_iso()}},
+    )
+    return {"ok": True}
 
 
 @router.delete("/{doc_id}")

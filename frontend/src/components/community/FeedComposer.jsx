@@ -1,25 +1,33 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Image, Video, Calendar, Briefcase, Sparkles, Send } from 'lucide-react';
+import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 
 const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
 
 /**
- * FeedComposer — LinkedIn-style publish box. Purely presentational for now;
- * arch-ready to POST to /api/community/posts once backend is added.
+ * FeedComposer — real publisher wired to the backend feed.
+ * When `onSubmit` is provided the composer will call it with `{ text, categoryKey }`
+ * and reset on success. If it's not provided the composer stays inert (used for
+ * dev previews).
  */
-const FeedComposer = ({ onSubmit }) => {
+const FeedComposer = ({ onSubmit, categoryKey = null }) => {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const { user } = useCommunityAuth();
+  const authorInitial = (user?.name || user?.email || '0').charAt(0).toUpperCase();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!text.trim() || busy) return;
-    setBusy(true);
+    setBusy(true); setError('');
     try {
-      if (onSubmit) await onSubmit({ text: text.trim() });
+      if (onSubmit) await onSubmit({ text: text.trim(), categoryKey });
       setText('');
+    } catch (err) {
+      setError(err?.message === 'Debes iniciar sesión' ? 'Inicia sesión para publicar.' : 'No se pudo publicar. Intenta de nuevo.');
     } finally {
       setBusy(false);
     }
@@ -38,12 +46,17 @@ const FeedComposer = ({ onSubmit }) => {
       }}
     >
       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-        <div style={{
-          width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-          background: 'linear-gradient(135deg, #0B1F3A 0%, #1E3A8A 40%, #7C3AED 100%)',
-          color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700,
-        }}>0</div>
+        {user?.picture ? (
+          <img src={user.picture} alt={user.name} referrerPolicy="no-referrer"
+            style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, objectFit: 'cover' }} />
+        ) : (
+          <div style={{
+            width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+            background: 'linear-gradient(135deg, #0B1F3A 0%, #1E3A8A 40%, #7C3AED 100%)',
+            color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700,
+          }}>{authorInitial}</div>
+        )}
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -95,6 +108,13 @@ const FeedComposer = ({ onSubmit }) => {
           </motion.button>
         </div>
       </div>
+      {error && (
+        <div data-testid="feed-composer-error" style={{
+          marginTop: '-0.15rem', padding: '0.5rem 0.75rem', borderRadius: 8,
+          background: 'rgba(255,90,90,0.08)', color: '#B91C1C',
+          fontSize: '0.8rem',
+        }}>{error}</div>
+      )}
     </form>
   );
 };
