@@ -24,8 +24,13 @@ Transformar el sitio de Punto Cero System en una experiencia tecnológica premiu
 - No inventar datos financieros, KPIs, tracción, ni inversionistas.
 
 ## Arquitectura de Rutas (React Router)
-- **Público**
-  - `/` — HomePage (8 bloques)
+- **Público (comunidad + landing)**
+  - `/` — HomePage 3-column community (LinkedIn-style)
+  - `/join` — Fast registration + social login (Google activo, MS/LinkedIn/Apple/FB "PRONTO")
+  - `/noticias`, `/videos`, `/empleos`, `/empresas`, `/eventos`, `/ia`, `/comunidad` — verticales visuales con mock data
+  - `/perfil` — perfil unificado (requiere community auth; redirige a /join si no hay sesión)
+  - `/capital` — Capital Hub (Investor Center público)
+  - `/executive-summary`, `/investor-pitch-deck`, `/capital-strategy`
   - `/investor-room` — InvestorRoomPreview (arquitectura, mockup)
   - `/request-access` — Formulario público → POST `/api/investor-requests`
   - `/investor-pitch-deck` — Pitch Deck 12-slide
@@ -36,27 +41,39 @@ Transformar el sitio de Punto Cero System en una experiencia tecnológica premiu
 ## Backend Architecture
 ```
 /app/backend/
-├── server.py              # FastAPI entry, startup seeds admin + indexes
-├── auth.py                # bcrypt + JWT + FastAPI dependencies
-├── models.py              # Pydantic models (User, InvestorRequest, ...)
+├── server.py                    # FastAPI entry, startup seeds admin + indexes + storage
+├── auth.py                      # bcrypt + JWT + FastAPI dependencies
+├── models.py                    # Pydantic models (User, InvestorRequest, ...)
 ├── routes/
-│   ├── auth_routes.py     # /api/auth/{login,me,logout} + brute-force
-│   └── investor_routes.py # public POST + admin CRUD/workflow
-└── .env                   # JWT_SECRET, ADMIN_*, MONGO_URL, DB_NAME
+│   ├── auth_routes.py           # /api/auth/{login,me,logout} + brute-force
+│   ├── investor_routes.py       # public POST + admin CRUD/workflow
+│   ├── pitch_deck_routes.py     # analytics + PDF download
+│   ├── community_auth_routes.py # NEW /api/community/auth/* (cookie-based)
+│   └── document_routes.py       # NEW /api/documents/* (object storage)
+├── services/
+│   ├── community_auth.py        # NEW provider abstraction (Emergent Google today; MS/LinkedIn/Apple/FB ready)
+│   └── object_storage.py        # NEW pluggable storage (Local | Emergent)
+└── .env                         # JWT_SECRET, ADMIN_*, MONGO_URL, DB_NAME,
+                                 # EMERGENT_AUTH_*, OBJECT_STORAGE_*, EMERGENT_LLM_KEY
 ```
 
 ### API Endpoints
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
 | GET | `/api/health` | — | Health + DB ping |
-| POST | `/api/auth/login` | — | `{email,password}` → `{access_token,user}` |
+| POST | `/api/auth/login` | — | `{email,password}` → `{access_token,user}` (admin/investor) |
 | GET | `/api/auth/me` | Bearer | Devuelve usuario autenticado |
 | POST | `/api/auth/logout` | Bearer | Logout stateless |
+| GET | `/api/community/auth/providers` | — | Lista de proveedores sociales habilitados |
+| POST | `/api/community/auth/session` | — | Exchange `session_id` → cookie httpOnly |
+| GET | `/api/community/auth/me` | Cookie/Bearer | Perfil comunidad autenticado |
+| POST | `/api/community/auth/logout` | Cookie/Bearer | Cierra sesión y limpia cookie |
 | POST | `/api/investor-requests` | — | Envío público de solicitud |
-| GET | `/api/admin/investor-requests` | Admin | Lista con `status`, `search`, `limit`, `skip` |
-| GET | `/api/admin/investor-requests/stats` | Admin | KPIs por estado |
-| GET | `/api/admin/investor-requests/{id}` | Admin | Detalle |
-| PATCH | `/api/admin/investor-requests/{id}` | Admin | Actualizar `status`, `admin_notes` |
+| GET/PATCH/POST | `/api/admin/investor-requests/*` | Admin | Panel de solicitudes + invitaciones |
+| POST | `/api/documents/upload` | Admin | Multipart upload (category, vertical) |
+| GET | `/api/documents` | Admin/Investor | Lista (admin ve todo; investor solo vertical='investor') |
+| GET | `/api/documents/{id}/download` | Admin/Investor | Descarga bytes con Content-Disposition |
+| DELETE | `/api/documents/{id}` | Admin | Soft delete |
 
 ### Data Model — InvestorRequest
 ```
@@ -251,3 +268,7 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 - **2026-02 · Responsive audit**: overflow-x: clip global, media queries defensivas, 100% pass en 10 breakpoints.
 - **2026-02 · Founding Team Integration**: Darwin & Jonathan en homepage + Executive Summary §09 + Pitch Deck slide 11.
 - **2026-02 · Narrative Overhaul**: reposicionamiento completo de Punto Cero Legal a "LIVE en producción".
+
+- **2026-07 · Task 1 · Community Google Auth (iteration_10 · 100% pass)**: New `/api/community/auth/*` cookie-based flow using Emergent-managed Google OAuth. Provider abstraction (`services/community_auth.py`) ready for Microsoft, LinkedIn, Apple, Facebook (UI shows "PRONTO" badge for each). Unified `users` collection with `auth_providers[]` array. Header shows profile menu + logout when authed; "Unirse" CTA otherwise. LeftSidebar reflects real user name/avatar. AuthCallback exchanges `#session_id=…` server-side. No hardcoded redirect URLs — portable to VS Code / any host.
+- **2026-07 · Task 2 · Visual layer complete with mock data (iteration_11)**: 7 new content verticals `/noticias`, `/videos`, `/empleos`, `/empresas`, `/eventos`, `/ia`, `/comunidad` + `/perfil` (auth-gated). Shared `services/mockData.js` with API-shaped functions for drop-in real-API swap later. Reusable `CategoryPage` layout preserving 3-column community shell. Header nav switched to `<Link>` with active-route highlight.
+- **2026-07 · Task 3 · Object Storage repository (iteration_11 · 100% pass)**: Pluggable `services/object_storage.py` with `LocalObjectStorage` (default; writes to `/app/data/uploads`) and `EmergentObjectStorage` (opt-in via env). New `/api/documents/*` endpoints (upload, list, download, soft-delete) with role-based access (admin sees all; investor sees vertical='investor'). New `/admin/documents` UI + Investor Portal renders `portal-documents-section` for uploaded assets. 10/10 backend pytest tests pass. Reusable across future verticals (Legal, Medicina, Contabilidad, Educación).
