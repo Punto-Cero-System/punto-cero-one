@@ -88,6 +88,8 @@ class CompanyCreate(BaseModel):
     team: list[TeamMember] = Field(default_factory=list)
     logo_url: Optional[str] = None
     banner_url: Optional[str] = None
+    cover_url: Optional[str] = None
+    gallery: list[str] = Field(default_factory=list)
 
 
 class CompanyUpdate(BaseModel):
@@ -104,6 +106,8 @@ class CompanyUpdate(BaseModel):
     team: Optional[list[TeamMember]] = None
     logo_url: Optional[str] = None
     banner_url: Optional[str] = None
+    cover_url: Optional[str] = None
+    gallery: Optional[list[str]] = None
 
 
 class CompanyPublic(BaseModel):
@@ -122,6 +126,8 @@ class CompanyPublic(BaseModel):
     team: list[TeamMember] = []
     logo_url: Optional[str] = None
     banner_url: Optional[str] = None
+    cover_url: Optional[str] = None
+    gallery: list[str] = []
     verification: VerificationStatus = "unverified"
     followers_count: int = 0
     posts_count: int = 0

@@ -43,6 +43,10 @@ from routes.notification_routes import router as notification_router
 from routes.messaging_routes import router as messaging_router
 from routes.search_routes import router as search_router
 from routes.admin_platform_routes import router as admin_platform_router
+from routes.realtime_routes import router as realtime_router
+from routes.widget_routes import router as widget_router
+from routes.company_media_routes import router as company_media_router
+from routes.email_routes import router as email_router
 from models_category import DEFAULT_CATEGORIES
 
 
@@ -102,6 +106,7 @@ app.include_router(community_auth_router)
 app.include_router(document_router)
 app.include_router(feed_router)
 app.include_router(category_router)
+app.include_router(company_media_router)
 app.include_router(company_router)
 app.include_router(job_router)
 app.include_router(event_router)
@@ -111,6 +116,9 @@ app.include_router(notification_router)
 app.include_router(messaging_router)
 app.include_router(search_router)
 app.include_router(admin_platform_router)
+app.include_router(realtime_router)
+app.include_router(widget_router)
+app.include_router(email_router)
 
 
 # -------------------- CORS --------------------
@@ -195,6 +203,14 @@ async def ensure_indexes():
     await db.conversations.create_index("updated_at")
     await db.conversations.create_index("participant_key")
     await db.chat_messages.create_index([("conversation_id", 1), ("created_at", -1)])
+    # Wave 3 — external widgets cache (TTL index for auto-eviction)
+    try:
+        await db.widget_cache.create_index(
+            [("provider", 1), ("cache_key", 1)], unique=True
+        )
+        await db.widget_cache.create_index("expires_at", expireAfterSeconds=0)
+    except Exception as e:
+        logger.warning(f"widget_cache index warning: {e}")
 
 
 async def seed_admin():

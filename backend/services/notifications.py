@@ -118,6 +118,14 @@ async def dispatch(
             "created_at": _now(),
         }
         await db.notifications.insert_one(doc)
+        # Realtime fan-out — soft-fail so the DB write is always the source of truth.
+        # We strip the Mongo-injected _id since it's not JSON-serializable.
+        try:
+            from services.realtime import emit_notification
+            payload = {k: v for k, v in doc.items() if k != "_id"}
+            await emit_notification(recipient_id, payload)
+        except Exception:
+            pass
         return doc["id"]
     except Exception:
         return None

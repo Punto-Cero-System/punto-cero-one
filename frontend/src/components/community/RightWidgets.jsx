@@ -7,6 +7,9 @@ import {
   MarketsWidget, AIOfTheDayWidget, PollWidget,
   CoursesWidget, LaunchesWidget, MarketplaceWidget,
 } from './Widgets';
+import {
+  CryptoLiveWidget, FxLiveWidget, WeatherLiveWidget, RssLiveWidget, YoutubeLiveWidget,
+} from './LiveWidgets';
 import { feedService } from '../../services/feedService';
 
 const NAVY = '#0B1F3A';
@@ -55,12 +58,8 @@ const RightWidgets = () => {
     <aside data-testid="community-right-widgets" style={{
       display: 'flex', flexDirection: 'column', gap: '0.85rem',
     }}>
-      {/* Noticias */}
-      <Widget title="Noticias del ecosistema" icon="news">
-        <NewsRow title="Punto Cero Legal LIVE en producción" hint="Primer vertical operativo" />
-        <NewsRow title="Founding team consolidado" hint="Darwin y Jonathan lideran el ecosistema" />
-        <NewsRow title="Roadmap 2026 publicado" hint="Ver en Capital · Roadmap" />
-      </Widget>
+      {/* Noticias — LIVE (RSS con fallback a mock) */}
+      <RssLiveWidget feedKey="noticias" title="Noticias del ecosistema" />
 
       {/* Tendencias — LIVE from /api/feed/trending, falls back to editorial defaults */}
       <LiveTrendingWidget />
@@ -95,6 +94,10 @@ const RightWidgets = () => {
       </Widget>
 
       {/* Integrated modules — fill any remaining space with life */}
+      <CryptoLiveWidget />
+      <FxLiveWidget />
+      <WeatherLiveWidget />
+      <YoutubeLiveWidget />
       <MarketsWidget />
       <AIOfTheDayWidget />
       <PollWidget />

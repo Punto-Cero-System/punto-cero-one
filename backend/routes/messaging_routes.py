@@ -259,4 +259,14 @@ async def send_message(
                 subject_type="conversation", subject_id=conv_id,
                 subject_url=f"/mensajes/{conv_id}",
             )
+            # Realtime push — the chat window updates instantly if the peer is open.
+            try:
+                from services.realtime import emit_message
+                msg_payload = {k: v for k, v in doc.items() if k != "_id"}
+                await emit_message(p["id"], {
+                    "conversation_id": conv_id,
+                    "message": msg_payload,
+                })
+            except Exception:
+                pass
     return MessagePublic(**doc)

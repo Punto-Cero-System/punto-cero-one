@@ -1,22 +1,24 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Check, X } from 'lucide-react';
 import { notificationService } from '../../services/coreServices';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
+import { useRealtime } from '../../contexts/RealtimeContext';
 
 const NAVY = '#0B1F3A';
 
 /**
  * NotificationsBell — header dropdown showing latest notifications + unread count.
- * Polls every 30s. Fully cross-vertical (uses /api/notifications/*).
+ * Real-time via SSE — no polling. Initial load fetches the last N and the
+ * `notification` event stream appends live items as they arrive.
  */
 const NotificationsBell = () => {
   const { user } = useCommunityAuth();
+  const { subscribe } = useRealtime();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
-  const timerRef = useRef(null);
   const navigate = useNavigate();
   const isAuthed = !!user && typeof user === 'object';
 
@@ -32,9 +34,21 @@ const NotificationsBell = () => {
   useEffect(() => {
     if (!isAuthed) return;
     load();
-    timerRef.current = setInterval(load, 30_000);
-    return () => clearInterval(timerRef.current);
   }, [isAuthed, load]);
+
+  // Live subscription: prepend every new notification and bump unread.
+  useEffect(() => {
+    if (!isAuthed) return;
+    const off = subscribe('notification', (n) => {
+      if (!n?.id) return;
+      setItems((prev) => {
+        if (prev.some((x) => x.id === n.id)) return prev;
+        return [n, ...prev].slice(0, 20);
+      });
+      if (!n.is_read) setUnread((u) => u + 1);
+    });
+    return off;
+  }, [isAuthed, subscribe]);
 
   if (!isAuthed) return null;
 

@@ -4,9 +4,11 @@ import { Send } from 'lucide-react';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
 import { messagingService } from '../services/coreServices';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+import { useRealtime } from '../contexts/RealtimeContext';
 
 const MessagesPage = () => {
   const { user } = useCommunityAuth();
+  const { subscribe, status } = useRealtime();
   const [conversations, setConversations] = useState([]);
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -20,10 +22,32 @@ const MessagesPage = () => {
 
   useEffect(() => { if (user) loadConvs(); }, [user, loadConvs]);
 
+  // Live: incoming `message` events either append to the open conversation or
+  // bump the unread counter of the corresponding sidebar entry.
+  useEffect(() => {
+    if (!user) return;
+    const off = subscribe('message', (evt) => {
+      const convId = evt?.conversation_id;
+      const msg = evt?.message;
+      if (!convId || !msg) return;
+      if (active?.id === convId) {
+        setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+      }
+      setConversations((prev) => prev.map((c) => (
+        c.id === convId
+          ? { ...c, last_message: msg, updated_at: msg.created_at, unread_count: active?.id === convId ? 0 : (c.unread_count || 0) + 1 }
+          : c
+      )));
+    });
+    return off;
+  }, [user, active?.id, subscribe]);
+
   const openConv = async (c) => {
     setActive(c);
     try { setMessages(await messagingService.listMessages(c.id)); }
     catch { setMessages([]); }
+    // Reflect read-status locally (backend clears server-side on listMessages).
+    setConversations((prev) => prev.map((x) => (x.id === c.id ? { ...x, unread_count: 0 } : x)));
   };
 
   const send = async (e) => {
@@ -32,7 +56,7 @@ const MessagesPage = () => {
     setBusy(true);
     try {
       const m = await messagingService.send(active.id, { body: body.trim() });
-      setMessages((p) => [...p, m]); setBody('');
+      setMessages((p) => (p.some((x) => x.id === m.id) ? p : [...p, m])); setBody('');
     } catch { /* noop */ } finally { setBusy(false); }
   };
 
@@ -43,6 +67,10 @@ const MessagesPage = () => {
     <CategoryPage icon="community" eyebrow="Messaging Service" title="Mensajes"
       subtitle="Conecta con miembros y empresas de todas las verticales del ecosistema."
       testid="messages-page">
+      <div data-testid="messages-realtime-status" style={{ position: 'absolute', top: 8, right: 12, fontSize: '0.65rem', color: 'rgba(11,31,58,0.55)' }}>
+        <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', marginRight: 6, background: status === 'open' ? '#00C896' : status === 'connecting' ? '#F59E0B' : '#9CA3AF' }} />
+        {status === 'open' ? 'Live' : status === 'connecting' ? 'Conectando…' : 'Sin conexión live'}
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '0.85rem', minHeight: 480 }}>
         <div data-testid="messages-conversations" style={{ background: '#FFFFFF', borderRadius: 12, border: '1px solid rgba(11,31,58,0.06)', overflow: 'auto' }}>
           {conversations.length === 0 && (

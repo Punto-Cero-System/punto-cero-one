@@ -25,6 +25,7 @@ from pydantic import BaseModel
 
 from auth import require_admin
 from services.notifications import dispatch as dispatch_notif
+from services.feed_engine import build_for_you_feed
 from models_feed import (
     PostCreate, PostPublic, PostAuthorMini, PostListResponse,
     CommentCreate, CommentPublic, CommentListResponse,
@@ -151,6 +152,58 @@ async def _serialize_post(db, post: dict, viewer: Optional[dict]) -> PostPublic:
         created_at=post["created_at"],
         updated_at=post.get("updated_at", post["created_at"]),
     )
+
+
+# ---------------------------------------------------------------------------
+# FOR YOU FEED — personalized ranking
+# ---------------------------------------------------------------------------
+class ForYouReason(BaseModel):
+    reasons: list[str] = []
+    score: float = 0.0
+
+
+class ForYouItem(PostPublic):
+    for_you: ForYouReason = ForYouReason()
+
+
+class ForYouResponse(BaseModel):
+    items: list[ForYouItem]
+    mode: str
+    signals_summary: dict
+
+
+@router.get("/for-you", response_model=ForYouResponse)
+async def for_you_feed(
+    request: Request,
+    session_token: Optional[str] = Cookie(default=None),
+    authorization: Optional[str] = Header(default=None),
+    limit: int = Query(default=20, ge=1, le=50),
+):
+    """Personalized "Para Ti" feed — ranked by follow/category/interaction/recency/trending providers.
+
+    For anonymous users this endpoint gracefully degrades to the chronological latest posts
+    (same as /api/feed/posts) so the frontend can call it unconditionally.
+    """
+    viewer = await _current_user_or_none(request, session_token, authorization)
+    db = request.app.state.db
+    ranked, mode = await build_for_you_feed(db, viewer, limit=limit)
+    items: list[ForYouItem] = []
+    for it in ranked:
+        base = await _serialize_post(db, it.post, viewer)
+        items.append(ForYouItem(**base.model_dump(),
+                                for_you=ForYouReason(reasons=it.reasons, score=it.score)))
+    signals_summary = {}
+    if viewer:
+        # Give the client (and QA) a tiny summary of what powered the ranking.
+        from services.feed_engine.engine import load_user_signals
+        s = await load_user_signals(db, viewer)
+        signals_summary = {
+            "verticals": sorted(list(s.verticals)),
+            "followed_companies": len(s.followed_company_ids),
+            "interaction_authors": len(s.interaction_author_ids),
+            "interaction_hashtags": sorted(list(s.interaction_hashtags))[:12],
+        }
+    return ForYouResponse(items=items, mode=mode.value, signals_summary=signals_summary)
 
 
 # ---------------------------------------------------------------------------

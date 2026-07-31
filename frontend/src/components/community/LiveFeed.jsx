@@ -25,6 +25,8 @@ const LiveFeed = ({ initialCategory = null }) => {
   const [category, setCategory] = useState(initialCategory);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState('');
+  const [tab, setTab] = useState('latest');  // 'latest' | 'for-you'
+  const [forYouMode, setForYouMode] = useState(null);
   const isAuthed = !!user && typeof user === 'object';
   const sentinelRef = useRef(null);
   const inflight = useRef(false);
@@ -38,16 +40,27 @@ const LiveFeed = ({ initialCategory = null }) => {
     setLoading(true);
     setError('');
     try {
-      const data = await feedService.listPosts({
-        limit: 15,
-        cursor: nextCursorRef.current || undefined,
-        category_key: category || undefined,
-      });
-      setItems((prev) => (nextCursorRef.current ? [...prev, ...data.items] : data.items));
-      nextCursorRef.current = data.next_cursor;
-      hasMoreRef.current = !!data.next_cursor;
-      setCursor(data.next_cursor);
-      setHasMore(!!data.next_cursor);
+      if (tab === 'for-you') {
+        // Ranked feed — single page (no pagination cursor). Backend picks the top N.
+        const data = await feedService.forYou(30);
+        setItems(data.items || []);
+        setForYouMode(data.mode || 'CHRONOLOGICAL');
+        nextCursorRef.current = null;
+        hasMoreRef.current = false;
+        setCursor(null);
+        setHasMore(false);
+      } else {
+        const data = await feedService.listPosts({
+          limit: 15,
+          cursor: nextCursorRef.current || undefined,
+          category_key: category || undefined,
+        });
+        setItems((prev) => (nextCursorRef.current ? [...prev, ...data.items] : data.items));
+        nextCursorRef.current = data.next_cursor;
+        hasMoreRef.current = !!data.next_cursor;
+        setCursor(data.next_cursor);
+        setHasMore(!!data.next_cursor);
+      }
     } catch (e) {
       setError(e.message || 'No se pudo cargar el feed');
       hasMoreRef.current = false;
@@ -56,15 +69,15 @@ const LiveFeed = ({ initialCategory = null }) => {
       setLoading(false);
       inflight.current = false;
     }
-  }, [category]);
+  }, [category, tab]);
 
-  // reset when category changes
+  // reset when category OR tab changes
   useEffect(() => {
     nextCursorRef.current = null;
     hasMoreRef.current = true;
     setCursor(null); setHasMore(true); setItems([]);
     loadMore();
-  }, [category, loadMore]);
+  }, [category, tab, loadMore]);
 
   // dynamic taxonomy
   useEffect(() => {
@@ -103,8 +116,23 @@ const LiveFeed = ({ initialCategory = null }) => {
         <ComposerLoggedOut />
       )}
 
-      {/* Category chips */}
-      {categories.length > 0 && (
+      {/* Tabs: Últimos / Para Ti (Para Ti solo si está autenticado) */}
+      <div data-testid="feed-tabs" style={{
+        display: 'flex', gap: '0.35rem', padding: '0.4rem',
+        background: '#FFFFFF', borderRadius: 100,
+        border: '1px solid rgba(11,31,58,0.06)',
+        alignSelf: 'flex-start',
+      }}>
+        <TabButton active={tab === 'latest'} onClick={() => setTab('latest')}
+          testid="feed-tab-latest">Últimos</TabButton>
+        <TabButton active={tab === 'for-you'} onClick={() => isAuthed && setTab('for-you')}
+          disabled={!isAuthed} testid="feed-tab-for-you">
+          Para Ti {tab === 'for-you' && forYouMode && <ModeBadge mode={forYouMode} />}
+        </TabButton>
+      </div>
+
+      {/* Category chips (solo en modo "Últimos") */}
+      {tab === 'latest' && categories.length > 0 && (
         <div data-testid="feed-category-chips" style={{
           display: 'flex', gap: '0.35rem', flexWrap: 'wrap',
           padding: '0.6rem 0.9rem', borderRadius: 14,
@@ -239,5 +267,34 @@ const FilterChip = ({ label, active, onClick, color = '#00C896', testid }) => (
       fontSize: '0.72rem', fontWeight: 600,
     }}>{label}</button>
 );
+
+const TabButton = ({ active, onClick, disabled, children, testid }) => (
+  <button onClick={onClick} disabled={disabled} data-testid={testid}
+    style={{
+      padding: '0.4rem 0.95rem', borderRadius: 100,
+      background: active ? NAVY : 'transparent',
+      color: active ? '#FFFFFF' : (disabled ? 'rgba(11,31,58,0.3)' : NAVY),
+      border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
+      fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.02em',
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+    }}>{children}</button>
+);
+
+const ModeBadge = ({ mode }) => {
+  const map = {
+    CHRONOLOGICAL: { label: 'Reciente', color: 'rgba(255,255,255,0.7)' },
+    FOLLOW_BASED: { label: 'Afinidad', color: '#00C896' },
+    TRENDING: { label: 'Trending', color: '#F59E0B' },
+    AI_RECOMMENDED: { label: 'AI', color: '#8B5CF6' },
+  };
+  const m = map[mode] || map.CHRONOLOGICAL;
+  return (
+    <span data-testid={`for-you-mode-${mode}`} style={{
+      fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.14em',
+      padding: '2px 6px', borderRadius: 100, background: 'rgba(255,255,255,0.15)',
+      color: m.color,
+    }}>{m.label.toUpperCase()}</span>
+  );
+};
 
 export default LiveFeed;

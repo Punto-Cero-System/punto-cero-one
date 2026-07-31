@@ -31,6 +31,7 @@ import MessagesPage from './pages/MessagesPage';
 import AdminPlatformPage from './pages/AdminPlatformPage';
 import { AuthProvider } from './contexts/AuthContext';
 import { CommunityAuthProvider } from './contexts/CommunityAuthContext';
+import { RealtimeProvider } from './contexts/RealtimeContext';
 
 function App() {
   useEffect(() => {
@@ -64,7 +65,9 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <CommunityAuthProvider>
-            <AppRouter />
+            <RealtimeProvider>
+              <AppRouter />
+            </RealtimeProvider>
           </CommunityAuthProvider>
         </AuthProvider>
       </BrowserRouter>

@@ -51,6 +51,7 @@ export const feedService = {
     fj(`/api/feed/posts/${postId}/view`, { method: 'POST', body: JSON.stringify({ session_id: sessionId }) }).then(throwOnError),
 
   trending: () => fj('/api/feed/trending').then(throwOnError),
+  forYou: (limit = 20) => fj(`/api/feed/for-you?limit=${limit}`).then(throwOnError),
   report: (postId, reason) =>
     fj(`/api/feed/posts/${postId}/report`, { method: 'POST', body: JSON.stringify({ reason }) }).then(throwOnError),
 };

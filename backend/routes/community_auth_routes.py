@@ -123,6 +123,12 @@ async def _upsert_user_from_identity(db, identity: ProviderIdentity) -> dict:
             "last_login_at": now,
         }
         await db.users.insert_one(doc)
+        # Fire-and-forget welcome email (soft-fails if provider not configured).
+        try:
+            from services.email import send_welcome
+            await send_welcome(identity.email, identity.name)
+        except Exception:
+            pass
         return doc
 
     # merge

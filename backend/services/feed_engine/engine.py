@@ -1,0 +1,131 @@
+"""Feed engine — assembles signals, fans out to providers, ranks posts."""
+from __future__ import annotations
+
+import asyncio
+from datetime import datetime, timezone, timedelta
+from typing import Optional
+
+from .base import FeedItem, FeedSignals, FeedMode
+from .providers import DEFAULT_PROVIDERS
+
+
+async def load_user_signals(db, user: Optional[dict]) -> FeedSignals:
+    """Load everything we need to rank in one pass."""
+    if not user:
+        return FeedSignals()
+
+    user_id = user["id"]
+    verticals = set([v.lower() for v in (user.get("verticals") or [])])
+    interests = set([i.lower() for i in (user.get("interests") or [])])
+    country = user.get("country")
+
+    # Followed companies (and their owners → author-level boost)
+    followed_company_ids: set[str] = set()
+    followed_company_owner_ids: set[str] = set()
+    async for f in db.company_follows.find({"user_id": user_id}, {"_id": 0, "company_id": 1}):
+        followed_company_ids.add(f["company_id"])
+    if followed_company_ids:
+        async for c in db.companies.find(
+            {"id": {"$in": list(followed_company_ids)}},
+            {"_id": 0, "owner_id": 1, "vertical": 1},
+        ):
+            if c.get("owner_id"):
+                followed_company_owner_ids.add(c["owner_id"])
+            if c.get("vertical"):
+                verticals.add(c["vertical"].lower())
+
+    # Author affinity from past reactions + comments + saves (last 90 days).
+    interaction_author_ids: set[str] = set()
+    interaction_hashtags: set[str] = set()
+    since_iso = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
+
+    # 1) reactions/saves → look up target posts
+    interacted_post_ids: set[str] = set()
+    async for r in db.post_reactions.find({"user_id": user_id, "created_at": {"$gte": since_iso}},
+                                          {"_id": 0, "post_id": 1}):
+        interacted_post_ids.add(r["post_id"])
+    async for s in db.post_saves.find({"user_id": user_id, "created_at": {"$gte": since_iso}},
+                                      {"_id": 0, "post_id": 1}):
+        interacted_post_ids.add(s["post_id"])
+    # 2) comments (comments live in `post_comments`)
+    async for c in db.post_comments.find({"author_id": user_id, "created_at": {"$gte": since_iso}},
+                                         {"_id": 0, "post_id": 1}):
+        interacted_post_ids.add(c["post_id"])
+
+    if interacted_post_ids:
+        async for p in db.posts.find(
+            {"id": {"$in": list(interacted_post_ids)}},
+            {"_id": 0, "author_id": 1, "hashtags": 1},
+        ):
+            if p.get("author_id"):
+                interaction_author_ids.add(p["author_id"])
+            for t in (p.get("hashtags") or []):
+                interaction_hashtags.add((t or "").lower())
+
+    return FeedSignals(
+        user_id=user_id,
+        followed_company_ids=followed_company_ids,
+        followed_company_owner_ids=followed_company_owner_ids,
+        verticals=verticals,
+        interests=interests,
+        country=country,
+        interaction_author_ids=interaction_author_ids,
+        interaction_hashtags=interaction_hashtags,
+    )
+
+
+async def _rank_posts(db, posts: list[dict], signals: FeedSignals) -> list[FeedItem]:
+    """Fan out scoring per post × provider. Providers are cheap and in-memory."""
+    async def score_one(p: dict) -> FeedItem:
+        total = 0.0
+        reasons: list[str] = []
+        for prov in DEFAULT_PROVIDERS:
+            delta, reason = await prov.score(db, p, signals)
+            total += delta
+            if reason:
+                reasons.append(reason)
+        return FeedItem(post=p, score=round(total, 3), reasons=reasons)
+
+    return await asyncio.gather(*(score_one(p) for p in posts))
+
+
+async def build_for_you_feed(
+    db,
+    user: Optional[dict],
+    *,
+    limit: int = 20,
+    pool_size: int = 200,
+    lookback_days: int = 30,
+) -> tuple[list[FeedItem], FeedMode]:
+    """Rank the last `pool_size` published posts within `lookback_days` and
+    return the top `limit`. Anonymous users skip ranking entirely.
+    """
+    if not user:
+        cursor = db.posts.find({"status": "published"}, {"_id": 0}).sort("created_at", -1).limit(limit)
+        docs = [d async for d in cursor]
+        return [FeedItem(post=d, score=0.0) for d in docs], FeedMode.CHRONOLOGICAL
+
+    since = (datetime.now(timezone.utc) - timedelta(days=lookback_days)).isoformat()
+    cursor = db.posts.find(
+        {"status": "published", "created_at": {"$gte": since}},
+        {"_id": 0},
+    ).sort("created_at", -1).limit(pool_size)
+    pool = [d async for d in cursor]
+    if not pool:
+        return [], FeedMode.CHRONOLOGICAL
+
+    signals = await load_user_signals(db, user)
+    ranked = await _rank_posts(db, pool, signals)
+    ranked.sort(key=lambda x: (x.score, x.post["created_at"]), reverse=True)
+
+    # Decide the mode label for observability
+    top = ranked[:limit]
+    top_reasons = [r for it in top for r in it.reasons]
+    if any("empresa/persona seguida" in r or "vertical" in r or "hashtags afines" in r
+           or "autor con el que" in r for r in top_reasons):
+        mode = FeedMode.FOLLOW_BASED
+    elif any(it.post.get("counts", {}).get("reactions", 0) > 3 for it in top):
+        mode = FeedMode.TRENDING
+    else:
+        mode = FeedMode.CHRONOLOGICAL
+    return top, mode

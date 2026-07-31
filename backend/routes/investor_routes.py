@@ -231,6 +231,17 @@ async def invite_investor(
     base = _public_base_url()
     invitation_url = f"{base}/investor/setup?token={token}" if base else f"/investor/setup?token={token}"
 
+    # Fire-and-forget invitation email (soft-fails if provider not configured).
+    try:
+        from services.email import send_invitation
+        await send_invitation(
+            to=email, invite_link=invitation_url,
+            inviter_name=admin.get("name") or "Punto Cero",
+            context="portal de inversionistas",
+        )
+    except Exception:
+        pass
+
     return InvestorInvitationResponse(
         request_id=req_id,
         user_id=user_id,
