@@ -303,30 +303,68 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
   - **Portabilidad**: cero dependencias exclusivas de Emergent. Todo compatible con MongoDB Atlas + Vercel + Render + GitHub. Suite pytest reproducible.
 
 ## Wave 3 — Backlog priorizado (siguiente iteración)
-- **Notificaciones (P6)**: Notification Center con eventos (nueva reacción, comentario, seguidor, empresa, empleo, evento, mensaje, cambio de estado, admin). Preparar WebSocket/SSE.
-- **Chat interno (P7)**: mensajería 1-a-1 y user↔empresa, historial, lectura, adjuntos usando object_storage. Preparar para llamadas.
-- **Motor de búsqueda global (P9)**: `/api/search?q=...&type=all|people|companies|posts|jobs|events` (Atlas Search cuando estemos en producción, text index como fallback local).
-- **Admin unificado (P8)**: panel único con tabs para Users, Companies, Posts, Reports, Moderation, Events, Jobs, Categories, Verticales, Países, Documents, Investor Center, Estadísticas.
-- **SSO Platform Login (P4)**: extraer community auth a `/api/platform/auth/*` con token compartido; One consume, Legal reserva slot.
-- **Integraciones externas**: YouTube, RSS proxy, OpenWeather, CoinGecko, FX USD/COP, Google Calendar/Maps.
-
-
-
-- **2026-07 · Wave 2.5 GO LIVE — Core Services de Punto Cero System (iteration_14 · 22/22 pytest pass)**:
-  - **Notification Center** (`services/notifications.py` + `routes/notification_routes.py`): dispatch centralizado. Kinds soportados: reaction, comment, follower, company_new, job_new, event_new, request, message, mention, admin, application, rsvp. Auto-hookeado en feed react/comment, company follow, job apply, event RSVP. Endpoints: list (unread count), mark-read, mark-all-read, delete, preferences. Preparado para real-time (WS/SSE) y push/email como próximos canales.
-  - **Internal Messaging** (`routes/messaging_routes.py`): conversations (dm/company/group) idempotentes por participant_key. Send message con attachments + shared_ref (post/event/job/company). Unread counters atómicos por participante. Notifica al recipient automáticamente. Preparado para futuras video-llamadas/IA/adjuntos vía object_storage.
-  - **Global Search Engine** (`routes/search_routes.py`): 8 tipos (people, companies, posts, jobs, events, hashtags, categories, documents). Regex fallback ready para Atlas Search. `/api/search?q=X` + `/api/search/suggest`. Shape uniforme `{type, id, title, subtitle?, image?, url}`.
-  - **Unified Admin Platform** (`routes/admin_platform_routes.py` + frontend `AdminPlatformPage.jsx`): tabs Users/Companies/Posts/Jobs/Events/Reports/Activity/Summary. Un único admin surface para TODAS las verticales.
-  - **UI cambios**: Header con `HeaderSearchBar` (búsqueda global cross-vertical) y `NotificationsBell` (dropdown + badge unread). Nuevas páginas `/notificaciones`, `/mensajes`, `/admin/platform`.
-  - **Fix aplicado post-testing**: `register_view` ahora es race-safe (try/except DuplicateKeyError).
-  - **Portabilidad**: cero deps Emergent-exclusivas. Compatible MongoDB Atlas + Render + Vercel + GitHub. Suite pytest en `/app/backend/tests/test_wave25_core.py`.
-
-## Wave 3+ — Backlog priorizado
-- Integraciones externas (YouTube, RSS, OpenWeather, CoinGecko, FX USD/COP, Google Calendar/Maps)
-- Real-time WS/SSE en Notifications + Messaging
-- Push + Email channels (Resend playbook)
-- Company logo/banner upload (Object Storage ya está)
+- SSO Platform Login (`/api/platform/auth/*`) compartido entre One / Legal / Health / etc.
+- Push (web push) via service worker + notification.channels.push=true
+- Real-time typing indicators + salas colaborativas (fase 2)
+- Trending y "Para Ti" con embeddings + learn-to-rank cuando haya volumen
+- YouTube + OpenWeather con API keys reales
 - Atlas Search / Meilisearch swap para el search engine cuando escale
-- SSO Platform (`/api/platform/auth/*`) compartido con Legal
+
+
+- **2026-07 · Wave 3 GO LIVE — Ecosystem Live (iteration_15 · 36/36 pytest pass, 5 bloques ejecutados estrictamente por prioridad con test tras cada bloque)**:
+
+  ### P0 · Real-Time SSE Architecture
+  - `services/realtime.py`: RealtimeBroker in-process con asyncio.Queue por tab, presencia ONLINE/AWAY/OFFLINE por timestamps, portable (no depende de Redis, listo para swap).
+  - `routes/realtime_routes.py`: `/api/realtime/stream` (SSE con X-Accel-Buffering:no, keep-alive comments cada 20s), `/heartbeat`, `/presence?ids=`, `/stats`.
+  - Hooks en `services/notifications.dispatch()` y `messaging_routes.send_message` → `emit_notification` / `emit_message`. Soft-fail garantizado (write en DB nunca se rompe por realtime).
+  - Frontend `RealtimeContext.jsx`: EventSource con reconexión exponencial, `subscribe(eventType, fn)` API, presencia via fetch.
+  - `NotificationsBell` sin polling — vive del SSE. `MessagesPage` recibe mensajes en vivo con `messages-realtime-status` indicator.
+
+  ### P1 · External Integrations desacopladas
+  - `services/integrations/{base,crypto,weather,fx,rss,youtube}.py` — cada provider retorna un `WidgetResponse{status, source, data, updated_at, error?}`.
+  - Estados garantizados: ACTIVE / MOCK / CONFIG_PENDING / ERROR. Cache Mongo (`widget_cache`) con TTL index (5-15 min según provider) + snapshot in-memory para CoinGecko (evita 429 del free tier).
+  - `routes/widget_routes.py`: `/api/widgets/{crypto,weather,fx,rss,youtube,all}`.
+  - Activo hoy: CoinGecko free (BTC/ETH), FX USD/COP/MXN/ARS/CLP (open.er-api), RSS BBC Mundo (config vía `RSS_FEEDS` JSON env).
+  - Config-pending: OpenWeather (`OPENWEATHER_API_KEY`), YouTube (`YOUTUBE_API_KEY`, `YOUTUBE_DEFAULT_CHANNEL_ID`). Devuelven mock coherente.
+  - Frontend `LiveWidgets.jsx` con `StatusBadge` (LIVE/DEMO/CONFIG/ERROR) integrado en el sidebar.
+
+  ### P1 · Company Media
+  - Extendido `models_business.py` con `cover_url` + `gallery: [str]`.
+  - `routes/company_media_routes.py`: `PUT /api/companies/{id}/media/{slot}` (slot ∈ logo|banner|cover), `POST/DELETE /gallery`, `GET /media/{path}` público (con guard de namespace).
+  - Whitelist MIME (png/jpeg/webp/gif/svg), max 10MB (`MAX_COMPANY_MEDIA_BYTES`), max 20 items galería (`MAX_COMPANY_GALLERY_ITEMS`).
+  - Reutiliza `services/object_storage` — funciona con backend local o Emergent-managed sin cambios.
+
+  ### P1 · Email (Emergent-managed Resend, arquitectura desacoplada)
+  - `services/email.py`: `EmailProvider` singleton con estado ACTIVE/CONFIG_PENDING/DISABLED/FAILED, jinja-lite HTML template inline, helpers `send_welcome`, `send_invitation`, `send_password_reset`, `send_confirmation`.
+  - `routes/email_routes.py`: `/api/email/status` (público) + `/api/admin/email/test` (admin JWT).
+  - Hooks activos: welcome en creación de user vía `_upsert_user_from_identity`; invitation email en `/api/admin/investor-requests/{id}/invite`.
+  - Preparado (no hookeado aún): mentions, digest, activity summaries — la infraestructura ya soporta cualquier trigger, solo requiere llamar `send_confirmation`.
+  - Sin `EMERGENT_EMAIL_KEY` → todo funciona en modo "dry-run" retornando ok=true con status=CONFIG_PENDING. Nada rompe.
+
+  ### P2 · "Para Ti" Feed — Recommendation Engine
+  - `services/feed_engine/{base,providers,engine}.py`: 6 providers componibles (Follow, Category, Hashtag, Interaction, Recency, Trending) con scoring numérico + reasons humanas.
+  - Signals cargadas UNA VEZ por request desde: `company_follows`, `verticals`/`interests` del perfil, reacciones/saves/comments últimos 90 días (author affinity + hashtag affinity).
+  - `GET /api/feed/for-you` retorna `{items[with for_you.score, for_you.reasons], mode, signals_summary}`. Estados: CHRONOLOGICAL / FOLLOW_BASED / TRENDING / AI_RECOMMENDED (futuro).
+  - Frontend `LiveFeed` con toggle "Últimos / Para Ti" + `ModeBadge` que revela el modo activo.
+  - Anónimos degradan graciosamente a CHRONOLOGICAL (misma UX que /api/feed/posts).
+
+  ### Env vars nuevos (todos opcionales, defaults sanos):
+  - `RSS_FEEDS='{"noticias":"...","tecnologia":"..."}'` (JSON string map)
+  - `OPENWEATHER_API_KEY`, `YOUTUBE_API_KEY`, `YOUTUBE_DEFAULT_CHANNEL_ID`
+  - `EMAIL_ENABLED`, `EMERGENT_EMAIL_KEY`, `EMAIL_FROM_NAME`, `EMAIL_REPLY_TO`
+  - `REALTIME_AWAY_AFTER_SECONDS`, `REALTIME_OFFLINE_AFTER_SECONDS`, `REALTIME_KEEPALIVE_SECONDS`
+  - `MAX_COMPANY_MEDIA_BYTES`, `MAX_COMPANY_GALLERY_ITEMS`
+
+  ### Testing:
+  - `/app/backend/tests/test_wave3_realtime.py` (7 pass) — SSE stream, presencia, fan-out end-to-end
+  - `/app/backend/tests/test_wave3_integrations.py` (13 pass) — shape, ACTIVE/CONFIG_PENDING/mock, cache
+  - `/app/backend/tests/test_wave3_media.py` (6 pass) — upload, ACL, MIME whitelist, galería, path guard
+  - `/app/backend/tests/test_wave3_email.py` (5 pass) — status envelope, admin guard, helpers soft-fail
+  - `/app/backend/tests/test_wave3_foryou.py` (5 pass) — anon fallback, ranking correcto, signals summary
+  - Frontend smoke test: `feed-tabs`, `live-widget-{crypto,fx,weather,rss,youtube}`, badges de status todos presentes.
+  - **Portabilidad**: 100% portable a Render/Vercel/VS Code/MongoDB Atlas. Cero lock-in Emergent.
+
+## Wave 4+ — Backlog priorizado
+- SSO Platform (`/api/platform/auth/*`) compartido entre verticales
 
 
