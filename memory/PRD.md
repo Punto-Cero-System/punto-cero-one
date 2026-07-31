@@ -578,4 +578,40 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
   - **CERO cambios a los widgets subyacentes** (LiveFeed, LiveWidgets, Widgets, RightWidgets, LeftSidebar quedan intactos).
 
 
+- **2026-07 · Wave 4B.1 — Mi Espacio: Mensajes + Drag & Drop + Presets**:
+
+  ### P0 · Widget de Mensajes Directos
+  - Nuevo widget `messages` en el registry, insertado como primer widget del panel derecho por defecto.
+  - Reutiliza EL sistema de mensajería existente (`messagingService.listConversations`, `/api/messages/*`, `RealtimeContext` SSE `message` event).
+  - Muestra: top-5 conversaciones con avatar + `PresenceDot` (online), nombre, hora relativa, preview del último mensaje, contador de no leídos individual + total.
+  - Al hacer clic: navega a `/mensajes` con `state.conversationId` para auto-abrir la conversación en la pantalla existente. **CERO** interfaces nuevas de chat.
+  - Se actualiza automáticamente con el SSE `message` event (mismo canal que ya usaba MessagesPage y NotificationsBell).
+  - Anónimos: no se renderiza (retorna null).
+
+  ### P1 · Drag & Drop de Widgets
+  - Instalado `@dnd-kit/core@6.3.1`, `@dnd-kit/sortable@10.0.0`, `@dnd-kit/utilities@3.2.2` (compatible React 19).
+  - `WorkspaceDndProvider.jsx` — DndContext único que engloba los tres paneles; permite drag WITHIN + BETWEEN paneles.
+  - `WorkspacePanel.jsx` upgraded — cada widget es sortable con handle propio (`GripVertical`, `data-testid="drag-handle-{id}"`), panel-level droppable, activación con distance:6px (mouse) y delay:200ms (touch) para no robar clicks al widget cuando no se está editando.
+  - Overlay animado durante el drag con el nombre del widget.
+  - Persistencia: cada drop dispara `reorderPanel` o `moveWidget` → autosave debounced 500ms → PUT `/api/workspace/me`. **Cero localStorage**.
+  - Responsive: en desktop drag con puntero, en móvil con long-press (touch sensor). Si el usuario no está en modo edición, el DndContext se salta completo (cero overhead).
+
+  ### P1 · Presets del Ecosistema Punto Cero
+  - `services/workspacePresets.js` con 7 presets EXCLUSIVOS del ecosistema Punto Cero:
+    - ⚖ Punto Cero Legal · 🏥 Punto Cero Health · 📊 Punto Cero Contabilidad · 🏢 Empresa · 🚀 Fundador · 💼 Empleos · 💰 Capital.
+  - Cada preset define su propia composición de widgets por panel (feed + verticales + integraciones LIVE relevantes).
+  - `WorkspacePresetBar.jsx` — bar horizontal en modo edición del home con todos los presets como chips clickables (color-coded por preset).
+  - Sección "PRESETS · PUNTO CERO" en `/mi-espacio/configuracion` con cards descriptivos por preset.
+  - `applyPreset(id)` en `WorkspaceContext` — reemplaza los paneles preservando las preferencias por widget del usuario. Autosave persiste el cambio.
+
+  ### Archivos tocados
+  - Nuevos: `frontend/src/components/community/workspace/{MessagesWidget,WorkspaceDndProvider,WorkspacePresetBar}.jsx`, `frontend/src/services/workspacePresets.js`.
+  - Modificados: `backend/routes/workspace_routes.py` (default `messages` en right), `backend/tests/test_wave4_workspace.py` (nuevo assert), `frontend/src/services/workspaceRegistry.jsx` (registro `messages`), `frontend/src/contexts/WorkspaceContext.jsx` (`applyPreset` + fallback anon con `messages`), `frontend/src/components/community/workspace/WorkspacePanel.jsx` (sortable + droppable), `frontend/src/pages/HomePage.jsx` (envuelve en DndProvider + PresetBar), `frontend/src/pages/MiEspacioConfigPage.jsx` (sección Presets), `frontend/src/pages/MessagesPage.jsx` (deep-link `state.conversationId`).
+  - Dependencies: `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` (única librería instalada, ligera).
+
+  ### Testing
+  - `test_wave4_workspace.py` — 7/7 pass (nuevo assert: `messages` en defaults del panel derecho).
+  - `yarn build` producción exitoso: 302 kB gzip (incluye dnd-kit).
+
+
 

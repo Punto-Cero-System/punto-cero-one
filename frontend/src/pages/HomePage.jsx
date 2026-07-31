@@ -9,6 +9,8 @@ import CustomCursor from '../components/CustomCursor';
 import CommunityLayout from '../components/community/CommunityLayout';
 import WorkspacePanel from '../components/community/workspace/WorkspacePanel';
 import MobileWorkspaceDrawer from '../components/community/workspace/MobileWorkspaceDrawer';
+import WorkspaceDndProvider from '../components/community/workspace/WorkspaceDndProvider';
+import WorkspacePresetBar from '../components/community/workspace/WorkspacePresetBar';
 import SlideCarousel from '../components/SlideCarousel';
 import { PRIMARY_SLIDES } from '../components/PrimarySlides';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
@@ -38,6 +40,7 @@ const HomePage = () => {
       <CustomCursor />
       <Header />
       <main id="top" style={{ paddingTop: '58px', background: '#F4F6FB', minHeight: '100vh' }}>
+        <WorkspaceDndProvider editing={editing}>
         <CommunityLayout
           top={
             <SlideCarousel
@@ -57,6 +60,7 @@ const HomePage = () => {
                   onConfig={() => navigate('/mi-espacio/configuracion')}
                 />
               )}
+              {isAuthed && editing && <WorkspacePresetBar />}
               {ready && <WorkspacePanel panel="left" editing={editing} testid="community-left-sidebar" />}
             </>
           }
@@ -68,6 +72,7 @@ const HomePage = () => {
           }
           right={ready && <WorkspacePanel panel="right" editing={editing} testid="community-right-widgets" />}
         />
+        </WorkspaceDndProvider>
       </main>
       <Footer />
     </>

@@ -21,6 +21,7 @@
  */
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { workspaceService } from '../services/workspaceService';
+import { buildPayloadFromPreset, getPreset } from '../services/workspacePresets';
 import { useCommunityAuth } from './CommunityAuthContext';
 
 const DEFAULT_WORKSPACE = {
@@ -66,7 +67,7 @@ export const WorkspaceProvider = ({ children }) => {
             panels: {
               left: ['profile-card', 'nuestra-historia', 'activity', 'groups', 'quick-links', 'weather-mini', 'calendar-mini', 'podcast-mini'],
               center: ['welcome-band', 'feed', 'inline-stats'],
-              right: ['rss-news', 'trending', 'trending-editorial', 'events', 'companies', 'investor-center', 'ai-tools', 'crypto-live', 'fx-live', 'weather-live', 'youtube-live', 'markets', 'ai-of-the-day', 'poll', 'launches', 'courses', 'marketplace', 'suggested-people', 'capital-cta'],
+              right: ['messages', 'rss-news', 'trending', 'trending-editorial', 'events', 'companies', 'investor-center', 'ai-tools', 'crypto-live', 'fx-live', 'weather-live', 'youtube-live', 'markets', 'ai-of-the-day', 'poll', 'launches', 'courses', 'marketplace', 'suggested-people', 'capital-cta'],
             },
             widgets: {},
             theme: 'auto',
@@ -158,14 +159,22 @@ export const WorkspaceProvider = ({ children }) => {
     return workspaceService.save(workspace);
   }, [isAuthed, workspace]);
 
+  const applyPreset = useCallback((presetId) => {
+    const preset = getPreset(presetId);
+    if (!preset) return null;
+    const payload = buildPayloadFromPreset(preset, workspace.widgets);
+    setWorkspace(payload);
+    return preset;
+  }, [workspace.widgets]);
+
   const value = useMemo(() => ({
     workspace, defaults, ready,
     isWidgetEnabled, isWidgetCollapsed,
     toggleWidget, toggleCollapse, setWidgetPref,
     moveWidget, reorderPanel,
-    resetWorkspace, save,
+    resetWorkspace, save, applyPreset,
   }), [workspace, defaults, ready, isWidgetEnabled, isWidgetCollapsed,
-       toggleWidget, toggleCollapse, setWidgetPref, moveWidget, reorderPanel, resetWorkspace, save]);
+       toggleWidget, toggleCollapse, setWidgetPref, moveWidget, reorderPanel, resetWorkspace, save, applyPreset]);
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 };

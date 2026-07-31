@@ -18,6 +18,7 @@ import Footer from '../components/Footer';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { WORKSPACE_WIDGETS, getWidget, workspaceCategories } from '../services/workspaceRegistry';
+import { WORKSPACE_PRESETS } from '../services/workspacePresets';
 
 const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
@@ -33,6 +34,7 @@ const MiEspacioConfigPage = () => {
   const {
     workspace, isWidgetEnabled, isWidgetCollapsed,
     toggleWidget, toggleCollapse, moveWidget, reorderPanel, resetWorkspace,
+    applyPreset,
   } = useWorkspace();
 
   if (user === null) {
@@ -122,6 +124,58 @@ const MiEspacioConfigPage = () => {
               </button>
             </div>
           </motion.div>
+
+          {/* Presets — one click to apply an ecosystem-tuned layout */}
+          <div data-testid="config-presets"
+            style={{
+              background: '#FFFFFF', borderRadius: 18,
+              border: '1px solid rgba(11,31,58,0.06)',
+              boxShadow: '0 4px 20px rgba(11,31,58,0.04)',
+              padding: '1rem 1.1rem', marginBottom: '1.25rem',
+            }}>
+            <div style={{
+              fontSize: '0.62rem', letterSpacing: '0.22em', fontWeight: 800,
+              color: 'rgba(11,31,58,0.55)', marginBottom: '0.5rem',
+            }}>PRESETS · PUNTO CERO</div>
+            <div style={{ fontSize: '0.72rem', color: 'rgba(11,31,58,0.6)', marginBottom: '0.85rem' }}>
+              Aplica un preset como punto de partida y edítalo cuando quieras.
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
+              gap: '0.55rem',
+            }}>
+              {WORKSPACE_PRESETS.map(({ id, label, Icon, accent, description }) => (
+                <button key={id}
+                  onClick={() => applyPreset(id)}
+                  data-testid={`config-preset-${id}`}
+                  style={{
+                    textAlign: 'left', cursor: 'pointer',
+                    padding: '0.7rem 0.85rem', borderRadius: 14,
+                    background: `${accent}0F`,
+                    border: `1px solid ${accent}33`,
+                    color: NAVY,
+                    display: 'flex', gap: '0.65rem', alignItems: 'center',
+                  }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: 10,
+                    background: `${accent}22`,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Icon size={18} color={accent} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800 }}>{label}</div>
+                    <div style={{
+                      fontSize: '0.66rem', color: 'rgba(11,31,58,0.6)',
+                      lineHeight: 1.35, marginTop: 2,
+                    }}>{description}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Panel by panel */}
           <div className="pc-config-grid">

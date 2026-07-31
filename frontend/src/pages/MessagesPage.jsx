@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Send } from 'lucide-react';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
 import { messagingService } from '../services/coreServices';
@@ -24,6 +24,7 @@ const relTime = (iso) => {
 const MessagesPage = () => {
   const { user } = useCommunityAuth();
   const { subscribe, status } = useRealtime();
+  const location = useLocation();
   const [conversations, setConversations] = useState([]);
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -36,6 +37,16 @@ const MessagesPage = () => {
   }, []);
 
   useEffect(() => { if (user) loadConvs(); }, [user, loadConvs]);
+
+  // Deep-link: /mensajes navigated with state.conversationId (from the
+  // Messages widget) auto-opens that conversation.
+  useEffect(() => {
+    const wantId = location.state?.conversationId;
+    if (!wantId || active?.id === wantId) return;
+    const found = conversations.find((c) => c.id === wantId);
+    if (found) { openConv(found); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversations, location.state]);
 
   // Live: incoming `message` events either append to the open conversation or
   // bump the unread counter of the corresponding sidebar entry.

@@ -90,6 +90,7 @@ def default_workspace() -> Dict[str, Any]:
                 "inline-stats",
             ],
             "right": [
+                "messages",
                 "rss-news",
                 "trending",
                 "trending-editorial",

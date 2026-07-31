@@ -55,8 +55,9 @@ def test_workspace_returns_defaults_when_empty(user):
     assert set(ws["panels"].keys()) == {"left", "center", "right"}
     # feed must be present by default
     assert "feed" in ws["panels"]["center"]
-    # right panel has crypto-live + news
+    # right panel has crypto-live + news + messages
     assert "rss-news" in ws["panels"]["right"]
+    assert "messages" in ws["panels"]["right"]
 
 
 def test_workspace_full_replace_persists(user):

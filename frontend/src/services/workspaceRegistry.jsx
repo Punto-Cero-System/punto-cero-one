@@ -40,6 +40,7 @@ import InvestorCenterWidget from '../components/community/workspace/InvestorCent
 import AiToolsWidget from '../components/community/workspace/AiToolsWidget';
 import SuggestedPeopleWidget from '../components/community/workspace/SuggestedPeopleWidget';
 import CapitalCtaWidget from '../components/community/workspace/CapitalCtaWidget';
+import MessagesWidget from '../components/community/workspace/MessagesWidget';
 
 /**
  * Small helpers to wrap the existing decorative widgets that live inside
@@ -293,6 +294,14 @@ export const WORKSPACE_WIDGETS = [
     category: 'community',
     defaultPanel: 'right',
     defaultOrder: 180,
+  }),
+  wrap(MessagesWidget, {
+    id: 'messages',
+    title: 'Mensajes directos',
+    description: 'Últimas conversaciones con avatar, presencia y contador de no leídos.',
+    category: 'community',
+    defaultPanel: 'right',
+    defaultOrder: 15,
   }),
   wrap(CapitalCtaWidget, {
     id: 'capital-cta',
