@@ -29,6 +29,8 @@ import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
 import MessagesPage from './pages/MessagesPage';
 import AdminPlatformPage from './pages/AdminPlatformPage';
+import NuestraHistoriaPage from './pages/NuestraHistoriaPage';
+import { PrivacyPage, CookiesPage, TermsPage, ProfessionalAgreementPage } from './pages/LegalPages';
 import { AuthProvider } from './contexts/AuthContext';
 import { CommunityAuthProvider } from './contexts/CommunityAuthContext';
 import { RealtimeProvider } from './contexts/RealtimeContext';
@@ -106,6 +108,11 @@ function AppRouter() {
       <Route path="/perfil" element={<ProfilePage />} />
       <Route path="/notificaciones" element={<NotificationsPage />} />
       <Route path="/mensajes" element={<MessagesPage />} />
+      <Route path="/nuestra-historia" element={<NuestraHistoriaPage />} />
+      <Route path="/legal/privacidad" element={<PrivacyPage />} />
+      <Route path="/legal/cookies" element={<CookiesPage />} />
+      <Route path="/legal/terminos" element={<TermsPage />} />
+      <Route path="/legal/acuerdo-profesional" element={<ProfessionalAgreementPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/investor/setup" element={<InvestorSetupPage />} />
       <Route

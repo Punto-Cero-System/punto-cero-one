@@ -368,3 +368,40 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 - SSO Platform (`/api/platform/auth/*`) compartido entre verticales
 
 
+- **2026-07 · Wave 3.5 — Punto Cero One Experience & Branding (frontend-only, arquitectura intacta)**:
+
+  ### Rebrand a "PUNTO CERO ONE"
+  - `Footer.jsx` reescrito: 4 columnas (Plataforma / Ecosistema / Empresa / Legal), redes SOLO iconos con tooltip (Email, WhatsApp, LinkedIn, Instagram, Facebook, X, TikTok, YouTube). URLs originales preservadas.
+  - Sección "Contacto" con texto eliminada; email y WhatsApp ahora son iconos.
+  - "Hecho en Latinoamérica 🌎" con globe rotate + emoji bounce.
+  - Columna Ecosistema: Punto Cero Legal (LIVE badge), Health/Contabilidad/Viajes/IA (PRONTO).
+
+  ### Página institucional `/nuestra-historia`
+  - Nueva `NuestraHistoriaPage.jsx`: Hero cinematográfico → 3 pillars (Historia · Visión · Misión) → **FoundersSection reutilizado** (Darwin Gómez + Jonathan Cetina, sin cambios) → Cronología 2023-2027 con línea vertical animada → Valores (6 cards oscuros) → Roadmap Q3'26 → Q2'27.
+  - **Botón premium "Nuestra Historia"** en LeftSidebar con eyebrow "CONOCE PUNTO CERO", gradient navy→violet→purple, ring emerald, glow dorado. Se lee tan importante como Investor Room / Capital.
+  - **FoundersSection removida del feed** (antes iba embebida como slider secundario debajo del composer — rompía el flujo del feed).
+
+  ### Slider principal renovado
+  - Slide 1 "Una comunidad. Un ecosistema" → imagen de personas felices en comunidad.
+  - Slide 2 "De un punto a un ecosistema" → imagen satelital **Punto Fijo, Falcón, Venezuela** que subió el usuario.
+  - Slide 4 "Punto Cero Legal LIVE" → SIN logo verde. Card premium con `puntocerolegal.com` + badge animado "LIVE EN PRODUCCIÓN" con pulse.
+  - Slide 5 "Latam" → **mapa interactivo con 20 países**, hover glow, tooltip dinámico "MÉXICO · MARKETPLACE PRÓXIMAMENTE" y colores per-country.
+  - Slide 6 nuevo: **CTA "Únete al ecosistema"** con 5 beneficios en pills + gradient rainbow en "ecosistema".
+
+  ### Páginas legales
+  - `/legal/privacidad` — Política de Privacidad (7 secciones)
+  - `/legal/cookies` — Política de Cookies (4 secciones)
+  - `/legal/terminos` — Términos y Condiciones (7 secciones)
+  - `/legal/acuerdo-profesional` — Acuerdo Profesional (6 secciones)
+  - Layout compartido en `LegalPages.jsx` con hero navy → card blanca + CTA a soporte.
+
+  ### Explicabilidad del "Para Ti"
+  - Cada `FeedPostCard` muestra chip "Porque {reason}" (data-testid `feed-post-why-{id}`) usando `post.for_you.reasons` del backend. Tooltip nativo con todas las razones.
+
+  ### Archivos tocados (solo frontend)
+  - Nuevos: `pages/NuestraHistoriaPage.jsx`, `pages/LegalPages.jsx`
+  - Reescritos: `components/Footer.jsx`
+  - Modificados: `App.js` (6 rutas nuevas), `pages/HomePage.jsx`, `components/community/LeftSidebar.jsx`, `components/PrimarySlides.jsx`, `components/community/FeedPostCard.jsx`
+  - **CERO cambios a backend**, APIs, autenticación, modelos, real-time, multi-tenant. 36/36 tests Wave 3 siguen pasando.
+
+

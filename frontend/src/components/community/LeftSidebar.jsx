@@ -1,11 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Sparkles, ArrowRight } from 'lucide-react';
 import AppIcon from './AppIcon';
 import { WeatherWidget, CalendarWidget, PodcastWidget, CompaniesShoutout } from './Widgets';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 
 const NAVY = '#0B1F3A';
+const EMERALD = '#00C896';
+const GOLD = '#D4AF37';
 
 /**
  * LeftSidebar — LinkedIn-style compact profile + activity + groups + quick access.
@@ -19,6 +22,64 @@ const LeftSidebar = () => {
     <aside data-testid="community-left-sidebar" style={{
       display: 'flex', flexDirection: 'column', gap: '0.85rem',
     }}>
+      {/* PREMIUM · Nuestra Historia — must feel as important as Investor Room / Capital */}
+      <Link
+        to="/nuestra-historia"
+        data-testid="left-sidebar-nuestra-historia"
+        style={{
+          display: 'block', textDecoration: 'none', color: '#FFFFFF',
+          position: 'relative', overflow: 'hidden',
+          borderRadius: 18,
+          background: `linear-gradient(135deg, ${NAVY} 0%, #1E1B4B 55%, #4C1D95 100%)`,
+          padding: '1rem 1.1rem',
+          boxShadow: `0 10px 30px rgba(11,31,58,0.18), 0 0 0 1px ${EMERALD}33`,
+        }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }} transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
+          style={{
+            position: 'absolute', top: -60, right: -60, width: 160, height: 160,
+            borderRadius: '50%', border: `1px dashed ${EMERALD}44`, pointerEvents: 'none',
+          }} />
+        <motion.div
+          animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.9, 0.5] }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            position: 'absolute', bottom: -40, right: -20, width: 90, height: 90,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${GOLD}44 0%, transparent 60%)`,
+            pointerEvents: 'none',
+          }} />
+        <div style={{
+          position: 'relative', display: 'flex', alignItems: 'center', gap: '0.6rem',
+          fontSize: '0.6rem', letterSpacing: '0.24em', fontWeight: 700,
+          color: EMERALD, marginBottom: '0.55rem',
+        }}>
+          <Sparkles size={11} /> CONOCE PUNTO CERO
+        </div>
+        <div style={{
+          position: 'relative', fontFamily: '"Space Grotesk", sans-serif',
+          fontSize: '1.05rem', fontWeight: 700, lineHeight: 1.2,
+          letterSpacing: '-0.015em', marginBottom: '0.35rem',
+        }}>
+          Nuestra Historia
+        </div>
+        <div style={{
+          position: 'relative', fontSize: '0.72rem', color: 'rgba(255,255,255,0.62)',
+          marginBottom: '0.75rem', fontWeight: 300, lineHeight: 1.45,
+        }}>
+          Visión, misión y las personas detrás del ecosistema.
+        </div>
+        <motion.div
+          whileHover={{ x: 2 }}
+          style={{
+            position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+            fontSize: '0.7rem', fontWeight: 700, color: GOLD, letterSpacing: '0.05em',
+          }}>
+          Explorar la historia <ArrowRight size={12} />
+        </motion.div>
+      </Link>
+
       {/* Profile card */}
       <div style={{
         background: '#FFFFFF', borderRadius: 16, overflow: 'hidden',

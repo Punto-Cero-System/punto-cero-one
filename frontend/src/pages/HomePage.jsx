@@ -4,35 +4,23 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import CustomCursor from '../components/CustomCursor';
 
-// Founders / people components — reused inside the SECONDARY slider (feed).
-import FoundersSection from '../components/FoundersSection';
-import PeopleSection from '../components/PeopleSection';
-import CareersSection from '../components/CareersSection';
-
 // Community layout & building blocks.
 import CommunityLayout from '../components/community/CommunityLayout';
 import LeftSidebar from '../components/community/LeftSidebar';
 import RightWidgets from '../components/community/RightWidgets';
 import LiveFeed from '../components/community/LiveFeed';
-import FeedItem from '../components/community/FeedItem';
 import { InlineWidgetStrip } from '../components/community/Widgets';
 import SlideCarousel from '../components/SlideCarousel';
 
 // Redesigned primary slider content (professional, feed-friendly).
 import { PRIMARY_SLIDES } from '../components/PrimarySlides';
 
-const SECONDARY_SLIDES = [
-  { key: 'founders', node: <FoundersSection /> },
-  { key: 'people', node: <PeopleSection /> },
-  { key: 'careers', node: <CareersSection /> },
-];
-
 /**
  * HomePage — Punto Cero One community home.
- * ── Primary slider on top (redesigned, 6 modern slides, 12s autoplay).
+ * ── Primary slider on top (6 slides, 12s autoplay).
  * ── 3-column community layout (left sidebar / feed / right widgets).
- * ── Center column is a fully-real LiveFeed (backend at /api/feed/*) with a
- *    couple of editorial "always-on" items woven in for ecosystem context.
+ * ── Center column is a fully-real LiveFeed. Founders/history moved to
+ *    the dedicated /nuestra-historia institutional page.
  */
 const HomePage = () => {
   return (
@@ -87,25 +75,6 @@ const HomePage = () => {
 
               {/* REAL FEED — powered by /api/feed/* */}
               <LiveFeed />
-
-              {/* Editorial ecosystem slider (always-on, non-feed item) */}
-              <FeedItem
-                kind="slider"
-                author="The Founding Team"
-                timestamp="Historia del ecosistema"
-                title="Las personas detrás de la visión → 18 países"
-                body="Recorrido por el equipo fundador, la comunidad y la ambición regional para Latinoamérica."
-                padded={false}
-                node={
-                  <SlideCarousel
-                    id="pc-slider-team"
-                    slides={SECONDARY_SLIDES}
-                    autoplayMs={14000}
-                    height="clamp(720px, 100vh, 1100px)"
-                    label="Slider equipo fundador y comunidad"
-                  />
-                }
-              />
 
               <InlineWidgetStrip />
             </>

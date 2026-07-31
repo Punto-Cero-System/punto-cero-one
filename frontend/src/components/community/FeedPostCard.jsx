@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Share2, Bookmark, Send, MoreHorizontal, Lightbulb, Trophy, HandHeart, HelpCircle } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Send, MoreHorizontal, Lightbulb, Trophy, HandHeart, HelpCircle, Info } from 'lucide-react';
 import { feedService, getViewSessionId } from '../../services/feedService';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 
@@ -150,6 +150,25 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
           </button>
         )}
       </div>
+
+      {/* "Por qué ves esta publicación" — surfaces the ranking reasons from /api/feed/for-you */}
+      {post.for_you?.reasons?.length > 0 && (
+        <div data-testid={`feed-post-why-${post.id}`} title={post.for_you.reasons.join(' · ')}
+          style={{
+            margin: '-0.4rem 1.15rem 0.6rem',
+            display: 'inline-flex', alignItems: 'center', gap: '0.4rem', alignSelf: 'flex-start',
+            padding: '0.28rem 0.7rem', borderRadius: 100,
+            background: 'rgba(0,200,150,0.09)', border: '1px solid rgba(0,200,150,0.28)',
+            color: '#0B6F52', fontSize: '0.66rem', fontWeight: 600,
+            width: 'fit-content', cursor: 'help',
+          }}>
+          <Info size={11} />
+          <span>Porque {post.for_you.reasons[0]}</span>
+          {post.for_you.reasons.length > 1 && (
+            <span style={{ opacity: 0.6, fontWeight: 700 }}>+{post.for_you.reasons.length - 1}</span>
+          )}
+        </div>
+      )}
 
       {/* body */}
       <div style={{ padding: '0 1.15rem 0.85rem' }}>

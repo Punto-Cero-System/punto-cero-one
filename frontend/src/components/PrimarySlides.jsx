@@ -140,8 +140,8 @@ const Slide1Community = () => (
   <SlideShell
     id="community"
     background="linear-gradient(140deg, #0B1F3A 0%, #1E1B4B 45%, #4C1D95 100%)"
-    image="https://images.unsplash.com/photo-1552664730-d307ca884978?w=1600&auto=format&fit=crop&q=80"
-    imageOverlay="linear-gradient(105deg, rgba(11,31,58,0.9) 0%, rgba(30,27,75,0.72) 55%, rgba(76,29,149,0.55) 100%)"
+    image="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1600&auto=format&fit=crop&q=80"
+    imageOverlay="linear-gradient(105deg, rgba(11,31,58,0.78) 0%, rgba(30,27,75,0.55) 55%, rgba(76,29,149,0.4) 100%)"
   >
     {/* Decorative orbits */}
     <div style={{
@@ -221,8 +221,8 @@ const Slide2Vision = () => (
   <SlideShell
     id="vision"
     background="linear-gradient(160deg, #0A0F1C 0%, #0B1F3A 100%)"
-    image="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80"
-    imageOverlay="linear-gradient(115deg, rgba(10,15,28,0.92) 0%, rgba(11,31,58,0.7) 60%, rgba(0,200,150,0.35) 100%)"
+    image="https://customer-assets-m6fa6gv7.emergentagent.net/job_future-core-5/artifacts/8w3qxh3a_ChatGPT%20Image%2030%20jul%202026%2C%2010_03_46%20p.m..png"
+    imageOverlay="linear-gradient(115deg, rgba(10,15,28,0.78) 0%, rgba(11,31,58,0.55) 45%, rgba(0,200,150,0.28) 100%)"
   >
     <div style={{
       position: 'absolute', top: '20%', right: '10%', width: 320, height: 320,
@@ -362,45 +362,128 @@ const Slide4Legal = () => (
           <Link to="/capital" style={ghostBtnStyle}>Ver Investor Center</Link>
         </CtaRow>
       </div>
-      <div className="pc-slide-visual" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ position: 'relative', width: 200, height: 200 }}>
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-            style={{
-              position: 'absolute', inset: '-14px', borderRadius: '50%',
-              border: '1px dashed rgba(0,200,150,0.5)',
-            }}
-          />
-          <div style={{
-            width: '100%', height: '100%', borderRadius: '50%',
-            background: 'radial-gradient(circle at 30% 30%, #00C896 0%, #052E1F 70%)',
-            boxShadow: '0 0 60px rgba(0,200,150,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: '"Space Grotesk", sans-serif', fontSize: '2.6rem',
-            fontWeight: 700, color: '#FFFFFF',
+      <div className="pc-slide-visual" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+        {/* Big animated LIVE badge — no icon, just typography + pulse */}
+        <motion.div
+          animate={{ scale: [1, 1.03, 1] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            position: 'relative',
+            padding: '1.4rem 2rem',
+            borderRadius: 22,
+            background: 'linear-gradient(135deg, rgba(0,200,150,0.18), rgba(0,200,150,0.05))',
+            border: '2px solid rgba(0,200,150,0.65)',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 24px 60px rgba(0,200,150,0.28), inset 0 0 30px rgba(0,200,150,0.08)',
+            textAlign: 'center', minWidth: 240,
           }}>
-            <AppIcon name="legal" size={64} variant="mono-light" />
+          <motion.div
+            animate={{ opacity: [0.35, 1, 0.35] }}
+            transition={{ duration: 1.6, repeat: Infinity }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
+              padding: '0.35rem 0.85rem', borderRadius: 100,
+              background: 'rgba(0,200,150,0.22)', border: '1px solid rgba(0,200,150,0.55)',
+              fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.28em', color: '#00E8AC',
+              marginBottom: '0.85rem',
+            }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#00E8AC',
+                           boxShadow: '0 0 12px #00E8AC' }} />
+            LIVE EN PRODUCCIÓN
+          </motion.div>
+          <div style={{
+            fontFamily: '"Space Grotesk", sans-serif',
+            fontSize: '1.85rem', fontWeight: 700,
+            color: '#FFFFFF', letterSpacing: '-0.015em', marginBottom: '0.3rem',
+          }}>puntocerolegal.com</div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.14em', fontWeight: 500 }}>
+            Primer vertical operativo del ecosistema
           </div>
-        </div>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-          padding: '0.4rem 0.85rem', borderRadius: 100,
-          background: 'rgba(0,200,150,0.12)', border: '1px solid rgba(0,200,150,0.4)',
-        }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#00C896', boxShadow: '0 0 8px #00C896' }} />
-          <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', color: '#00C896' }}>LIVE EN PRODUCCIÓN</span>
-        </div>
+        </motion.div>
       </div>
     </SlideGrid>
   </SlideShell>
 );
 
 /* ============================================================================
-   SLIDE 5 — Latinoamérica 18 países
+   SLIDE 5 — Latinoamérica INTERACTIVA (mapa de nombres con hover)
    ========================================================================= */
-const COUNTRIES_TOP = ['México', 'Colombia', 'Perú', 'Chile', 'Argentina', 'Brasil'];
-const COUNTRIES_MORE = ['Ecuador', 'Venezuela', 'Uruguay', 'Paraguay', 'Bolivia', 'Panamá', 'Costa Rica', 'Rep. Dominicana', 'Guatemala', 'Honduras', 'Nicaragua', 'El Salvador'];
+const LATAM_COUNTRIES = [
+  { code: 'MX', name: 'México',        row: 0, col: 0, tone: '#3B82F6' },
+  { code: 'GT', name: 'Guatemala',     row: 0, col: 1, tone: '#8B5CF6' },
+  { code: 'HN', name: 'Honduras',      row: 0, col: 2, tone: '#EC4899' },
+  { code: 'SV', name: 'El Salvador',   row: 0, col: 3, tone: '#F59E0B' },
+  { code: 'NI', name: 'Nicaragua',     row: 1, col: 0, tone: '#EC4899' },
+  { code: 'CR', name: 'Costa Rica',    row: 1, col: 1, tone: '#00C896' },
+  { code: 'PA', name: 'Panamá',        row: 1, col: 2, tone: '#3B82F6' },
+  { code: 'DO', name: 'Rep. Dominicana', row: 1, col: 3, tone: '#8B5CF6' },
+  { code: 'CU', name: 'Cuba',          row: 2, col: 0, tone: '#F59E0B' },
+  { code: 'VE', name: 'Venezuela',     row: 2, col: 1, tone: '#00C896' },
+  { code: 'CO', name: 'Colombia',      row: 2, col: 2, tone: '#D4AF37' },
+  { code: 'EC', name: 'Ecuador',       row: 2, col: 3, tone: '#3B82F6' },
+  { code: 'PE', name: 'Perú',          row: 3, col: 0, tone: '#EC4899' },
+  { code: 'BO', name: 'Bolivia',       row: 3, col: 1, tone: '#F59E0B' },
+  { code: 'BR', name: 'Brasil',        row: 3, col: 2, tone: '#00C896' },
+  { code: 'PY', name: 'Paraguay',      row: 3, col: 3, tone: '#8B5CF6' },
+  { code: 'CL', name: 'Chile',         row: 4, col: 0, tone: '#3B82F6' },
+  { code: 'AR', name: 'Argentina',     row: 4, col: 1, tone: '#D4AF37' },
+  { code: 'UY', name: 'Uruguay',       row: 4, col: 2, tone: '#EC4899' },
+  { code: 'PR', name: 'Puerto Rico',   row: 4, col: 3, tone: '#00C896' },
+];
+
+const InteractiveLatamMap = () => {
+  const [active, setActive] = React.useState(null);
+  return (
+    <div style={{ maxWidth: 460, margin: '0 auto' }} data-testid="latam-map-interactive">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '0.5rem',
+      }}>
+        {LATAM_COUNTRIES.map((c) => (
+          <motion.button
+            key={c.code}
+            onMouseEnter={() => setActive(c)}
+            onMouseLeave={() => setActive(null)}
+            onFocus={() => setActive(c)}
+            onBlur={() => setActive(null)}
+            whileHover={{ y: -2, scale: 1.04 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+            data-testid={`map-country-${c.code}`}
+            style={{
+              padding: '0.55rem 0.5rem', borderRadius: 12,
+              background: active?.code === c.code
+                ? `linear-gradient(135deg, ${c.tone}44, ${c.tone}18)`
+                : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${active?.code === c.code ? c.tone : 'rgba(255,255,255,0.10)'}`,
+              boxShadow: active?.code === c.code ? `0 0 24px ${c.tone}55` : 'none',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+              transition: 'background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease',
+            }}>
+            <span style={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontSize: '0.72rem', fontWeight: 800, color: active?.code === c.code ? c.tone : '#FFFFFF',
+              letterSpacing: '0.06em',
+            }}>{c.code}</span>
+            <span style={{
+              fontSize: '0.6rem', fontWeight: 500,
+              color: active?.code === c.code ? '#FFFFFF' : 'rgba(255,255,255,0.55)',
+            }}>{c.name}</span>
+          </motion.button>
+        ))}
+      </div>
+      <div style={{
+        marginTop: '0.9rem', textAlign: 'center', fontSize: '0.65rem',
+        color: active ? active.tone : 'rgba(255,255,255,0.5)', letterSpacing: '0.2em',
+        fontWeight: 700, transition: 'color 0.3s ease', minHeight: 18,
+      }}>
+        {active ? `${active.name.toUpperCase()} · MARKETPLACE PRÓXIMAMENTE` : 'PASA EL MOUSE PARA EXPLORAR CADA PAÍS'}
+      </div>
+    </div>
+  );
+};
 
 const Slide5Latam = () => (
   <SlideShell
@@ -416,111 +499,96 @@ const Slide5Latam = () => (
     <SlideGrid>
       <div>
         <Eyebrow color="#D4AF37">ALCANCE REGIONAL</Eyebrow>
-        <Title>Diseñado para <span style={{ fontWeight: 700 }}>18 países</span> de Latinoamérica.</Title>
+        <Title>Diseñado para toda <span style={{ fontWeight: 700 }}>Latinoamérica</span>.</Title>
         <Lead>
-          Una infraestructura tecnológica que se adapta a diferentes culturas, monedas,
-          regulaciones y realidades profesionales — con un solo ecosistema conectado.
+          Un ecosistema tecnológico regional — cada país iluminado, cada mercado conectado
+          por la misma infraestructura. Pronto ingreso al marketplace por país.
         </Lead>
         <CtaRow>
           <Link to="/capital" style={primaryBtnStyle}>Ver oportunidad regional <Globe size={14} /></Link>
         </CtaRow>
       </div>
-      <div className="pc-slide-visual" style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-        <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: '0.4rem', justifyContent: 'center', maxWidth: 420, margin: '0 auto',
-        }}>
-          {COUNTRIES_TOP.map((c) => (
-            <span key={c} style={{
-              padding: '0.4rem 0.8rem', borderRadius: 100,
-              background: 'rgba(212,175,55,0.14)', border: '1px solid rgba(212,175,55,0.45)',
-              color: '#F3E7A2', fontSize: '0.78rem', fontWeight: 700,
-            }}>{c}</span>
-          ))}
-        </div>
-        <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: '0.3rem', justifyContent: 'center', maxWidth: 420, margin: '0 auto',
-          opacity: 0.75,
-        }}>
-          {COUNTRIES_MORE.map((c) => (
-            <span key={c} style={{
-              padding: '0.28rem 0.6rem', borderRadius: 100,
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-              color: 'rgba(255,255,255,0.72)', fontSize: '0.7rem', fontWeight: 600,
-            }}>{c}</span>
-          ))}
-        </div>
-        <div style={{
-          marginTop: '0.75rem', textAlign: 'center', fontSize: '0.66rem',
-          color: 'rgba(255,255,255,0.55)', letterSpacing: '0.24em', fontWeight: 700,
-        }}>
-          + 400M DE PERSONAS · UNA MISMA INFRAESTRUCTURA
-        </div>
+      <div className="pc-slide-visual">
+        <InteractiveLatamMap />
       </div>
     </SlideGrid>
   </SlideShell>
 );
 
 /* ============================================================================
-   SLIDE 6 — Un sistema que evoluciona progresivamente
+   SLIDE 6 — CTA "Únete al ecosistema"
    ========================================================================= */
-const PHASES = [
-  { n: '01', label: 'Base tecnológica', tone: '#3B82F6', status: 'Operativa' },
-  { n: '02', label: 'Primer vertical LIVE · Legal', tone: '#00C896', status: 'En producción' },
-  { n: '03', label: 'Tracción comercial', tone: '#D4AF37', status: 'En curso' },
-  { n: '04', label: 'Ingresos recurrentes', tone: '#F59E0B', status: 'Próxima etapa' },
-  { n: '05', label: 'Nueva vertical + expansión', tone: '#EC4899', status: 'Roadmap' },
-];
-
-const Slide6Evolution = () => (
+const Slide6Join = () => (
   <SlideShell
-    id="evolution"
+    id="join"
     background="linear-gradient(135deg, #0B1F3A 0%, #1E1B4B 40%, #0A0F1C 100%)"
     image="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1600&auto=format&fit=crop&q=80"
-    imageOverlay="linear-gradient(115deg, rgba(11,31,58,0.9) 0%, rgba(30,27,75,0.75) 55%, rgba(236,72,153,0.4) 100%)"
+    imageOverlay="linear-gradient(115deg, rgba(11,31,58,0.85) 0%, rgba(30,27,75,0.7) 55%, rgba(0,200,150,0.35) 100%)"
   >
-    <div style={{
-      position: 'absolute', top: '-120px', right: '-120px', width: 440, height: 440,
-      borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.13) 0%, transparent 65%)',
-      filter: 'blur(24px)',
-    }} />
+    {/* Ambient orbs */}
+    <motion.div
+      animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.7, 0.4] }}
+      transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+      style={{
+        position: 'absolute', top: '10%', right: '5%', width: 380, height: 380,
+        borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,200,150,0.24) 0%, transparent 65%)',
+        filter: 'blur(30px)',
+      }} />
+    <motion.div
+      animate={{ scale: [1.1, 1, 1.1], opacity: [0.3, 0.6, 0.3] }}
+      transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+      style={{
+        position: 'absolute', bottom: '-100px', left: '-100px', width: 480, height: 480,
+        borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.22) 0%, transparent 65%)',
+        filter: 'blur(28px)',
+      }} />
+
     <SlideGrid>
       <div>
-        <Eyebrow color="#EC4899">EVOLUCIÓN</Eyebrow>
-        <Title>Un sistema que <span style={{ fontWeight: 700 }}>evoluciona</span> progresivamente.</Title>
+        <Eyebrow color="#00C896">TODO EMPIEZA AQUÍ</Eyebrow>
+        <Title>Únete al <span style={{
+          fontWeight: 700,
+          background: 'linear-gradient(90deg, #00C896, #3B82F6, #8B5CF6, #EC4899)',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+        }}>ecosistema</span>.</Title>
         <Lead>
-          No lanzamos todo simultáneamente. Cada etapa refuerza a la siguiente —
-          producto real, tracción real, luego expansión ordenada del ecosistema.
+          Crea tu cuenta gratis en 30 segundos. Publica, conecta, sigue empresas,
+          aplica a vacantes y sé parte de la primera generación del ecosistema latinoamericano.
         </Lead>
         <CtaRow>
-          <Link to="/capital" style={primaryBtnStyle}>Ver roadmap completo <Rocket size={14} /></Link>
-          <Link to="/join" style={ghostBtnStyle}>Unirse a la comunidad <Users size={14} /></Link>
+          <Link to="/join" style={primaryBtnStyle}>Crear mi cuenta <ArrowRight size={14} /></Link>
+          <a href="#feed" style={ghostBtnStyle}>Explorar el feed <Users size={14} /></a>
         </CtaRow>
       </div>
       <div className="pc-slide-visual" style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', maxWidth: 420, margin: '0 auto' }}>
-        {PHASES.map((p) => (
-          <div key={p.n} style={{
-            display: 'flex', alignItems: 'center', gap: '0.85rem',
-            padding: '0.7rem 0.95rem', borderRadius: 14,
-            background: 'rgba(255,255,255,0.04)', border: `1px solid ${p.tone}44`,
-          }}>
-            <div style={{
-              width: 34, height: 34, borderRadius: '50%',
-              background: `${p.tone}22`, border: `1px solid ${p.tone}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: p.tone, fontFamily: '"Space Grotesk", sans-serif',
-              fontWeight: 700, fontSize: '0.8rem', flexShrink: 0,
-            }}>{p.n}</div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#FFFFFF' }}>{p.label}</div>
-              <div style={{ fontSize: '0.68rem', color: p.tone, letterSpacing: '0.14em', fontWeight: 700 }}>
-                {p.status.toUpperCase()}
-              </div>
-            </div>
-          </div>
-        ))}
+        <BenefitPill color="#00C896" text="Publica, comenta y conecta con otros profesionales" />
+        <BenefitPill color="#3B82F6" text="Sigue empresas y descubre oportunidades laborales" />
+        <BenefitPill color="#8B5CF6" text="Feed personalizado 'Para Ti' basado en tus intereses" />
+        <BenefitPill color="#EC4899" text="Mensajería directa y notificaciones en tiempo real" />
+        <BenefitPill color="#D4AF37" text="Acceso temprano a los próximos verticales del ecosistema" />
       </div>
     </SlideGrid>
   </SlideShell>
+);
+
+const BenefitPill = ({ color, text }) => (
+  <motion.div
+    initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }}
+    viewport={{ once: true }} transition={{ duration: 0.5 }}
+    style={{
+      display: 'flex', alignItems: 'center', gap: '0.85rem',
+      padding: '0.75rem 1rem', borderRadius: 14,
+      background: 'rgba(255,255,255,0.04)', border: `1px solid ${color}55`,
+      backdropFilter: 'blur(6px)',
+    }}>
+    <div style={{
+      width: 8, height: 8, borderRadius: '50%', background: color,
+      boxShadow: `0 0 10px ${color}`, flexShrink: 0,
+    }} />
+    <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
+      {text}
+    </span>
+  </motion.div>
 );
 
 /* ============================================================================
@@ -532,7 +600,7 @@ const PRIMARY_SLIDES = [
   { key: 'ecosystem', node: <Slide3Ecosystem /> },
   { key: 'legal', node: <Slide4Legal /> },
   { key: 'latam', node: <Slide5Latam /> },
-  { key: 'evolution', node: <Slide6Evolution /> },
+  { key: 'join', node: <Slide6Join /> },
 ];
 
 export { PRIMARY_SLIDES };
