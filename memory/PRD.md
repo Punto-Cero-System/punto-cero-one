@@ -292,3 +292,22 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 ## Wave 4 — Admin unificado + Multi-provider Auth (fase 2)
 - Panel admin único (Usuarios, Empresas, Publicaciones, Eventos, Empleos, Noticias, Videos, Investor Center, Documentos, Integraciones).
 - Activar Microsoft/LinkedIn/Apple/Facebook (arquitectura ya lista en `services/community_auth.py`).
+
+- **2026-07 · Wave 2 GO LIVE — Core Social & Business Platform (iteration_13 · 35/35 pytest pass)**:
+  - **Empresas (P1)**: modelo genérico multi-tenant + endpoints `/api/companies/*` (create, list con filtros, get by id/slug, patch, delete, follow toggle, admin verification). Reusable por CUALQUIER vertical (Legal, Salud, Contabilidad, Turismo, Seguros, IA). Cada empresa tiene logo/banner/servicios/team/vertical/país/ciudad/redes.
+  - **Empleos (P2)**: `/api/jobs/*` cuelgan de una company. Solo owner/team pueden publicar. Aplicaciones con cover letter + CV (referencia a documents), estados (submitted→hired), panel de aplicaciones para la empresa, `/api/me/applications` para candidatos. Guardar empleo toggle.
+  - **Eventos (P3)**: `/api/events/*` presencial/virtual/híbrido. RSVP toggle-and-switch (going/interested/cancelled) con contadores atómicos. Lista de asistentes solo para organizadores.
+  - **Perfiles Profesionales (P10)**: `/api/community/users/me` GET/PATCH extendido con headline, bio, país, ciudad, cargo, empresa, skills, especialidades, verticales, idiomas, portafolio, redes sociales, experiencia, certificaciones. `/api/community/users/{id}` público.
+  - **Analytics core (P5)**: `services/analytics.py:record_event` centralizado (cada endpoint que crea/actúa lo dispara). Colecciones `analytics_events` + `analytics_counters` (por día, por vertical, por país). `/api/analytics/summary` (admin) devuelve totals de 12 recursos + active_users_30d + signups_by_country. `/api/analytics/timeseries?name=X&days=N`.
+  - **Feed Infinite Scroll**: reemplazado el botón "Cargar más" por IntersectionObserver + skeleton loaders + rootMargin de 400px. Composer bloqueado (`feed-composer-locked`) para anónimos. Autenticados publican con optimistic UI. Todo en `LiveFeed.jsx`.
+  - **Portabilidad**: cero dependencias exclusivas de Emergent. Todo compatible con MongoDB Atlas + Vercel + Render + GitHub. Suite pytest reproducible.
+
+## Wave 3 — Backlog priorizado (siguiente iteración)
+- **Notificaciones (P6)**: Notification Center con eventos (nueva reacción, comentario, seguidor, empresa, empleo, evento, mensaje, cambio de estado, admin). Preparar WebSocket/SSE.
+- **Chat interno (P7)**: mensajería 1-a-1 y user↔empresa, historial, lectura, adjuntos usando object_storage. Preparar para llamadas.
+- **Motor de búsqueda global (P9)**: `/api/search?q=...&type=all|people|companies|posts|jobs|events` (Atlas Search cuando estemos en producción, text index como fallback local).
+- **Admin unificado (P8)**: panel único con tabs para Users, Companies, Posts, Reports, Moderation, Events, Jobs, Categories, Verticales, Países, Documents, Investor Center, Estadísticas.
+- **SSO Platform Login (P4)**: extraer community auth a `/api/platform/auth/*` con token compartido; One consume, Legal reserva slot.
+- **Integraciones externas**: YouTube, RSS proxy, OpenWeather, CoinGecko, FX USD/COP, Google Calendar/Maps.
+
+
