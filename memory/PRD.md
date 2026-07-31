@@ -311,3 +311,22 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 - **Integraciones externas**: YouTube, RSS proxy, OpenWeather, CoinGecko, FX USD/COP, Google Calendar/Maps.
 
 
+
+- **2026-07 · Wave 2.5 GO LIVE — Core Services de Punto Cero System (iteration_14 · 22/22 pytest pass)**:
+  - **Notification Center** (`services/notifications.py` + `routes/notification_routes.py`): dispatch centralizado. Kinds soportados: reaction, comment, follower, company_new, job_new, event_new, request, message, mention, admin, application, rsvp. Auto-hookeado en feed react/comment, company follow, job apply, event RSVP. Endpoints: list (unread count), mark-read, mark-all-read, delete, preferences. Preparado para real-time (WS/SSE) y push/email como próximos canales.
+  - **Internal Messaging** (`routes/messaging_routes.py`): conversations (dm/company/group) idempotentes por participant_key. Send message con attachments + shared_ref (post/event/job/company). Unread counters atómicos por participante. Notifica al recipient automáticamente. Preparado para futuras video-llamadas/IA/adjuntos vía object_storage.
+  - **Global Search Engine** (`routes/search_routes.py`): 8 tipos (people, companies, posts, jobs, events, hashtags, categories, documents). Regex fallback ready para Atlas Search. `/api/search?q=X` + `/api/search/suggest`. Shape uniforme `{type, id, title, subtitle?, image?, url}`.
+  - **Unified Admin Platform** (`routes/admin_platform_routes.py` + frontend `AdminPlatformPage.jsx`): tabs Users/Companies/Posts/Jobs/Events/Reports/Activity/Summary. Un único admin surface para TODAS las verticales.
+  - **UI cambios**: Header con `HeaderSearchBar` (búsqueda global cross-vertical) y `NotificationsBell` (dropdown + badge unread). Nuevas páginas `/notificaciones`, `/mensajes`, `/admin/platform`.
+  - **Fix aplicado post-testing**: `register_view` ahora es race-safe (try/except DuplicateKeyError).
+  - **Portabilidad**: cero deps Emergent-exclusivas. Compatible MongoDB Atlas + Render + Vercel + GitHub. Suite pytest en `/app/backend/tests/test_wave25_core.py`.
+
+## Wave 3+ — Backlog priorizado
+- Integraciones externas (YouTube, RSS, OpenWeather, CoinGecko, FX USD/COP, Google Calendar/Maps)
+- Real-time WS/SSE en Notifications + Messaging
+- Push + Email channels (Resend playbook)
+- Company logo/banner upload (Object Storage ya está)
+- Atlas Search / Meilisearch swap para el search engine cuando escale
+- SSO Platform (`/api/platform/auth/*`) compartido con Legal
+
+

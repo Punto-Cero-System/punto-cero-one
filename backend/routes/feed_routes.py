@@ -469,19 +469,21 @@ async def register_view(
     session_token: Optional[str] = Cookie(default=None),
     authorization: Optional[str] = Header(default=None),
 ):
-    """Deduped view counter — one per (post_id, session_id).  Anonymous OK."""
+    """Deduped view counter — one per (post_id, session_id).  Anonymous OK.
+    Race-safe: relies on the unique index and swallows DuplicateKeyError."""
+    from pymongo.errors import DuplicateKeyError
     viewer = await _current_user_or_none(request, session_token, authorization)
     db = request.app.state.db
-    key = {"post_id": post_id, "session_id": payload.session_id}
-    existing = await db.post_views.find_one(key, {"_id": 0})
-    if existing:
+    try:
+        await db.post_views.insert_one({
+            "id": new_view_id(),
+            "post_id": post_id,
+            "session_id": payload.session_id,
+            "user_id": viewer["id"] if viewer else None,
+            "created_at": _now(),
+        })
+    except DuplicateKeyError:
         return {"counted": False}
-    await db.post_views.insert_one({
-        "id": new_view_id(),
-        **key,
-        "user_id": viewer["id"] if viewer else None,
-        "created_at": _now(),
-    })
     await db.posts.update_one({"id": post_id}, {"$inc": {"counts.views": 1}})
     return {"counted": True}
 
