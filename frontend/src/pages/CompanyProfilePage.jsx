@@ -8,6 +8,7 @@ import {
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import CompanyMediaManager from '../components/business/CompanyMediaManager';
+import FollowButton from '../components/community/FollowButton';
 import { companyService } from '../services/platformService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 
@@ -190,16 +191,10 @@ const CompanyProfilePage = () => {
                   </a>
                 )}
                 {user && !isOwner && (
-                  <button onClick={toggleFollow} data-testid="company-profile-follow"
-                    disabled={followBusy}
-                    style={{
-                      ...primaryBtn,
-                      background: company.my_following ? '#FFFFFF' : EMERALD,
-                      color: company.my_following ? NAVY : '#FFFFFF',
-                      border: `1px solid ${company.my_following ? 'rgba(11,31,58,0.12)' : EMERALD}`,
-                    }}>
-                    {company.my_following ? (<><Check size={13} /> Siguiendo</>) : (<><Plus size={13} /> Seguir</>)}
-                  </button>
+                  <FollowButton entityType="company" entityId={company.id}
+                    initialFollowing={company.my_following}
+                    testid="company-profile-follow" size="md"
+                    onChange={() => refetch()} />
                 )}
               </div>
             </div>

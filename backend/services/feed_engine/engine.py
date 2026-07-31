@@ -19,6 +19,27 @@ async def load_user_signals(db, user: Optional[dict]) -> FeedSignals:
     interests = set([i.lower() for i in (user.get("interests") or [])])
     country = user.get("country")
 
+    # Load unified social graph — Wave 4A adds user/hashtag/country/vertical/event follows
+    # alongside the legacy company_follows collection.
+    followed_user_ids: set[str] = set()
+    followed_hashtags: set[str] = set()
+    followed_countries: set[str] = set()
+    followed_event_ids: set[str] = set()
+    async for f in db.follows.find({"user_id": user_id}, {"_id": 0, "entity_type": 1, "entity_id": 1}):
+        et, eid = f.get("entity_type"), f.get("entity_id")
+        if not eid:
+            continue
+        if et == "user":
+            followed_user_ids.add(eid)
+        elif et == "hashtag":
+            followed_hashtags.add(eid.lower().lstrip("#"))
+        elif et == "country":
+            followed_countries.add(eid.lower())
+        elif et == "event":
+            followed_event_ids.add(eid)
+        elif et == "vertical":
+            verticals.add(eid.lower())
+
     # Followed companies (and their owners → author-level boost)
     followed_company_ids: set[str] = set()
     followed_company_owner_ids: set[str] = set()
@@ -64,13 +85,14 @@ async def load_user_signals(db, user: Optional[dict]) -> FeedSignals:
 
     return FeedSignals(
         user_id=user_id,
+        followed_user_ids=followed_user_ids,
         followed_company_ids=followed_company_ids,
         followed_company_owner_ids=followed_company_owner_ids,
         verticals=verticals,
         interests=interests,
         country=country,
         interaction_author_ids=interaction_author_ids,
-        interaction_hashtags=interaction_hashtags,
+        interaction_hashtags=interaction_hashtags | followed_hashtags,
     )
 
 

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, MessageCircle, ExternalLink, Building2, MapPin } from 'lucide-react';
 import PresenceDot from './PresenceDot';
+import FollowButton from './FollowButton';
 
 const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
@@ -113,9 +114,8 @@ const UserHoverCard = ({ userId, fallback, children }) => {
               )}
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <button style={primaryBtn} data-testid={`hover-follow-${userId}`}>
-                <UserPlus size={12} /> Seguir
-              </button>
+              <FollowButton entityType="user" entityId={userId} size="sm"
+                testid={`hover-follow-${userId}`} />
               <a href={`/mensajes?to=${userId}`} style={ghostBtn}
                 data-testid={`hover-message-${userId}`}>
                 <MessageCircle size={12} /> Mensaje

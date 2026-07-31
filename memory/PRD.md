@@ -484,3 +484,34 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
   - **CERO cambios a backend**. 36/36 tests Wave 3 siguen pasando.
 
 
+- **2026-07 · Wave 4A — Social Graph & Content Integration**:
+
+  ### Backend · Unified Social Graph (aditivo, no rompe nada existente)
+  - Nueva colección `follows` con shape `{user_id, entity_type, entity_id, created_at}` + índice unique compuesto.
+  - Nuevo router `/api/follows/*`:
+    - `POST /:type/:id` — follow (entity_type ∈ user | company | hashtag | country | vertical | event). Idempotente. Bloquea auto-follow. Bridge automático a `company_follows` cuando el tipo es `company`, preservando 100% la lógica Wave 2.
+    - `DELETE /:type/:id` — unfollow.
+    - `GET /status?type=x&ids=a,b,c` — bulk check.
+    - `GET /me` — todos los follows del usuario, agrupados por tipo.
+    - `GET /:type/:id/count` — contador (fusiona legacy `company_follows`).
+  - Normalización case-insensitive para hashtag/country/vertical (`#Legal` → `legal`, `CO` → `co`).
+  - **Feed engine actualizado** — `load_user_signals()` lee `follows` y alimenta `followed_user_ids`, `followed_hashtags` (fusionados a `interaction_hashtags`), y verticales seguidos. `FollowProvider` ya boosteaba `followed_user_ids` → cero cambio en providers.
+
+  ### Frontend · Universal Follow Button
+  - `followsService.js` con API completa (follow/unfollow/bulkStatus/me/count).
+  - `FollowButton.jsx` universal — cualquier `entityType + entityId`, tamaños sm/md/lg, animaciones tap/hover, spinner en busy, rollback en error.
+  - Integrado en: `UserHoverCard`, `CompanyProfilePage`, `MarketplacePage` (seguir país), `HashtagPage`.
+
+  ### Frontend · Nueva página `/h/:tag`
+  - `HashtagPage.jsx` con hero navy→purple, ícono `#` en emerald, contadores, botón Follow prominent, listado de posts.
+
+  ### Testing
+  - `/app/backend/tests/test_wave4_follows.py` — 11/11 pass.
+  - **Test end-to-end del Social Graph**: usuario A sigue a B → posts de B suben en `/api/feed/for-you` de A con reason "empresa/persona seguida".
+  - **47/47 tests (Wave 3 + Wave 4A) pasan en regresión completa**.
+
+  ### Archivos tocados
+  - Nuevos: `backend/routes/follows_routes.py`, `backend/tests/test_wave4_follows.py`, `frontend/src/services/followsService.js`, `frontend/src/components/community/FollowButton.jsx`, `frontend/src/pages/HashtagPage.jsx`
+  - Modificados: `backend/server.py`, `backend/services/feed_engine/engine.py`, `frontend/src/App.js`, `frontend/src/pages/MarketplacePage.jsx`, `frontend/src/pages/CompanyProfilePage.jsx`, `frontend/src/components/community/UserHoverCard.jsx`.
+
+

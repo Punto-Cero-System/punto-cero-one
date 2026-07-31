@@ -47,6 +47,7 @@ from routes.realtime_routes import router as realtime_router
 from routes.widget_routes import router as widget_router
 from routes.company_media_routes import router as company_media_router
 from routes.email_routes import router as email_router
+from routes.follows_routes import router as follows_router
 from models_category import DEFAULT_CATEGORIES
 
 
@@ -119,6 +120,7 @@ app.include_router(admin_platform_router)
 app.include_router(realtime_router)
 app.include_router(widget_router)
 app.include_router(email_router)
+app.include_router(follows_router)
 
 
 # -------------------- CORS --------------------
@@ -203,6 +205,14 @@ async def ensure_indexes():
     await db.conversations.create_index("updated_at")
     await db.conversations.create_index("participant_key")
     await db.chat_messages.create_index([("conversation_id", 1), ("created_at", -1)])
+    # Wave 4A — unified social graph
+    try:
+        await db.follows.create_index(
+            [("user_id", 1), ("entity_type", 1), ("entity_id", 1)], unique=True
+        )
+        await db.follows.create_index([("entity_type", 1), ("entity_id", 1)])
+    except Exception as e:
+        logger.warning(f"follows index warning: {e}")
     # Wave 3 — external widgets cache (TTL index for auto-eviction)
     try:
         await db.widget_cache.create_index(

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Building2, Users, Briefcase, Calendar, MapPin, ExternalLink } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import FollowButton from '../components/community/FollowButton';
 import { companyService, jobService, eventService } from '../services/platformService';
 
 const NAVY = '#0B1F3A';
@@ -145,6 +146,10 @@ const MarketplacePage = () => {
                   Empresas verificadas, profesionales, vacantes abiertas y eventos activos
                   — filtrados por país para que descubras oportunidades locales sin ruido.
                 </p>
+                <div style={{ marginTop: '1rem' }}>
+                  <FollowButton entityType="country" entityId={code}
+                    testid="country-follow-btn" size="md" />
+                </div>
               </div>
             </div>
           </div>
