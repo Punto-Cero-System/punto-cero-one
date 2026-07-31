@@ -272,3 +272,23 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 - **2026-07 · Task 1 · Community Google Auth (iteration_10 · 100% pass)**: New `/api/community/auth/*` cookie-based flow using Emergent-managed Google OAuth. Provider abstraction (`services/community_auth.py`) ready for Microsoft, LinkedIn, Apple, Facebook (UI shows "PRONTO" badge for each). Unified `users` collection with `auth_providers[]` array. Header shows profile menu + logout when authed; "Unirse" CTA otherwise. LeftSidebar reflects real user name/avatar. AuthCallback exchanges `#session_id=…` server-side. No hardcoded redirect URLs — portable to VS Code / any host.
 - **2026-07 · Task 2 · Visual layer complete with mock data (iteration_11)**: 7 new content verticals `/noticias`, `/videos`, `/empleos`, `/empresas`, `/eventos`, `/ia`, `/comunidad` + `/perfil` (auth-gated). Shared `services/mockData.js` with API-shaped functions for drop-in real-API swap later. Reusable `CategoryPage` layout preserving 3-column community shell. Header nav switched to `<Link>` with active-route highlight.
 - **2026-07 · Task 3 · Object Storage repository (iteration_11 · 100% pass)**: Pluggable `services/object_storage.py` with `LocalObjectStorage` (default; writes to `/app/data/uploads`) and `EmergentObjectStorage` (opt-in via env). New `/api/documents/*` endpoints (upload, list, download, soft-delete) with role-based access (admin sees all; investor sees vertical='investor'). New `/admin/documents` UI + Investor Portal renders `portal-documents-section` for uploaded assets. 10/10 backend pytest tests pass. Reusable across future verticals (Legal, Medicina, Contabilidad, Educación).
+
+- **2026-07 · Wave 1 GO LIVE — Feed + Categories + Docs counters (iteration_12 · 23/23 pytest pass)**:
+  - **Feed backend real** en MongoDB (`posts`, `post_comments`, `post_reactions`, `post_saves`, `post_shares`, `post_views`, `post_reports`, `hashtags`). Endpoints `/api/feed/*` con posts, reactions toggle multi-kind (5 tipos), comments, saves toggle, shares con destino, view dedupe por session, hashtags parseados automáticamente, trending 7-day rolling, cursor pagination, moderación admin, reportes anónimos.
+  - **Sistema de categorías dinámicas**: colección `categories` con seed idempotente de 13 verticales + 6 países. API `/api/categories` público read + admin CRUD. Frontend fetch al iniciar → chips se renderizan sin cambios de código al agregar nuevas categorías.
+  - **HomePage feed real**: `LiveFeed.jsx` + `FeedPostCard.jsx` reemplazan los mocks. Composer bloqueado para anónimos con CTA a `/join`. Autenticados publican, reaccionan, comentan, guardan, comparten. Chips filtran por `category_key`. Right widget "Tendencias" LIVE vía `/api/feed/trending`.
+  - **Documents counters + signed download**: `download_count`, `view_count`, `last_download_at` por documento. `POST /api/documents/{id}/download-link` genera URL corta one-shot (TTL 15 min); `GET /api/documents/signed/{token}` descarga sin auth y consume el token (410 en reuse/expiración).
+  - Todo el código sigue siendo 100% portable (VS Code / cualquier host). Sin dependencias exclusivas de Emergent. Suite pytest en `/app/backend/tests/test_feed_categories.py`.
+
+## Wave 2 — Backlog priorizado (siguiente iteración)
+- **Empresas**: modelo `companies` (perfil, logo via object_storage, servicios, publish, owner=user_id). Endpoints `/api/companies/*` + edición de perfil + integración en `/empresas`.
+- **Empleos**: modelo `jobs` (creado por empresa, aplicaciones, estado). Endpoints `/api/jobs/*` + `/api/jobs/{id}/applications` + panel de empresa.
+- **Eventos**: modelo `events` (registro, asistentes, RSVP, virtual/presencial). Endpoints `/api/events/*` + `/api/events/{id}/rsvp` + calendario visual.
+
+## Wave 3 — Integraciones externas
+- YouTube (embeds + last N videos) · RSS proxy (LegalTech/IA/Startups/Tech) · OpenWeather (clima por ciudad) · CoinGecko (BTC + altcoins) · FX USD/COP (Alpha Vantage o fuente free) · Google Calendar (embeds) · Google Maps (ubicación de eventos).
+- Arquitectura: cada integración es un módulo bajo `services/integrations/*` activable via env; endpoints públicos cacheados en `/api/integrations/{provider}`.
+
+## Wave 4 — Admin unificado + Multi-provider Auth (fase 2)
+- Panel admin único (Usuarios, Empresas, Publicaciones, Eventos, Empleos, Noticias, Videos, Investor Center, Documentos, Integraciones).
+- Activar Microsoft/LinkedIn/Apple/Facebook (arquitectura ya lista en `services/community_auth.py`).
