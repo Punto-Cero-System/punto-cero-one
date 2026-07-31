@@ -31,6 +31,7 @@ from routes.investor_routes import (
 from routes.pitch_deck_routes import public_router as pitch_public_router
 from routes.pitch_deck_routes import admin_router as pitch_admin_router
 from routes.community_auth_routes import router as community_auth_router
+from routes.document_routes import router as document_router
 
 
 # -------------------- Logging --------------------
@@ -86,6 +87,7 @@ app.include_router(investor_router)
 app.include_router(pitch_public_router)
 app.include_router(pitch_admin_router)
 app.include_router(community_auth_router)
+app.include_router(document_router)
 
 
 # -------------------- CORS --------------------
@@ -154,6 +156,13 @@ async def seed_admin():
 async def _startup():
     await ensure_indexes()
     await seed_admin()
+    # Initialize object storage lazily on first use — no crash if backend unavailable.
+    try:
+        from services.object_storage import get_storage
+        s = get_storage()
+        logger.info(f"Storage backend ready: {s.backend_name}")
+    except Exception as e:
+        logger.warning(f"Storage backend init warning (non-fatal): {e}")
     logger.info("Punto Cero System API ready.")
 
 

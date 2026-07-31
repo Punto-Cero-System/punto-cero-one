@@ -14,9 +14,18 @@ import InvestorSetupPage from './pages/InvestorSetupPage';
 import InvestorPortalPage from './pages/InvestorPortalPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminDocumentsPage from './pages/AdminDocumentsPage';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import ProtectedInvestorRoute from './components/ProtectedInvestorRoute';
 import AuthCallback from './components/AuthCallback';
+import NewsPage from './pages/NewsPage';
+import VideosPage from './pages/VideosPage';
+import JobsPage from './pages/JobsPage';
+import CompaniesPage from './pages/CompaniesPage';
+import EventsPage from './pages/EventsPage';
+import AiPage from './pages/AiPage';
+import CommunityPage from './pages/CommunityPage';
+import ProfilePage from './pages/ProfilePage';
 import { AuthProvider } from './contexts/AuthContext';
 import { CommunityAuthProvider } from './contexts/CommunityAuthContext';
 
@@ -81,6 +90,14 @@ function AppRouter() {
       <Route path="/capital-strategy" element={<CapitalStrategyPage />} />
       <Route path="/capital" element={<CapitalHubPage />} />
       <Route path="/join" element={<JoinPage />} />
+      <Route path="/noticias" element={<NewsPage />} />
+      <Route path="/videos" element={<VideosPage />} />
+      <Route path="/empleos" element={<JobsPage />} />
+      <Route path="/empresas" element={<CompaniesPage />} />
+      <Route path="/eventos" element={<EventsPage />} />
+      <Route path="/ia" element={<AiPage />} />
+      <Route path="/comunidad" element={<CommunityPage />} />
+      <Route path="/perfil" element={<ProfilePage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/investor/setup" element={<InvestorSetupPage />} />
       <Route
@@ -96,6 +113,14 @@ function AppRouter() {
         element={
           <ProtectedAdminRoute>
             <AdminDashboardPage />
+          </ProtectedAdminRoute>
+        }
+      />
+      <Route
+        path="/admin/documents"
+        element={
+          <ProtectedAdminRoute>
+            <AdminDocumentsPage />
           </ProtectedAdminRoute>
         }
       />

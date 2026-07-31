@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, ExternalLink, LogOut, Shield, Sparkles, FileText, LineChart,
-  Presentation, Scale, Rocket, Loader,
+  Presentation, Scale, Rocket, Loader, Download,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -18,23 +18,47 @@ const KIND_META = {
 };
 
 const InvestorPortalPage = () => {
-  const { user, logout, authFetch } = useAuth();
+  const { user, logout, authFetch, token } = useAuth();
   const [data, setData] = useState(null);
+  const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await authFetch('/api/investor/room');
-      if (!res.ok) throw new Error('No se pudo cargar el portal');
-      setData(await res.json());
+      const [roomRes, docsRes] = await Promise.all([
+        authFetch('/api/investor/room'),
+        authFetch('/api/documents?vertical=investor'),
+      ]);
+      if (!roomRes.ok) throw new Error('No se pudo cargar el portal');
+      setData(await roomRes.json());
+      if (docsRes.ok) {
+        const dd = await docsRes.json();
+        setDocuments(dd.items || []);
+      }
     } catch (e) {
       setError(e.message);
     } finally { setLoading(false); }
   }, [authFetch]);
 
   useEffect(() => { load(); }, [load]);
+
+  const downloadDocument = async (doc) => {
+    const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/documents/${doc.id}/download`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = doc.original_filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   const logAccess = (docId, action = 'view') => {
     authFetch('/api/investor/access-log', {
@@ -177,6 +201,60 @@ const InvestorPortalPage = () => {
                   </Link>
                 );
               })}
+            </div>
+          </section>
+        )}
+
+        {/* Uploaded documents section — pulls from /api/documents (Investor Center vertical) */}
+        {documents.length > 0 && (
+          <section data-testid="portal-documents-section" style={{ marginTop: '3.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontSize: '0.65rem', color: GOLD, letterSpacing: '0.25em', fontWeight: 700, marginBottom: '0.5rem' }}>
+                  REPOSITORIO INSTITUCIONAL
+                </div>
+                <h2 style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.6rem', fontWeight: 300, letterSpacing: '-0.02em', margin: 0 }}>
+                  Documentos privados
+                </h2>
+              </div>
+              <span data-testid="portal-documents-count" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>
+                {documents.length} documento{documents.length === 1 ? '' : 's'}
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.85rem' }}>
+              {documents.map((d) => (
+                <motion.button
+                  key={d.id}
+                  whileHover={{ y: -3 }}
+                  onClick={() => downloadDocument(d)}
+                  data-testid={`portal-document-${d.id}`}
+                  style={{
+                    padding: '1.15rem 1.25rem', borderRadius: 16,
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(212,175,55,0.35)',
+                    color: '#FFFFFF', textAlign: 'left', cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', gap: '0.55rem',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 10,
+                      background: `${GOLD}18`, border: `1px solid ${GOLD}55`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}><FileText size={16} color={GOLD} /></div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700 }}>{d.original_filename}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }}>
+                        {d.category.replace('_', ' ')} · {(d.size_bytes / 1024).toFixed(0)} KB
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: GOLD, fontWeight: 700 }}>
+                    <Download size={12} /> Descargar
+                  </div>
+                </motion.button>
+              ))}
             </div>
           </section>
         )}

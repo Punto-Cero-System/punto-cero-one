@@ -12,16 +12,18 @@ const GOLD = '#D4AF37';
 /**
  * NAV_ITEMS — LinkedIn-style top nav. Categories are natural language
  * (not brand-heavy). Every item uses an AppIcon glyph for family consistency.
+ * `to` = react-router path (real destination); `hash` optional legacy fragment
+ * kept only for the mobile menu when the item stays on the homepage.
  */
 const NAV_ITEMS = [
-  { key: 'home', label: 'Inicio', href: '#top', icon: 'home' },
-  { key: 'news', label: 'Noticias', href: '#news', icon: 'news' },
-  { key: 'video', label: 'Videos', href: '#video', icon: 'video' },
-  { key: 'jobs', label: 'Empleos', href: '#jobs', icon: 'jobs' },
-  { key: 'companies', label: 'Empresas', href: '#companies', icon: 'companies' },
-  { key: 'events', label: 'Eventos', href: '#events', icon: 'events' },
-  { key: 'ai', label: 'IA', href: '#ai', icon: 'ai' },
-  { key: 'community', label: 'Comunidad', href: '#feed', icon: 'community' },
+  { key: 'home', label: 'Inicio', to: '/', icon: 'home' },
+  { key: 'news', label: 'Noticias', to: '/noticias', icon: 'news' },
+  { key: 'video', label: 'Videos', to: '/videos', icon: 'video' },
+  { key: 'jobs', label: 'Empleos', to: '/empleos', icon: 'jobs' },
+  { key: 'companies', label: 'Empresas', to: '/empresas', icon: 'companies' },
+  { key: 'events', label: 'Eventos', to: '/eventos', icon: 'events' },
+  { key: 'ai', label: 'IA', to: '/ia', icon: 'ai' },
+  { key: 'community', label: 'Comunidad', to: '/comunidad', icon: 'community' },
 ];
 
 const Header = () => {
@@ -179,6 +181,16 @@ const Header = () => {
                       <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#FFFFFF' }}>{user.name}</div>
                       <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)' }}>{user.email}</div>
                     </div>
+                    <Link
+                      to="/perfil"
+                      onClick={() => setProfileMenuOpen(false)}
+                      data-testid="header-profile-link"
+                      style={{
+                        marginTop: 4, width: '100%', display: 'inline-flex', alignItems: 'center', gap: 8,
+                        padding: '0.55rem 0.75rem', textDecoration: 'none',
+                        color: '#FFFFFF', fontSize: '0.82rem', borderRadius: 8,
+                      }}
+                    >Ver mi perfil</Link>
                     <button
                       onClick={handleLogout}
                       data-testid="header-logout"
@@ -270,11 +282,12 @@ const Header = () => {
                 gap: '0.4rem',
               }}>
                 {NAV_ITEMS.map((item) => (
-                  <a
+                  <Link
                     key={item.key}
-                    href={item.href}
+                    to={item.to}
                     onClick={() => setMobileMenuOpen(false)}
                     className="pc-mobile-nav-item"
+                    data-testid={`header-mobile-nav-${item.key}`}
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
                       padding: '0.75rem 0.35rem', textDecoration: 'none',
@@ -286,7 +299,7 @@ const Header = () => {
                     <span style={{ fontSize: '0.62rem', fontWeight: 600, textAlign: 'center' }}>
                       {item.label}
                     </span>
-                  </a>
+                  </Link>
                 ))}
               </div>
 
@@ -336,24 +349,28 @@ const Header = () => {
 };
 
 const NavItem = ({ item }) => {
+  const location = useLocation();
+  const active = item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to);
   return (
-    <a
-      href={item.href}
+    <Link
+      to={item.to}
       className="interactive pc-nav-item"
       data-testid={`header-nav-${item.key}`}
       style={{
         display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
         gap: 2, padding: '0.35rem 0.6rem',
-        color: 'rgba(255,255,255,0.7)', textDecoration: 'none',
+        color: active ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
+        background: active ? 'rgba(255,255,255,0.06)' : 'transparent',
+        textDecoration: 'none',
         fontSize: '0.68rem', fontWeight: 600,
         borderRadius: 8, transition: 'color 0.2s, background 0.2s',
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.background = 'transparent'; }}
+      onMouseEnter={(e) => { e.currentTarget.style.color = '#FFFFFF'; if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.color = active ? '#FFFFFF' : 'rgba(255,255,255,0.7)'; if (!active) e.currentTarget.style.background = 'transparent'; }}
     >
       <AppIcon name={item.icon} size={20} variant="mono-light" />
       <span className="pc-nav-label">{item.label}</span>
-    </a>
+    </Link>
   );
 };
 

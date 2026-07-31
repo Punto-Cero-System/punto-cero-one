@@ -109,6 +109,19 @@ const AdminDashboardPage = () => {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Link
+              to="/admin/documents"
+              data-testid="admin-documents-link"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                padding: '0.5rem 0.9rem', borderRadius: 100,
+                background: 'rgba(212,175,55,0.12)',
+                border: '1px solid rgba(212,175,55,0.35)',
+                color: '#D4AF37', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none',
+              }}
+            >
+              Documentos
+            </Link>
             <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }} data-testid="admin-user-email">
               {user?.email}
             </span>
