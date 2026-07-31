@@ -34,6 +34,11 @@ from routes.community_auth_routes import router as community_auth_router
 from routes.document_routes import router as document_router
 from routes.feed_routes import router as feed_router
 from routes.category_routes import router as category_router
+from routes.company_routes import router as company_router
+from routes.job_routes import router as job_router
+from routes.event_routes import router as event_router
+from routes.profile_routes import router as profile_router
+from routes.analytics_routes import router as analytics_router
 from models_category import DEFAULT_CATEGORIES
 
 
@@ -93,6 +98,11 @@ app.include_router(community_auth_router)
 app.include_router(document_router)
 app.include_router(feed_router)
 app.include_router(category_router)
+app.include_router(company_router)
+app.include_router(job_router)
+app.include_router(event_router)
+app.include_router(profile_router)
+app.include_router(analytics_router)
 
 
 # -------------------- CORS --------------------
@@ -127,6 +137,47 @@ async def ensure_indexes():
     await db.users.create_index(
         "invitation_token", unique=True, partialFilterExpression={"invitation_token": {"$type": "string"}}
     )
+    # Categories
+    await db.categories.create_index("key", unique=True)
+    await db.categories.create_index("group")
+    # Documents signed links
+    await db.document_signed_links.create_index("token", unique=True)
+    await db.document_signed_links.create_index("expires_at")
+    # Feed
+    await db.posts.create_index("id", unique=True)
+    await db.posts.create_index("created_at")
+    await db.posts.create_index("hashtags")
+    await db.posts.create_index("category_key")
+    await db.posts.create_index("status")
+    await db.post_comments.create_index("post_id")
+    await db.post_reactions.create_index([("post_id", 1), ("user_id", 1)], unique=True)
+    await db.post_saves.create_index([("post_id", 1), ("user_id", 1)], unique=True)
+    await db.post_views.create_index([("post_id", 1), ("session_id", 1)], unique=True)
+    await db.hashtags.create_index("tag", unique=True)
+    # Business core
+    await db.companies.create_index("id", unique=True)
+    await db.companies.create_index("slug", unique=True)
+    await db.companies.create_index("vertical")
+    await db.companies.create_index("owner_id")
+    await db.companies.create_index("created_at")
+    await db.company_follows.create_index([("company_id", 1), ("user_id", 1)], unique=True)
+    await db.jobs.create_index("id", unique=True)
+    await db.jobs.create_index("company_id")
+    await db.jobs.create_index("created_at")
+    await db.jobs.create_index("is_active")
+    await db.job_saves.create_index([("job_id", 1), ("user_id", 1)], unique=True)
+    await db.job_applications.create_index("id", unique=True)
+    await db.job_applications.create_index("job_id")
+    await db.job_applications.create_index("applicant_id")
+    await db.events.create_index("id", unique=True)
+    await db.events.create_index("company_id")
+    await db.events.create_index("starts_at")
+    await db.event_rsvps.create_index([("event_id", 1), ("user_id", 1)], unique=True)
+    # Analytics
+    await db.analytics_events.create_index("name")
+    await db.analytics_events.create_index("created_at")
+    await db.analytics_events.create_index("day")
+    await db.analytics_counters.create_index([("name", 1), ("day", 1)])
 
 
 async def seed_admin():

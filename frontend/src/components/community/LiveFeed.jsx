@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader, RefreshCcw, Filter } from 'lucide-react';
+import { Loader, Filter } from 'lucide-react';
 import { feedService, categoryService } from '../../services/feedService';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 import FeedPostCard from './FeedPostCard';
@@ -9,14 +9,12 @@ import FeedComposer from './FeedComposer';
 const NAVY = '#0B1F3A';
 
 /**
- * LiveFeed — end-to-end community feed powered by /api/feed/*.
+ * LiveFeed — infinite-scroll community feed.
  *
- * - Anonymous visitors see public posts (read-only).
- * - Authenticated members can compose, react, comment, save, share.
- * - Filter chips are driven by the dynamic /api/categories taxonomy — adding a
- *   new category on the server appears here without a code change.
- *
- * Pagination uses the server's opaque cursor (ISO timestamp) — no offsets.
+ * Loads incrementally as the user scrolls (IntersectionObserver sentinel).
+ * Prepends new posts optimistically on composer submit while preserving the
+ * user's scroll position. Skeleton loaders render while the initial batch
+ * is in-flight so the layout doesn't jump.
  */
 const LiveFeed = ({ initialCategory = null }) => {
   const { user } = useCommunityAuth();
@@ -24,48 +22,66 @@ const LiveFeed = ({ initialCategory = null }) => {
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [category, setCategory] = useState(initialCategory);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState('');
   const isAuthed = !!user && typeof user === 'object';
+  const sentinelRef = useRef(null);
   const inflight = useRef(false);
+  const nextCursorRef = useRef(null);
+  const hasMoreRef = useRef(true);
 
-  const load = useCallback(async (reset = false) => {
-    if (inflight.current) return;
+  // stable page loader — reads cursor/category via refs to avoid stale closures
+  const loadMore = useCallback(async () => {
+    if (inflight.current || !hasMoreRef.current) return;
     inflight.current = true;
-    if (reset) setRefreshing(true);
-    else setLoading(true);
+    setLoading(true);
     setError('');
     try {
       const data = await feedService.listPosts({
         limit: 15,
-        cursor: reset ? undefined : cursor,
+        cursor: nextCursorRef.current || undefined,
         category_key: category || undefined,
       });
-      setItems((prev) => (reset ? data.items : [...prev, ...data.items]));
+      setItems((prev) => (nextCursorRef.current ? [...prev, ...data.items] : data.items));
+      nextCursorRef.current = data.next_cursor;
+      hasMoreRef.current = !!data.next_cursor;
       setCursor(data.next_cursor);
       setHasMore(!!data.next_cursor);
     } catch (e) {
       setError(e.message || 'No se pudo cargar el feed');
+      hasMoreRef.current = false;
+      setHasMore(false);
     } finally {
-      setLoading(false); setRefreshing(false);
+      setLoading(false);
       inflight.current = false;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cursor, category]);
-
-  // reload on category change
-  useEffect(() => {
-    setCursor(null); setHasMore(true); setItems([]);
-    load(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
+
+  // reset when category changes
+  useEffect(() => {
+    nextCursorRef.current = null;
+    hasMoreRef.current = true;
+    setCursor(null); setHasMore(true); setItems([]);
+    loadMore();
+  }, [category, loadMore]);
 
   // dynamic taxonomy
   useEffect(() => {
     categoryService.list('vertical').then(setCategories).catch(() => {});
   }, []);
+
+  // IntersectionObserver — triggers loadMore when sentinel enters viewport
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node) return;
+    const io = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: '400px 0px' },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [loadMore]);
 
   const onNewPost = async ({ text, categoryKey }) => {
     const post = await feedService.createPost({
@@ -114,11 +130,13 @@ const LiveFeed = ({ initialCategory = null }) => {
       {/* Feed list */}
       {items.map((p) => (<FeedPostCard key={p.id} post={p} onDelete={onDelete} />))}
 
+      {/* Initial-load skeletons */}
       {loading && items.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(11,31,58,0.5)' }} data-testid="feed-loading">
-          <Loader size={16} className="pc-spin" /> Cargando publicaciones…
-          <style>{`.pc-spin { animation: pcSpin 1s linear infinite; } @keyframes pcSpin { to { transform: rotate(360deg); } }`}</style>
-        </div>
+        <>
+          <FeedSkeleton />
+          <FeedSkeleton />
+          <FeedSkeleton />
+        </>
       )}
 
       {!loading && items.length === 0 && !error && (
@@ -131,17 +149,20 @@ const LiveFeed = ({ initialCategory = null }) => {
         </div>
       )}
 
-      {hasMore && !loading && (
-        <button data-testid="feed-load-more"
-          onClick={() => load(false)}
+      {/* Infinite-scroll sentinel + subtle loader */}
+      {hasMore && (
+        <div ref={sentinelRef} data-testid="feed-scroll-sentinel"
           style={{
-            padding: '0.7rem 1rem', borderRadius: 12,
-            background: '#FFFFFF', border: '1px solid rgba(11,31,58,0.08)',
-            color: NAVY, cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem',
-            display: 'inline-flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center',
+            padding: '1rem', textAlign: 'center',
+            color: 'rgba(11,31,58,0.4)', fontSize: '0.8rem',
           }}>
-          <RefreshCcw size={13} /> Cargar más
-        </button>
+          {loading && items.length > 0 && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Loader size={14} className="pc-spin" /> Cargando más…
+              <style>{`.pc-spin { animation: pcSpin 1s linear infinite; } @keyframes pcSpin { to { transform: rotate(360deg); } }`}</style>
+            </span>
+          )}
+        </div>
       )}
 
       {error && (
@@ -154,6 +175,38 @@ const LiveFeed = ({ initialCategory = null }) => {
     </div>
   );
 };
+
+const FeedSkeleton = () => (
+  <div data-testid="feed-skeleton" style={{
+    background: '#FFFFFF', borderRadius: 16, padding: '1rem 1.15rem',
+    border: '1px solid rgba(11,31,58,0.06)',
+    display: 'flex', flexDirection: 'column', gap: '0.6rem',
+  }}>
+    <div style={{ display: 'flex', gap: '0.7rem', alignItems: 'center' }}>
+      <Bar w={44} h={44} circle />
+      <div style={{ flex: 1 }}>
+        <Bar w={160} h={12} />
+        <div style={{ height: 6 }} />
+        <Bar w={110} h={10} />
+      </div>
+    </div>
+    <Bar w="100%" h={12} />
+    <Bar w="88%" h={12} />
+    <Bar w="70%" h={12} />
+    <style>{`
+      @keyframes pcShimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
+      .pc-bar { background: linear-gradient(90deg, rgba(11,31,58,0.06) 0px, rgba(11,31,58,0.12) 40px, rgba(11,31,58,0.06) 80px); background-size: 200px 100%; animation: pcShimmer 1.4s linear infinite; }
+    `}</style>
+  </div>
+);
+
+const Bar = ({ w, h, circle }) => (
+  <div className="pc-bar" style={{
+    width: typeof w === 'number' ? `${w}px` : w,
+    height: `${h}px`,
+    borderRadius: circle ? '50%' : 6,
+  }} />
+);
 
 const ComposerLoggedOut = () => (
   <div data-testid="feed-composer-locked" style={{
