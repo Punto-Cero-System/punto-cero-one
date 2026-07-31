@@ -69,12 +69,16 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
   };
 
   const share = async () => {
-    setPost((p) => ({ ...p, counts: { ...p.counts, shares: p.counts.shares + 1 } }));
+    setPost((p) => ({ ...p, counts: { ...p.counts, shares: (p.counts.shares || 0) + 1 } }));
     try {
-      const url = `${window.location.origin}/?post=${post.id}`;
+      const url = post.is_growth
+        ? (post.link_url || `${window.location.origin}/`)
+        : `${window.location.origin}/?post=${post.id}`;
       if (navigator.share) { await navigator.share({ title: 'Punto Cero One', url }); }
       else { await navigator.clipboard?.writeText(url); }
-      await feedService.share(post.id, navigator.share ? 'native' : 'clipboard');
+      if (!post.is_growth) {
+        await feedService.share(post.id, navigator.share ? 'native' : 'clipboard');
+      }
     } catch { /* ignore */ }
   };
 
@@ -132,6 +136,14 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
           {post.author.picture ? (
             <img src={post.author.picture} alt={post.author.name} referrerPolicy="no-referrer"
               style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} />
+          ) : post.is_growth ? (
+            <div style={{
+              width: 44, height: 44, borderRadius: 12,
+              background: 'linear-gradient(135deg, #0EA5E9, #7C3AED)',
+              color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 800, fontFamily: '"Space Grotesk", sans-serif', fontSize: '0.62rem',
+              letterSpacing: '0.1em',
+            }}>RSS</div>
           ) : (
             <div style={{
               width: 44, height: 44, borderRadius: '50%',
@@ -140,27 +152,55 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
               fontWeight: 700, fontFamily: '"Space Grotesk", sans-serif',
             }}>{(post.author.name || 'M').charAt(0).toUpperCase()}</div>
           )}
-          <PresenceDot userId={post.author.id} size={11} />
+          {!post.is_growth && <PresenceDot userId={post.author.id} size={11} />}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <UserHoverCard userId={post.author.id} fallback={post.author}>
+          {post.is_growth ? (
             <span data-testid={`feed-post-author-${post.id}`}
-              style={{ fontWeight: 700, fontSize: '0.92rem', color: NAVY, cursor: 'default' }}>
+              style={{ fontWeight: 700, fontSize: '0.92rem', color: NAVY }}>
               {post.author.name}
             </span>
-          </UserHoverCard>
+          ) : (
+            <UserHoverCard userId={post.author.id} fallback={post.author}>
+              <span data-testid={`feed-post-author-${post.id}`}
+                style={{ fontWeight: 700, fontSize: '0.92rem', color: NAVY, cursor: 'default' }}>
+                {post.author.name}
+              </span>
+            </UserHoverCard>
+          )}
           <div style={{ fontSize: '0.72rem', color: 'rgba(11,31,58,0.55)' }}>
             {post.author.headline || 'Miembro de Punto Cero One'} · {new Date(post.created_at).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
-        {(isOwner || user?.role === 'admin') && (
+        {post.is_growth && (
+          <span data-testid={`feed-post-source-badge-${post.id}`}
+            style={{
+              fontSize: '0.58rem', letterSpacing: '0.18em', fontWeight: 800,
+              padding: '3px 8px', borderRadius: 100,
+              background: 'rgba(14,165,233,0.1)', color: '#0369A1',
+              border: '1px solid rgba(14,165,233,0.28)',
+              whiteSpace: 'nowrap',
+            }}>FUENTE PÚBLICA</span>
+        )}
+        {(isOwner || user?.role === 'admin') && !post.is_growth && (
           <button onClick={handleDelete} data-testid={`feed-post-delete-${post.id}`}
             style={{ background: 'transparent', border: 'none', color: 'rgba(11,31,58,0.5)', cursor: 'pointer' }}>
             <MoreHorizontal size={16} />
           </button>
         )}
-        <FeedPostMenu post={post} onSave={toggleSave} onShare={share} isAuthed={isAuthed} />
+        {!post.is_growth && <FeedPostMenu post={post} onSave={toggleSave} onShare={share} isAuthed={isAuthed} />}
       </div>
+
+      {/* Growth item image (RSS-provided, license-friendly) */}
+      {post.is_growth && post.source?.image_url && (
+        <a href={post.link_url} target="_blank" rel="noopener noreferrer"
+          data-testid={`feed-post-source-image-${post.id}`}
+          style={{ display: 'block', margin: '0 1.15rem', borderRadius: 12, overflow: 'hidden' }}>
+          <img src={post.source.image_url} alt=""
+            referrerPolicy="no-referrer"
+            style={{ width: '100%', maxHeight: 260, objectFit: 'cover', display: 'block' }} />
+        </a>
+      )}
 
       {/* "Por qué ves esta publicación" — surfaces the ranking reasons from /api/feed/for-you */}
       {post.for_you?.reasons?.length > 0 && (
@@ -172,8 +212,7 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
             background: 'rgba(0,200,150,0.09)', border: '1px solid rgba(0,200,150,0.28)',
             color: '#0B6F52', fontSize: '0.66rem', fontWeight: 600,
             width: 'fit-content', cursor: 'help',
-          }}>
-          <Info size={11} />
+          }}>          <Info size={11} />
           <span>Porque {post.for_you.reasons[0]}</span>
           {post.for_you.reasons.length > 1 && (
             <span style={{ opacity: 0.6, fontWeight: 700 }}>+{post.for_you.reasons.length - 1}</span>
@@ -211,38 +250,68 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
       </div>
 
       {/* counters row */}
-      <div style={{
-        padding: '0.35rem 1.15rem',
-        display: 'flex', gap: '0.75rem', fontSize: '0.72rem', color: 'rgba(11,31,58,0.55)',
-        borderTop: '1px solid rgba(11,31,58,0.04)',
-      }}>
-        <span data-testid={`feed-post-reactions-${post.id}`}>{post.counts.reactions} reacciones</span>
-        <span>·</span>
-        <span data-testid={`feed-post-comments-count-${post.id}`}>{post.counts.comments} comentarios</span>
-        <span style={{ marginLeft: 'auto' }}>{post.counts.views} vistas</span>
-      </div>
+      {!post.is_growth && (
+        <div style={{
+          padding: '0.35rem 1.15rem',
+          display: 'flex', gap: '0.75rem', fontSize: '0.72rem', color: 'rgba(11,31,58,0.55)',
+          borderTop: '1px solid rgba(11,31,58,0.04)',
+        }}>
+          <span data-testid={`feed-post-reactions-${post.id}`}>{post.counts.reactions} reacciones</span>
+          <span>·</span>
+          <span data-testid={`feed-post-comments-count-${post.id}`}>{post.counts.comments} comentarios</span>
+          <span style={{ marginLeft: 'auto' }}>{post.counts.views} vistas</span>
+        </div>
+      )}
 
       {/* actions */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr',
-        padding: '0.4rem 0.55rem', gap: '0.25rem',
-        borderTop: '1px solid rgba(11,31,58,0.05)',
-      }}>
-        <ReactionButton
-          testid={`feed-post-react-${post.id}`}
-          meta={myReactionMeta}
-          onClick={() => react('like')}
-          onPickReaction={react}
-          disabled={!isAuthed}
-        />
-        <ActionButton icon={<MessageCircle size={16} />} label="Comentar" onClick={openComments}
-          testid={`feed-post-comment-${post.id}`} />
-        <ActionButton icon={<Share2 size={16} />} label="Compartir" onClick={share}
-          testid={`feed-post-share-${post.id}`} />
-        <ActionButton icon={<Bookmark size={16} />} label={post.my_saved ? 'Guardado' : 'Guardar'}
-          active={post.my_saved} onClick={toggleSave} disabled={!isAuthed}
-          testid={`feed-post-save-${post.id}`} />
-      </div>
+      {post.is_growth ? (
+        <div style={{
+          padding: '0.6rem 1.15rem 0.9rem',
+          borderTop: '1px solid rgba(11,31,58,0.05)',
+          display: 'flex', gap: '0.5rem', flexWrap: 'wrap',
+        }}>
+          <a href={post.link_url} target="_blank" rel="noopener noreferrer"
+            data-testid={`feed-post-source-cta-${post.id}`}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.5rem 0.85rem', borderRadius: 100,
+              background: NAVY, color: '#FFFFFF', textDecoration: 'none',
+              fontSize: '0.76rem', fontWeight: 700,
+            }}>
+            Leer en {post.source?.name || 'la fuente'}
+          </a>
+          <button onClick={share} data-testid={`feed-post-share-${post.id}`}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.5rem 0.85rem', borderRadius: 100,
+              background: 'rgba(11,31,58,0.05)', color: NAVY, border: 'none', cursor: 'pointer',
+              fontSize: '0.76rem', fontWeight: 700,
+            }}>
+            <Share2 size={13} /> Compartir
+          </button>
+        </div>
+      ) : (
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr',
+          padding: '0.4rem 0.55rem', gap: '0.25rem',
+          borderTop: '1px solid rgba(11,31,58,0.05)',
+        }}>
+          <ReactionButton
+            testid={`feed-post-react-${post.id}`}
+            meta={myReactionMeta}
+            onClick={() => react('like')}
+            onPickReaction={react}
+            disabled={!isAuthed}
+          />
+          <ActionButton icon={<MessageCircle size={16} />} label="Comentar" onClick={openComments}
+            testid={`feed-post-comment-${post.id}`} />
+          <ActionButton icon={<Share2 size={16} />} label="Compartir" onClick={share}
+            testid={`feed-post-share-${post.id}`} />
+          <ActionButton icon={<Bookmark size={16} />} label={post.my_saved ? 'Guardado' : 'Guardar'}
+            active={post.my_saved} onClick={toggleSave} disabled={!isAuthed}
+            testid={`feed-post-save-${post.id}`} />
+        </div>
+      )}
 
       {/* comments */}
       <AnimatePresence>

@@ -614,4 +614,49 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
   - `yarn build` producción exitoso: 302 kB gzip (incluye dnd-kit).
 
 
+- **2026-07 · Wave 4C — Growth Engine (Feed Inteligente Regional)**:
+
+  ### Filosofía
+  - El Feed nunca se ve vacío: se alimenta automáticamente con contenido público (RSS oficial) clasificado por país, vertical, ciudad, idioma.
+  - NUNCA se almacena el artículo completo: solo `title`, `summary (<=400)`, `image_url`, `author`, `source`, `country`, `city`, `vertical`, `published_at`, `url`.
+  - Cada item enlaza directo a la fuente original — respeto absoluto por licencias, sin scraping.
+
+  ### Arquitectura backend (paquete `services/growth/`)
+  - `sources.py` — catálogo canónico de fuentes RSS con soporte para los 18 mercados objetivo (AR, BO, BR, CL, CO, CR, CU, DO, EC, SV, GT, HN, MX, NI, PA, PY, PE, UY, VE, ES) + LATAM + GLOBAL. Cada entrada define country/vertical/language/category/enabled.
+  - `providers.py` — abstracción `RSSProvider` con `fetch(source)` async + fan-out con `asyncio.Semaphore(6)`. Extensible a otros tipos (JSON API, HTML metadata) sin tocar el núcleo.
+  - `normalizer.py` — RSS entry → `GrowthItem` (limpia HTML, extrae imagen de media_thumbnail / enclosure / links, calcula id estable `sha1(source::guid|link|title)`, resume a 400 chars, título a 240).
+  - `classifier.py` — detección heurística: verticales por keywords, ciudad por diccionario por país, priority score determinista.
+  - `aggregator.py` — orquesta fetch → normalize → upsert (idempotente por `id`). Métricas por corrida (`sources`, `ingested`, `updated`).
+  - `scheduler.py` — asyncio task attach al app lifecycle. Run inmediato al startup + interval configurable (`GROWTH_INTERVAL_SECONDS`, default 30 min). Graceful shutdown.
+  - `recommender.py` — ranking por país (+40) / vertical (+25) / LATAM fallback (+15) / recency 24h (+8) / language (+2) / classifier priority.
+
+  ### Endpoints nuevos
+  - `GET  /api/growth/feed` — items proyectados como Posts (renderizados por `FeedPostCard` existente). Query: `country`, `vertical`, `limit`. Resolución de país: `?country=` → usuario autenticado → `Accept-Language` / `CF-IPCountry` / `X-User-Country` → LATAM.
+  - `GET  /api/growth/sources` — catálogo + estado (público, solo URLs públicas).
+  - `POST /api/growth/refresh` — dispara run manual (admin).
+  - `POST /api/growth/sources/{id}?enabled=bool` — toggle on/off por fuente (admin).
+
+  ### Colecciones nuevas
+  - `growth_items` — índices en `id` unique, `country+published_at`, `vertical+published_at`, `source_id`.
+  - `growth_sources` — overrides on/off por deployment, índice unique en `source_id`.
+
+  ### Integración frontend (cero pantallas nuevas)
+  - `services/feedService.js` — nuevo namespace `growthService.feed({limit, country, vertical})`.
+  - `components/community/LiveFeed.jsx` — carga growth en paralelo al feed, hace merge intercalando 1 growth cada 3 posts (`mergeFeedAndGrowth`), muestra chip "FEED REGIONAL · {país}" cuando el backend resolvió una región.
+  - `components/community/FeedPostCard.jsx` — extendido para renderizar items growth con: badge "FUENTE PÚBLICA", avatar RSS estilizado (sin PresenceDot), imagen destacada, y footer de acciones simplificado (Leer en la fuente + Compartir). Reacciones/comentarios ocultos porque no aplican a items externos.
+
+  ### Fuentes iniciales activas (ingesta ya funcionando)
+  - Real-time en preview con 279 items ingeridos al primer run: ES (54), CO (40), GLOBAL (30), LATAM (30), BR (30), MX (30), GT (30), BO (25), CU (10), + fuentes con feed roto quedan skipped (loggeados).
+
+  ### Tests
+  - `tests/test_growth.py` — 8/8 pass: proyección Post-shape, filtro country, fallback LATAM/GLOBAL, catálogo público, admin-only refresh, normalizador robusto, recommender prioriza país.
+  - `test_wave4_workspace.py` — 7/7 pass (regression).
+  - `yarn build` producción: 303 kB gzip.
+
+  ### Archivos tocados
+  - Nuevos: `backend/services/growth/{__init__,sources,providers,normalizer,classifier,aggregator,scheduler,recommender}.py`, `backend/routes/growth_routes.py`, `backend/tests/test_growth.py`.
+  - Modificados: `backend/server.py` (router + scheduler + índices), `frontend/src/services/feedService.js` (growthService), `frontend/src/components/community/LiveFeed.jsx` (merge + hint regional), `frontend/src/components/community/FeedPostCard.jsx` (renderer growth-aware, share sin API para growth).
+  - **CERO cambios** al layout, sidebars, Mi Espacio, MessagesWidget, Header ni cualquier otro componente.
+
+
 

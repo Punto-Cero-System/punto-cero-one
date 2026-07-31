@@ -64,6 +64,15 @@ export const categoryService = {
   },
 };
 
+export const growthService = {
+  feed: ({ limit = 20, country, vertical } = {}) => {
+    const qs = new URLSearchParams({ limit: String(limit) });
+    if (country) qs.set('country', country);
+    if (vertical) qs.set('vertical', vertical);
+    return fj(`/api/growth/feed?${qs.toString()}`).then(throwOnError);
+  },
+};
+
 /** Ephemeral session id for anonymous view dedupe. */
 export const getViewSessionId = () => {
   const KEY = 'pc_view_session';

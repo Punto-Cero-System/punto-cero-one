@@ -49,6 +49,8 @@ from routes.company_media_routes import router as company_media_router
 from routes.email_routes import router as email_router
 from routes.follows_routes import router as follows_router
 from routes.workspace_routes import router as workspace_router
+from routes.growth_routes import router as growth_router
+from services.growth.scheduler import scheduler as growth_scheduler
 from models_category import DEFAULT_CATEGORIES
 
 
@@ -123,6 +125,7 @@ app.include_router(widget_router)
 app.include_router(email_router)
 app.include_router(follows_router)
 app.include_router(workspace_router)
+app.include_router(growth_router)
 
 
 # -------------------- CORS --------------------
@@ -220,6 +223,20 @@ async def ensure_indexes():
         await db.user_workspaces.create_index("user_id", unique=True)
     except Exception as e:
         logger.warning(f"user_workspaces index warning: {e}")
+    # Growth Engine — public content ingestion
+    try:
+        await db.growth_items.create_index("id", unique=True)
+        await db.growth_items.create_index([("country", 1), ("published_at", -1)])
+        await db.growth_items.create_index([("vertical", 1), ("published_at", -1)])
+        await db.growth_items.create_index("source_id")
+        await db.growth_sources.create_index("source_id", unique=True)
+    except Exception as e:
+        logger.warning(f"growth index warning: {e}")
+    # Kick off the growth scheduler
+    try:
+        growth_scheduler.start(app)
+    except Exception as e:
+        logger.warning(f"growth scheduler start warning: {e}")
     # Wave 3 — external widgets cache (TTL index for auto-eviction)
     try:
         await db.widget_cache.create_index(
@@ -297,4 +314,8 @@ async def _startup():
 
 @app.on_event("shutdown")
 async def _shutdown():
+    try:
+        await growth_scheduler.stop()
+    except Exception:
+        pass
     mongo_client.close()

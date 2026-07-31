@@ -1,12 +1,37 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader, Filter } from 'lucide-react';
-import { feedService, categoryService } from '../../services/feedService';
+import { feedService, categoryService, growthService } from '../../services/feedService';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 import FeedPostCard from './FeedPostCard';
 import FeedComposer from './FeedComposer';
 
 const NAVY = '#0B1F3A';
+
+/**
+ * mergeFeedAndGrowth — weave community posts with growth items so the feed
+ * never looks empty. Inserts one growth item every ~3 community posts, and
+ * dedupes by id. Growth items are visually indistinguishable from posts
+ * (rendered by the same FeedPostCard) but they carry `is_growth: true`
+ * and a `source` block that unlocks a subtle source badge inside the card.
+ */
+const mergeFeedAndGrowth = (posts, growth) => {
+  if (!growth || growth.length === 0) return posts;
+  if (!posts || posts.length === 0) return growth;
+  const seen = new Set(posts.map((p) => p.id));
+  const g = growth.filter((it) => !seen.has(it.id));
+  const out = [];
+  let gi = 0;
+  for (let i = 0; i < posts.length; i += 1) {
+    out.push(posts[i]);
+    if ((i + 1) % 3 === 0 && gi < g.length) {
+      out.push(g[gi]);
+      gi += 1;
+    }
+  }
+  while (gi < g.length) { out.push(g[gi]); gi += 1; }
+  return out;
+};
 
 /**
  * LiveFeed — infinite-scroll community feed.
@@ -27,11 +52,28 @@ const LiveFeed = ({ initialCategory = null }) => {
   const [error, setError] = useState('');
   const [tab, setTab] = useState('latest');  // 'latest' | 'for-you'
   const [forYouMode, setForYouMode] = useState(null);
+  const [growth, setGrowth] = useState([]);
+  const [resolvedCountry, setResolvedCountry] = useState(null);
   const isAuthed = !!user && typeof user === 'object';
   const sentinelRef = useRef(null);
   const inflight = useRef(false);
   const nextCursorRef = useRef(null);
   const hasMoreRef = useRef(true);
+
+  // Growth items are fetched once per session/category and interleaved
+  // into the feed. They come from public sources (RSS) and appear as
+  // "source" authored posts (is_growth: true).
+  useEffect(() => {
+    let cancelled = false;
+    growthService.feed({ limit: 30, vertical: category || undefined })
+      .then((d) => {
+        if (cancelled) return;
+        setGrowth(d.items || []);
+        setResolvedCountry(d.resolved_country_label || null);
+      })
+      .catch(() => setGrowth([]));
+    return () => { cancelled = true; };
+  }, [category]);
 
   // stable page loader — reads cursor/category via refs to avoid stale closures
   const loadMore = useCallback(async () => {
@@ -131,6 +173,23 @@ const LiveFeed = ({ initialCategory = null }) => {
         </TabButton>
       </div>
 
+      {resolvedCountry && (
+        <div data-testid="feed-region-hint" style={{
+          fontSize: '0.68rem', letterSpacing: '0.14em', fontWeight: 700,
+          color: 'rgba(11,31,58,0.55)', display: 'inline-flex',
+          alignItems: 'center', gap: '0.4rem',
+          padding: '0.35rem 0.7rem', borderRadius: 100,
+          background: 'rgba(0,200,150,0.08)', border: '1px solid rgba(0,200,150,0.2)',
+          color: '#00825E', alignSelf: 'flex-start',
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: '#00C896', boxShadow: '0 0 8px #00C896',
+          }} />
+          FEED REGIONAL · {resolvedCountry.toUpperCase()}
+        </div>
+      )}
+
       {/* Category chips (solo en modo "Últimos") */}
       {tab === 'latest' && categories.length > 0 && (
         <div data-testid="feed-category-chips" style={{
@@ -155,11 +214,13 @@ const LiveFeed = ({ initialCategory = null }) => {
         </div>
       )}
 
-      {/* Feed list */}
-      {items.map((p) => (<FeedPostCard key={p.id} post={p} onDelete={onDelete} />))}
+      {/* Feed list — interleaves community posts with growth items every 3 slots */}
+      {mergeFeedAndGrowth(items, growth).map((p) => (
+        <FeedPostCard key={p.id} post={p} onDelete={onDelete} />
+      ))}
 
       {/* Initial-load skeletons */}
-      {loading && items.length === 0 && (
+      {loading && items.length === 0 && growth.length === 0 && (
         <>
           <FeedSkeleton />
           <FeedSkeleton />
@@ -167,7 +228,7 @@ const LiveFeed = ({ initialCategory = null }) => {
         </>
       )}
 
-      {!loading && items.length === 0 && !error && (
+      {!loading && items.length === 0 && growth.length === 0 && !error && (
         <div data-testid="feed-empty" style={{
           padding: '2rem 1.5rem', textAlign: 'center', borderRadius: 16,
           background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)',
