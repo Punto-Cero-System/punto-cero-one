@@ -215,14 +215,15 @@ const MarketplacePage = () => {
 };
 
 const ResultCard = ({ item, tab, tone }) => {
-  const paths = { companies: '/empresas', jobs: '/empleos', events: '/eventos' };
-  const url = `${paths[tab] || '/'}?id=${item.id}`;
+  const paths = { companies: `/empresas/${item.id}`, jobs: `/empleos?id=${item.id}`, events: `/eventos?id=${item.id}` };
+  const url = paths[tab] || '/';
   const title = item.name || item.title || 'Sin título';
   const subtitle = item.tagline || item.description || item.summary || '';
   const image = item.logo_url || item.banner_url || item.cover_url || item.image_url;
 
   return (
-    <motion.div
+    <motion.a
+      href={url}
       layout
       initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
@@ -231,6 +232,8 @@ const ResultCard = ({ item, tab, tone }) => {
       style={{
         background: '#FFFFFF', borderRadius: 18, overflow: 'hidden',
         border: '1px solid rgba(11,31,58,0.06)', boxShadow: '0 4px 16px rgba(11,31,58,0.04)',
+        textDecoration: 'none', color: 'inherit', cursor: 'pointer',
+        display: 'block',
       }}>
       <div style={{
         height: 110, background: image
@@ -274,7 +277,7 @@ const ResultCard = ({ item, tab, tone }) => {
           </Link>
         </div>
       </div>
-    </motion.div>
+    </motion.a>
   );
 };
 

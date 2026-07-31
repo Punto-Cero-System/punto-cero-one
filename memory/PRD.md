@@ -448,3 +448,39 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
   - **CERO cambios a backend**. 36/36 tests Wave 3 siguen pasando.
 
 
+- **2026-07 · Wave 3.7 — Social Experience Polish (frontend-only)**:
+
+  ### P0 · Company Profile Experience (LinkedIn/Facebook style)
+  - Nueva ruta `/empresas/:id` → `CompanyProfilePage.jsx`.
+  - Breadcrumbs: `Inicio › Empresas › {name}`.
+  - Hero banner + logo card grande (130px) con fallback a gradient + inicial.
+  - Sección "Sobre nosotros" con `EditableText` — click en botón lápiz para editar inline, textarea multiline, Guardar/Cancelar con animaciones. Solo owner/admin ve el botón.
+  - Sección "Media" con `CompanyMediaManager` embebido directamente (sin modal, edición 100% in-page) para owners.
+  - Sección "Galería" (solo lectura) para visitantes cuando hay imágenes.
+  - Sección "Enlaces" con `EditableSocials` — inputs por red (website + linkedin + instagram + facebook + twitter/x + youtube + tiktok), previews como iconos círculares con hover.
+  - Sección "Ubicación" con LabelValue pairs (país, ciudad, vertical).
+  - Botón Follow/Unfollow para no-owners que refetch el doc completo tras cada acción.
+  - Skeleton loader mientras carga; empty-state 404 friendly.
+  - Grid responsive: 2fr/1fr → 1 col en < 900px.
+
+  ### P0 · Marketplace deep links
+  - Cards del `MarketplacePage` ahora son `<motion.a>` que navegan a `/empresas/:id` y `/empleos?id=:id`.
+  - Cards de `CompaniesPage` con `<Link to="/empresas/:id">` en el título de la empresa.
+  - CTA "Ver" en cada card con color per-country.
+
+  ### P0 · Messaging modernization
+  - Conversaciones ahora muestran: avatar 44px con `PresenceDot`, nombre, tiempo relativo (ahora / 5 min / 2 h / ayer / fecha), preview del último mensaje con negrita si hay unread, badge rojo con contador de no leídos.
+  - Header del chat: avatar del peer con presence dot grande + label ("En línea / Ausente / Desconectado") con dot inline pequeño.
+  - Sin polling — todo via SSE + `RealtimeContext.presenceOf`.
+
+  ### P1 · UserHoverCard (LinkedIn-style)
+  - `UserHoverCard.jsx` con hover-in delay 350ms → fetch `/api/profiles/{id}` + fallback a datos del post → popover con foto + headline + empresa + país + follower count + 3 botones (Seguir, Mensaje, Ver perfil).
+  - PresenceDot integrado. Auto-close on mouse leave con delay de 200ms para permitir hover al popover.
+  - Envolviendo el nombre del autor en cada `FeedPostCard`.
+
+  ### Archivos tocados
+  - Nuevos: `pages/CompanyProfilePage.jsx`, `components/community/UserHoverCard.jsx`
+  - Modificados: `App.js` (ruta `/empresas/:id`), `pages/MarketplacePage.jsx` (cards → anchor), `pages/CompaniesPage.jsx` (Link al profile), `pages/MessagesPage.jsx` (presence + tiempo relativo + preview), `components/community/FeedPostCard.jsx` (UserHoverCard sobre el nombre).
+  - **CERO cambios a backend**. 36/36 tests Wave 3 siguen pasando.
+
+

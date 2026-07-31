@@ -5,6 +5,21 @@ import CategoryPage, { NAVY } from '../components/CategoryPage';
 import { messagingService } from '../services/coreServices';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 import { useRealtime } from '../contexts/RealtimeContext';
+import PresenceDot from '../components/community/PresenceDot';
+
+// Human-friendly relative time ("hace 5 min", "ayer", "18 jul").
+const relTime = (iso) => {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    const diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 60) return 'ahora';
+    if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)} d`;
+    return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+  } catch { return ''; }
+};
 
 const MessagesPage = () => {
   const { user } = useCommunityAuth();
@@ -80,20 +95,57 @@ const MessagesPage = () => {
           )}
           {conversations.map((c) => {
             const other = c.participants.find((p) => p.id !== user.id) || c.participants[0];
+            const preview = c.last_message?.body || 'Sin mensajes aún';
+            const when = c.last_message?.created_at || c.updated_at;
+            const isActive = active?.id === c.id;
             return (
               <button key={c.id} onClick={() => openConv(c)}
                 data-testid={`messages-conv-${c.id}`}
-                style={{ width: '100%', padding: '0.75rem 0.9rem', textAlign: 'left', display: 'flex', gap: '0.55rem', alignItems: 'center',
-                         background: active?.id === c.id ? 'rgba(0,200,150,0.08)' : 'transparent',
-                         border: 'none', borderBottom: '1px solid rgba(11,31,58,0.05)', cursor: 'pointer' }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: NAVY, color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                  {(other.name || '·').charAt(0).toUpperCase()}
+                style={{ width: '100%', padding: '0.85rem 1rem', textAlign: 'left', display: 'flex', gap: '0.7rem', alignItems: 'center',
+                         background: isActive ? 'linear-gradient(135deg, rgba(0,200,150,0.10), rgba(0,200,150,0.02))' : 'transparent',
+                         border: 'none', borderBottom: '1px solid rgba(11,31,58,0.05)', cursor: 'pointer',
+                         transition: 'background 0.2s ease' }}>
+                <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: '50%',
+                                background: `linear-gradient(135deg, ${NAVY}, #7C3AED)`,
+                                color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: '1rem' }}>
+                    {(other.name || '·').charAt(0).toUpperCase()}
+                  </div>
+                  {other.kind === 'user' && other.id !== user.id && (
+                    <PresenceDot userId={other.id} size={11} />
+                  )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{other.name}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'rgba(11,31,58,0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.last_message?.body || 'Sin mensajes'}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6 }}>
+                    <div style={{ fontSize: '0.87rem', fontWeight: 700, color: NAVY,
+                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {other.name}
+                    </div>
+                    {when && (
+                      <div style={{ fontSize: '0.66rem', color: 'rgba(11,31,58,0.5)', flexShrink: 0, fontWeight: 500 }}>
+                        {relTime(when)}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <div style={{ fontSize: '0.75rem',
+                                  color: c.unread_count > 0 ? NAVY : 'rgba(11,31,58,0.55)',
+                                  fontWeight: c.unread_count > 0 ? 600 : 400,
+                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      {preview}
+                    </div>
+                    {c.unread_count > 0 && (
+                      <span data-testid={`messages-unread-${c.id}`}
+                            style={{ background: '#EF4444', color: '#FFFFFF',
+                                     fontSize: '0.6rem', fontWeight: 800,
+                                     padding: '2px 7px', borderRadius: 100,
+                                     minWidth: 20, textAlign: 'center' }}>
+                        {c.unread_count}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {c.unread_count > 0 && <span style={{ background: '#EF4444', color: '#FFFFFF', fontSize: '0.62rem', fontWeight: 800, padding: '2px 6px', borderRadius: 100 }}>{c.unread_count}</span>}
               </button>
             );
           })}
@@ -101,8 +153,32 @@ const MessagesPage = () => {
         <div style={{ background: '#FFFFFF', borderRadius: 12, border: '1px solid rgba(11,31,58,0.06)', display: 'flex', flexDirection: 'column' }}>
           {active ? (
             <>
-              <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(11,31,58,0.06)', fontWeight: 700, color: NAVY }}>
-                {(active.participants.find((p) => p.id !== user.id) || {}).name}
+              <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid rgba(11,31,58,0.06)',
+                            display: 'flex', alignItems: 'center', gap: 10 }}>
+                {(() => {
+                  const peer = active.participants.find((p) => p.id !== user.id) || {};
+                  return (
+                    <>
+                      <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: '50%',
+                                      background: `linear-gradient(135deg, ${NAVY}, #7C3AED)`,
+                                      color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700 }}>
+                          {(peer.name || '·').charAt(0).toUpperCase()}
+                        </div>
+                        {peer.kind === 'user' && <PresenceDot userId={peer.id} size={10} />}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, color: NAVY, fontSize: '0.9rem' }}>{peer.name}</div>
+                        {peer.kind === 'user' && (
+                          <div style={{ fontSize: '0.68rem', color: 'rgba(11,31,58,0.55)' }}>
+                            <PresenceDot userId={peer.id} size={7} inline showLabel />
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               <div data-testid="messages-list" style={{ flex: 1, overflow: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 {messages.map((m) => {

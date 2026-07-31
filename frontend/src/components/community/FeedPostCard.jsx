@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Share2, Bookmark, Send, MoreHorizontal, Lightbulb, Trophy, HandHeart, HelpCircle, Info, Copy, Flag, UserPlus, Building2 } from 'lucide-react';
 import PresenceDot from './PresenceDot';
+import UserHoverCard from './UserHoverCard';
 import { feedService, getViewSessionId } from '../../services/feedService';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 
@@ -142,7 +143,12 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
           <PresenceDot userId={post.author.id} size={11} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div data-testid={`feed-post-author-${post.id}`} style={{ fontWeight: 700, fontSize: '0.92rem', color: NAVY }}>{post.author.name}</div>
+          <UserHoverCard userId={post.author.id} fallback={post.author}>
+            <span data-testid={`feed-post-author-${post.id}`}
+              style={{ fontWeight: 700, fontSize: '0.92rem', color: NAVY, cursor: 'default' }}>
+              {post.author.name}
+            </span>
+          </UserHoverCard>
           <div style={{ fontSize: '0.72rem', color: 'rgba(11,31,58,0.55)' }}>
             {post.author.headline || 'Miembro de Punto Cero One'} · {new Date(post.created_at).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
           </div>

@@ -112,7 +112,8 @@ const CompaniesPage = () => {
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h2 style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1rem', fontWeight: 700, color: NAVY, margin: 0, letterSpacing: '-0.01em', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    {c.name}
+                    <Link to={`/empresas/${c.id}`} data-testid={`company-link-${c.id}`}
+                      style={{ color: NAVY, textDecoration: 'none' }}>{c.name}</Link>
                     {c.verification === 'verified' && <ShieldCheck size={14} color="#00C896" />}
                   </h2>
                   <div style={{ fontSize: '0.7rem', color: 'rgba(11,31,58,0.55)' }}>
