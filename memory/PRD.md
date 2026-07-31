@@ -405,3 +405,46 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
   - **CERO cambios a backend**, APIs, autenticación, modelos, real-time, multi-tenant. 36/36 tests Wave 3 siguen pasando.
 
 
+- **2026-07 · Wave 3.6 — Experience Polish & Social Ecosystem (frontend-only)**:
+
+  ### P0 · Company Media Upload UI
+  - `components/business/CompanyMediaManager.jsx`: drag-and-drop premium para logo (crop `contain`), banner (16:6), cover (16:9) y galería (hasta 20 imágenes).
+  - Progress bar animado con `XMLHttpRequest.upload.onprogress`, validación MIME + tamaño en cliente, error inline, reemplazar/eliminar por slot.
+  - Integrado en `CompaniesPage.jsx` con botón "Editar media" (solo dueño/admin) que abre `MediaEditModal` — full backdrop, cierre con click fuera, refetch automático del company doc tras cada mutación.
+  - Usa 100% los endpoints Wave 3 (`PUT /api/companies/{id}/media/{slot}`, `POST/DELETE /gallery`, `GET /media/{path}`).
+
+  ### P0 · News Experience
+  - `NewsPage.jsx` reescrito en estilo Google Discover / Microsoft Start: hero card grande + grid magazine (auto-fill 320px), category chips, timestamps humanizados, botones Guardar/Compartir/Leer más.
+  - Feed picker (`Todo` / `Tecnología`) sobre `/api/widgets/rss?feed_key=`. Fallback graceful cuando el feed viene vacío.
+  - Skeleton loaders animados, imágenes hero de `picsum.photos` como fallback cuando el RSS no trae imagen.
+  - `stripHtml()` + `formatTime()` helpers locales.
+
+  ### P0 · Marketplace por País
+  - `MarketplacePage.jsx` nueva ruta `/marketplace/:code` con 20 países registrados (name, flag emoji, tone, apiCountry). Fallback 404-friendly si el código no existe.
+  - Hero con bandera enorme + gradient teñido por país + 4 tabs (`Empresas · Profesionales · Vacantes · Eventos`) con contadores.
+  - Contenido cargado en paralelo desde `/api/companies?country=`, `/api/jobs?country=`, `/api/events?country=` (endpoints ya existentes). Cards con hover (`y: -3` + shadow) y placeholder image por país.
+  - Empty state con cohete cuando no hay contenido; skeleton grid mientras carga.
+  - **Mapa interactivo de Slide 5 ahora enlaza** a `/marketplace/{code}` (cambié `motion.button` a `motion.a href`). El tooltip pasó de "MARKETPLACE PRÓXIMAMENTE" a "ABRIR MARKETPLACE →".
+
+  ### P1 · Presence Avatars
+  - `components/community/PresenceDot.jsx`: hook `useRealtime().presenceOf([userId])` para primar el estado, dot con colores ONLINE emerald / AWAY amber / OFFLINE gray, glow ring solo cuando ONLINE.
+  - Integrado en:
+    - `FeedPostCard.jsx` (junto al avatar del autor)
+    - `RightWidgets.jsx > SuggestedPeople` (junto a cada persona sugerida)
+  - Preparado para inyectar en comments y messages en la siguiente iteración con solo `<PresenceDot userId={x} />`.
+
+  ### P1 · Feed más social
+  - `FeedPostMenu` (dropdown) añadido en cada `FeedPostCard` con: Copiar enlace (con feedback "¡Enlace copiado!"), Compartir, Guardar/Quitar, Ver empresa, Seguir autor, Reportar.
+  - Auto-cierre al click fuera. Estilos hover on-brand. Solo Reportar/Seguir/Guardar visibles si el user está autenticado.
+
+  ### P1 · Right Sidebar como dashboard vivo
+  - `SuggestedPeople` widget nuevo en `RightWidgets.jsx`: consume `/api/feed/posts?limit=15`, dedupe por autor, muestra top 5 con avatar + presence dot + botón "+ Seguir".
+  - Se conecta al SSE stream (`subscribe('notification')`) para reaccionar cuando hay actividad — las presencias se auto-refrescan.
+
+  ### Archivos tocados (solo frontend)
+  - Nuevos: `pages/MarketplacePage.jsx`, `components/business/CompanyMediaManager.jsx`, `components/community/PresenceDot.jsx`
+  - Reescritos: `pages/NewsPage.jsx`
+  - Modificados: `App.js` (ruta `/marketplace/:code`), `pages/CompaniesPage.jsx` (botón editar media + MediaEditModal), `components/community/FeedPostCard.jsx` (PresenceDot + FeedPostMenu dropdown), `components/community/RightWidgets.jsx` (SuggestedPeople), `components/PrimarySlides.jsx` (map buttons → anchor links a marketplace).
+  - **CERO cambios a backend**. 36/36 tests Wave 3 siguen pasando.
+
+

@@ -441,8 +441,9 @@ const InteractiveLatamMap = () => {
         gap: '0.5rem',
       }}>
         {LATAM_COUNTRIES.map((c) => (
-          <motion.button
+          <motion.a
             key={c.code}
+            href={`/marketplace/${c.code}`}
             onMouseEnter={() => setActive(c)}
             onMouseLeave={() => setActive(null)}
             onFocus={() => setActive(c)}
@@ -450,6 +451,7 @@ const InteractiveLatamMap = () => {
             whileHover={{ y: -2, scale: 1.04 }}
             transition={{ type: 'spring', stiffness: 320, damping: 20 }}
             data-testid={`map-country-${c.code}`}
+            title={`Abrir marketplace de ${c.name}`}
             style={{
               padding: '0.55rem 0.5rem', borderRadius: 12,
               background: active?.code === c.code
@@ -458,7 +460,7 @@ const InteractiveLatamMap = () => {
               border: `1px solid ${active?.code === c.code ? c.tone : 'rgba(255,255,255,0.10)'}`,
               boxShadow: active?.code === c.code ? `0 0 24px ${c.tone}55` : 'none',
               color: '#FFFFFF',
-              cursor: 'pointer',
+              cursor: 'pointer', textDecoration: 'none',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
               transition: 'background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease',
             }}>
@@ -471,7 +473,7 @@ const InteractiveLatamMap = () => {
               fontSize: '0.6rem', fontWeight: 500,
               color: active?.code === c.code ? '#FFFFFF' : 'rgba(255,255,255,0.55)',
             }}>{c.name}</span>
-          </motion.button>
+          </motion.a>
         ))}
       </div>
       <div style={{
@@ -479,7 +481,7 @@ const InteractiveLatamMap = () => {
         color: active ? active.tone : 'rgba(255,255,255,0.5)', letterSpacing: '0.2em',
         fontWeight: 700, transition: 'color 0.3s ease', minHeight: 18,
       }}>
-        {active ? `${active.name.toUpperCase()} · MARKETPLACE PRÓXIMAMENTE` : 'PASA EL MOUSE PARA EXPLORAR CADA PAÍS'}
+        {active ? `${active.name.toUpperCase()} · ABRIR MARKETPLACE →` : 'PASA EL MOUSE PARA EXPLORAR CADA PAÍS'}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Share2, Bookmark, Send, MoreHorizontal, Lightbulb, Trophy, HandHeart, HelpCircle, Info } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Send, MoreHorizontal, Lightbulb, Trophy, HandHeart, HelpCircle, Info, Copy, Flag, UserPlus, Building2 } from 'lucide-react';
+import PresenceDot from './PresenceDot';
 import { feedService, getViewSessionId } from '../../services/feedService';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 
@@ -126,17 +127,20 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
     >
       {/* header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '1rem 1.15rem 0.5rem' }}>
-        {post.author.picture ? (
-          <img src={post.author.picture} alt={post.author.name} referrerPolicy="no-referrer"
-            style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} />
-        ) : (
-          <div style={{
-            width: 44, height: 44, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #0B1F3A 0%, #7C3AED 100%)',
-            color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 700, fontFamily: '"Space Grotesk", sans-serif',
-          }}>{(post.author.name || 'M').charAt(0).toUpperCase()}</div>
-        )}
+        <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
+          {post.author.picture ? (
+            <img src={post.author.picture} alt={post.author.name} referrerPolicy="no-referrer"
+              style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} />
+          ) : (
+            <div style={{
+              width: 44, height: 44, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #0B1F3A 0%, #7C3AED 100%)',
+              color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 700, fontFamily: '"Space Grotesk", sans-serif',
+            }}>{(post.author.name || 'M').charAt(0).toUpperCase()}</div>
+          )}
+          <PresenceDot userId={post.author.id} size={11} />
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div data-testid={`feed-post-author-${post.id}`} style={{ fontWeight: 700, fontSize: '0.92rem', color: NAVY }}>{post.author.name}</div>
           <div style={{ fontSize: '0.72rem', color: 'rgba(11,31,58,0.55)' }}>
@@ -149,6 +153,7 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
             <MoreHorizontal size={16} />
           </button>
         )}
+        <FeedPostMenu post={post} onSave={toggleSave} onShare={share} isAuthed={isAuthed} />
       </div>
 
       {/* "Por qué ves esta publicación" — surfaces the ranking reasons from /api/feed/for-you */}
@@ -386,3 +391,82 @@ const ReactionButton = ({ meta, onClick, onPickReaction, disabled, testid }) => 
 };
 
 export default FeedPostCard;
+
+const FeedPostMenu = ({ post, onSave, onShare, isAuthed }) => {
+  const [open, setOpen] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
+  const menuRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const close = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
+    };
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [open]);
+
+  const copyLink = async (e) => {
+    e.stopPropagation();
+    try {
+      const url = `${window.location.origin}/?post=${post.id}`;
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    } catch { /* noop */ }
+  };
+  const report = async (e) => {
+    e.stopPropagation();
+    const reason = window.prompt('¿Por qué reportas esta publicación?');
+    if (!reason) return;
+    try { await feedService.report(post.id, reason); alert('Reporte enviado. Gracias.'); }
+    catch { alert('No se pudo enviar el reporte.'); }
+    setOpen(false);
+  };
+
+  const items = [
+    { label: copied ? '¡Enlace copiado!' : 'Copiar enlace', icon: Copy, onClick: copyLink, testid: `menu-copy-${post.id}` },
+    { label: 'Compartir', icon: Share2, onClick: (e) => { e.stopPropagation(); onShare(); setOpen(false); }, testid: `menu-share-${post.id}` },
+    { label: post.my_saved ? 'Quitar de guardados' : 'Guardar', icon: Bookmark, onClick: (e) => { e.stopPropagation(); onSave(); setOpen(false); }, testid: `menu-save-${post.id}`, hidden: !isAuthed },
+    { label: 'Ver empresa', icon: Building2, onClick: (e) => { e.stopPropagation(); window.location.href = '/empresas'; }, testid: `menu-company-${post.id}` },
+    { label: 'Seguir autor', icon: UserPlus, onClick: (e) => { e.stopPropagation(); alert('Próximamente'); setOpen(false); }, testid: `menu-follow-${post.id}`, hidden: !isAuthed },
+    { label: 'Reportar', icon: Flag, onClick: report, testid: `menu-report-${post.id}`, danger: true, hidden: !isAuthed },
+  ].filter((x) => !x.hidden);
+
+  return (
+    <div ref={menuRef} style={{ position: 'relative' }}>
+      <button onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        data-testid={`feed-post-menu-${post.id}`}
+        style={{ background: 'transparent', border: 'none', color: 'rgba(11,31,58,0.55)', cursor: 'pointer', padding: 4 }}>
+        <MoreHorizontal size={18} />
+      </button>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0, y: -6, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.15 }}
+          data-testid={`feed-post-menu-open-${post.id}`}
+          style={{
+            position: 'absolute', top: '110%', right: 0, zIndex: 30,
+            minWidth: 220, background: '#FFFFFF', borderRadius: 12,
+            boxShadow: '0 20px 50px rgba(11,31,58,0.18), 0 0 0 1px rgba(11,31,58,0.06)',
+            overflow: 'hidden', padding: '0.4rem 0',
+          }}>
+          {items.map((it) => (
+            <button key={it.label} onClick={it.onClick} data-testid={it.testid}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                width: '100%', padding: '0.6rem 1rem',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: it.danger ? '#B91C1C' : '#0B1F3A',
+                fontSize: '0.82rem', textAlign: 'left', fontWeight: 500,
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(11,31,58,0.04)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
+              <it.icon size={14} /> {it.label}
+            </button>
+          ))}
+        </motion.div>
+      )}
+    </div>
+  );
+};

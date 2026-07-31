@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ExternalLink, Globe2, Plus, Check, MapPin, ShieldCheck } from 'lucide-react';
+import { ExternalLink, Globe2, Plus, Check, MapPin, ShieldCheck, ImagePlus, X } from 'lucide-react';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
 import { companyService } from '../services/platformService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 import CompanyCreateModal from '../components/business/CompanyCreateModal';
+import CompanyMediaManager from '../components/business/CompanyMediaManager';
 
 const CompaniesPage = () => {
   const { user } = useCommunityAuth();
@@ -15,6 +16,7 @@ const CompaniesPage = () => {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [vertical, setVertical] = useState('');
+  const [editMediaFor, setEditMediaFor] = useState(null); // company being edited
   const isAuthed = !!user && typeof user === 'object';
 
   const load = useCallback(async (reset = false) => {
@@ -150,6 +152,18 @@ const CompaniesPage = () => {
                       display: 'inline-flex', alignItems: 'center', gap: 4,
                     }}>Visitar <ExternalLink size={10} /></a>
                 )}
+                {isAuthed && (c.owner_id === user?.id || user?.role === 'admin') && (
+                  <button onClick={() => setEditMediaFor(c)}
+                    data-testid={`company-edit-media-${c.id}`}
+                    style={{
+                      padding: '0.4rem 0.85rem', borderRadius: 100,
+                      background: 'rgba(0,200,150,0.12)', border: '1px solid rgba(0,200,150,0.4)',
+                      color: '#00A277', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700,
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                    }}>
+                    <ImagePlus size={11} /> Editar media
+                  </button>
+                )}
               </div>
             </div>
           </motion.article>
@@ -177,8 +191,60 @@ const CompaniesPage = () => {
       {showCreate && (
         <CompanyCreateModal onClose={() => setShowCreate(false)} onCreated={(c) => { onCreated(c); setShowCreate(false); }} />
       )}
+
+      {editMediaFor && (
+        <MediaEditModal
+          company={editMediaFor}
+          onClose={() => setEditMediaFor(null)}
+          onUpdated={async () => {
+            try {
+              const fresh = await companyService.get(editMediaFor.id);
+              setItems((prev) => prev.map((c) => (c.id === fresh.id ? { ...c, ...fresh } : c)));
+              setEditMediaFor(fresh);
+            } catch { /* noop */ }
+          }}
+        />
+      )}
     </CategoryPage>
   );
 };
+
+const MediaEditModal = ({ company, onClose, onUpdated }) => (
+  <div data-testid="company-media-modal" style={{
+    position: 'fixed', inset: 0, zIndex: 200,
+    background: 'rgba(10,15,28,0.78)',
+    display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+    padding: '3rem 1.5rem', overflowY: 'auto',
+  }} onClick={onClose}>
+    <motion.div
+      initial={{ opacity: 0, y: 30, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.35 }}
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        background: '#F7F8FC', borderRadius: 22,
+        width: '100%', maxWidth: 960, padding: '1.75rem 1.75rem 2.25rem',
+        boxShadow: '0 40px 100px rgba(0,0,0,0.35)',
+      }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    marginBottom: '1.25rem', gap: 8 }}>
+        <div>
+          <div style={{ fontSize: '0.62rem', letterSpacing: '0.24em', fontWeight: 700,
+                        color: '#00A277', marginBottom: 4 }}>GESTIÓN DE MEDIA</div>
+          <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.2rem',
+                        fontWeight: 700, color: NAVY }}>{company.name}</div>
+        </div>
+        <button onClick={onClose} data-testid="company-media-modal-close"
+          style={{
+            width: 36, height: 36, borderRadius: '50%',
+            border: 'none', background: 'rgba(11,31,58,0.06)', cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            color: NAVY,
+          }}><X size={16} /></button>
+      </div>
+      <CompanyMediaManager company={company} onUpdated={onUpdated} canEdit />
+    </motion.div>
+  </div>
+);
 
 export default CompaniesPage;
