@@ -21,6 +21,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from services.community_deps import current_user_or_none, require_current_user
 from services.analytics import record_event
+from services.notifications import dispatch as dispatch_notif
 from models_business import (
     EventCreate, EventUpdate, EventPublic, EventListResponse,
     RsvpInput, RsvpStatus, new_event_id, new_rsvp_id,
@@ -258,6 +259,15 @@ async def set_rsvp(
     await record_event(db, "event.rsvp",
                        actor_id=user["id"], subject_type="event", subject_id=event_id,
                        payload={"status": payload.status})
+    # Notify organizer (only when someone confirms going)
+    if payload.status == "going" and ev.get("organizer_id") != user["id"]:
+        await dispatch_notif(
+            db, recipient_id=ev.get("organizer_id"), kind="rsvp",
+            title=f"Nueva confirmación a {ev['title']}",
+            body=f"{user.get('name','Alguien')} asistirá",
+            actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
+            subject_type="event", subject_id=event_id, subject_url=f"/eventos/{event_id}",
+        )
     return {"status": payload.status}
 
 

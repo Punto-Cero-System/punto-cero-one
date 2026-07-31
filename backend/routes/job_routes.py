@@ -24,6 +24,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from auth import require_admin
 from services.community_deps import current_user_or_none, require_current_user
 from services.analytics import record_event
+from services.notifications import dispatch as dispatch_notif
 from models_business import (
     JobCreate, JobUpdate, JobPublic, JobListResponse,
     ApplicationCreate, ApplicationPublic, ApplicationStatusUpdate,
@@ -276,6 +277,17 @@ async def apply_to_job(
     await record_event(db, "job.applied",
                        actor_id=user["id"], subject_type="job", subject_id=job_id,
                        country=job.get("country"))
+    # Notify company owner
+    company = await db.companies.find_one({"id": job["company_id"]}, {"_id": 0, "owner_id": 1, "name": 1, "slug": 1})
+    if company:
+        await dispatch_notif(
+            db, recipient_id=company.get("owner_id"), kind="application",
+            title=f"Nueva postulación a {job['title']}",
+            body=f"{user.get('name','Un candidato')} aplicó al empleo",
+            actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
+            subject_type="application", subject_id=doc["id"],
+            subject_url=f"/admin/platform?tab=jobs&job={job_id}",
+        )
     return ApplicationPublic(**doc, job_title=job["title"])
 
 

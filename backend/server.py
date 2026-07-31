@@ -39,6 +39,10 @@ from routes.job_routes import router as job_router
 from routes.event_routes import router as event_router
 from routes.profile_routes import router as profile_router
 from routes.analytics_routes import router as analytics_router
+from routes.notification_routes import router as notification_router
+from routes.messaging_routes import router as messaging_router
+from routes.search_routes import router as search_router
+from routes.admin_platform_routes import router as admin_platform_router
 from models_category import DEFAULT_CATEGORIES
 
 
@@ -103,6 +107,10 @@ app.include_router(job_router)
 app.include_router(event_router)
 app.include_router(profile_router)
 app.include_router(analytics_router)
+app.include_router(notification_router)
+app.include_router(messaging_router)
+app.include_router(search_router)
+app.include_router(admin_platform_router)
 
 
 # -------------------- CORS --------------------
@@ -178,6 +186,15 @@ async def ensure_indexes():
     await db.analytics_events.create_index("created_at")
     await db.analytics_events.create_index("day")
     await db.analytics_counters.create_index([("name", 1), ("day", 1)])
+    # Wave 2.5 core services
+    await db.notifications.create_index("recipient_id")
+    await db.notifications.create_index([("recipient_id", 1), ("is_read", 1)])
+    await db.notifications.create_index("created_at")
+    await db.notification_preferences.create_index("user_id", unique=True)
+    await db.conversations.create_index("participants.id")
+    await db.conversations.create_index("updated_at")
+    await db.conversations.create_index("participant_key")
+    await db.chat_messages.create_index([("conversation_id", 1), ("created_at", -1)])
 
 
 async def seed_admin():

@@ -122,6 +122,19 @@ const AdminDashboardPage = () => {
             >
               Documentos
             </Link>
+            <Link
+              to="/admin/platform"
+              data-testid="admin-platform-link"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                padding: '0.5rem 0.9rem', borderRadius: 100,
+                background: 'rgba(0,200,150,0.14)',
+                border: '1px solid rgba(0,200,150,0.4)',
+                color: '#00C896', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none',
+              }}
+            >
+              Platform Admin
+            </Link>
             <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }} data-testid="admin-user-email">
               {user?.email}
             </span>

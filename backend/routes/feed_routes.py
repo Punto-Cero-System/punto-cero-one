@@ -24,6 +24,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, Cookie, Header,
 from pydantic import BaseModel
 
 from auth import require_admin
+from services.notifications import dispatch as dispatch_notif
 from models_feed import (
     PostCreate, PostPublic, PostAuthorMini, PostListResponse,
     CommentCreate, CommentPublic, CommentListResponse,
@@ -296,6 +297,16 @@ async def add_comment(
     }
     await db.post_comments.insert_one(doc)
     await db.posts.update_one({"id": post_id}, {"$inc": {"counts.comments": 1}})
+    # Notify author
+    post_doc = await db.posts.find_one({"id": post_id}, {"_id": 0, "author_id": 1})
+    if post_doc and post_doc.get("author_id") != user["id"]:
+        await dispatch_notif(
+            db, recipient_id=post_doc["author_id"], kind="comment",
+            title=f"{user.get('name','Alguien')} comentó tu publicación",
+            body=payload.body[:120],
+            actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
+            subject_type="post", subject_id=post_id, subject_url=f"/?post={post_id}",
+        )
     return CommentPublic(
         id=doc["id"], post_id=post_id, body=doc["body"],
         author=_author_mini(user), created_at=doc["created_at"],
@@ -377,6 +388,16 @@ async def react_to_post(
         {"id": post_id},
         {"$inc": {"counts.reactions": 1, f"reactions_by_kind.{payload.kind}": 1}},
     )
+    # Notify the post's author (except on self-reactions)
+    post_doc = await db.posts.find_one({"id": post_id}, {"_id": 0, "author_id": 1, "body": 1})
+    if post_doc and post_doc.get("author_id") != user["id"]:
+        await dispatch_notif(
+            db, recipient_id=post_doc["author_id"], kind="reaction",
+            title=f"{user.get('name','Alguien')} reaccionó con {payload.kind}",
+            body=(post_doc.get("body") or "")[:120],
+            actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
+            subject_type="post", subject_id=post_id, subject_url=f"/?post={post_id}",
+        )
     return {"reacted": True, "kind": payload.kind}
 
 

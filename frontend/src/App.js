@@ -26,6 +26,9 @@ import EventsPage from './pages/EventsPage';
 import AiPage from './pages/AiPage';
 import CommunityPage from './pages/CommunityPage';
 import ProfilePage from './pages/ProfilePage';
+import NotificationsPage from './pages/NotificationsPage';
+import MessagesPage from './pages/MessagesPage';
+import AdminPlatformPage from './pages/AdminPlatformPage';
 import { AuthProvider } from './contexts/AuthContext';
 import { CommunityAuthProvider } from './contexts/CommunityAuthContext';
 
@@ -98,6 +101,8 @@ function AppRouter() {
       <Route path="/ia" element={<AiPage />} />
       <Route path="/comunidad" element={<CommunityPage />} />
       <Route path="/perfil" element={<ProfilePage />} />
+      <Route path="/notificaciones" element={<NotificationsPage />} />
+      <Route path="/mensajes" element={<MessagesPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/investor/setup" element={<InvestorSetupPage />} />
       <Route
@@ -121,6 +126,14 @@ function AppRouter() {
         element={
           <ProtectedAdminRoute>
             <AdminDocumentsPage />
+          </ProtectedAdminRoute>
+        }
+      />
+      <Route
+        path="/admin/platform"
+        element={
+          <ProtectedAdminRoute>
+            <AdminPlatformPage />
           </ProtectedAdminRoute>
         }
       />

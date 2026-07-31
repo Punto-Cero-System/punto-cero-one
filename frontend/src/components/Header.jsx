@@ -4,6 +4,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Search, Bell, MessageCircle, ChevronDown, LogIn, LogOut } from 'lucide-react';
 import BrandMark from './BrandMark';
 import AppIcon from './community/AppIcon';
+import HeaderSearchBar from './community/HeaderSearchBar';
+import NotificationsBell from './community/NotificationsBell';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 
 const NAVY = '#0B1F3A';
@@ -62,31 +64,8 @@ const Header = () => {
         {/* Brand */}
         <BrandMark size={36} variant="full" showTagline={false} />
 
-        {/* Search — desktop */}
-        <div className="pc-header-search" style={{
-          position: 'relative', flex: 1, maxWidth: 320,
-          display: 'flex', alignItems: 'center',
-        }}>
-          <Search size={14} style={{
-            position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
-            color: 'rgba(255,255,255,0.5)',
-          }} />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar en Punto Cero One…"
-            data-testid="header-search"
-            style={{
-              width: '100%', height: 36,
-              padding: '0 0.85rem 0 2.15rem',
-              borderRadius: 100,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: '#FFFFFF', fontSize: '0.82rem',
-              outline: 'none',
-            }}
-          />
-        </div>
+        {/* Search — desktop (unified global) */}
+        <HeaderSearchBar />
 
         {/* Primary nav — desktop */}
         <nav className="pc-header-nav" style={{
@@ -123,7 +102,8 @@ const Header = () => {
             💎 Capital
           </Link>
 
-          {/* Profile / Join */}
+          {/* Notifications + Profile / Join */}
+          <NotificationsBell />
           {isAuthed ? (
             <div style={{ position: 'relative' }}>
               <button

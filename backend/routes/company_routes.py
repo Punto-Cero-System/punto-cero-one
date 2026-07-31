@@ -26,6 +26,7 @@ from pydantic import BaseModel
 from auth import require_admin
 from services.community_deps import current_user_or_none, require_current_user
 from services.analytics import record_event
+from services.notifications import dispatch as dispatch_notif
 from models_business import (
     CompanyCreate, CompanyUpdate, CompanyPublic, CompanyListResponse,
     VerificationStatus, new_company_id, make_slug, new_follow_id,
@@ -226,6 +227,14 @@ async def toggle_follow(
     await db.companies.update_one({"id": doc["id"]}, {"$inc": {"followers_count": 1}})
     await record_event(db, "company.followed",
                        actor_id=user["id"], subject_type="company", subject_id=doc["id"])
+    # Notify company owner
+    await dispatch_notif(
+        db, recipient_id=doc.get("owner_id"), kind="follower",
+        title=f"{user.get('name','Alguien')} sigue tu empresa",
+        body=doc.get("name"),
+        actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
+        subject_type="company", subject_id=doc["id"], subject_url=f"/empresas/{doc.get('slug') or doc['id']}",
+    )
     return {"following": True}
 
 
