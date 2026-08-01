@@ -95,6 +95,7 @@ def default_workspace() -> Dict[str, Any]:
                 "trending",
                 "trending-editorial",
                 "events",
+                "discover-entities",
                 "companies",
                 "investor-center",
                 "ai-tools",

@@ -50,7 +50,9 @@ from routes.email_routes import router as email_router
 from routes.follows_routes import router as follows_router
 from routes.workspace_routes import router as workspace_router
 from routes.growth_routes import router as growth_router
+from routes.discovery_routes import router as discovery_router
 from services.growth.scheduler import scheduler as growth_scheduler
+from services.discovery.seeder import seed_public_entities
 from models_category import DEFAULT_CATEGORIES
 
 
@@ -126,6 +128,7 @@ app.include_router(email_router)
 app.include_router(follows_router)
 app.include_router(workspace_router)
 app.include_router(growth_router)
+app.include_router(discovery_router)
 
 
 # -------------------- CORS --------------------
@@ -237,6 +240,21 @@ async def ensure_indexes():
         growth_scheduler.start(app)
     except Exception as e:
         logger.warning(f"growth scheduler start warning: {e}")
+    # Discovery — seed curated public entities into the companies collection.
+    try:
+        try:
+            await db.companies.create_index("slug", unique=True, sparse=True)
+        except Exception:
+            pass
+        try:
+            await db.companies.create_index("is_public_seed")
+            await db.companies.create_index("hashtags")
+            await db.companies.create_index("tags")
+        except Exception:
+            pass
+        await seed_public_entities(db)
+    except Exception as e:
+        logger.warning(f"discovery seed warning: {e}")
     # Wave 3 — external widgets cache (TTL index for auto-eviction)
     try:
         await db.widget_cache.create_index(

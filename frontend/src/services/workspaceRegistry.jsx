@@ -41,6 +41,7 @@ import AiToolsWidget from '../components/community/workspace/AiToolsWidget';
 import SuggestedPeopleWidget from '../components/community/workspace/SuggestedPeopleWidget';
 import CapitalCtaWidget from '../components/community/workspace/CapitalCtaWidget';
 import MessagesWidget from '../components/community/workspace/MessagesWidget';
+import DiscoverEntitiesWidget from '../components/community/workspace/DiscoverEntitiesWidget';
 
 /**
  * Small helpers to wrap the existing decorative widgets that live inside
@@ -302,6 +303,14 @@ export const WORKSPACE_WIDGETS = [
     category: 'community',
     defaultPanel: 'right',
     defaultOrder: 15,
+  }),
+  wrap(DiscoverEntitiesWidget, {
+    id: 'discover-entities',
+    title: 'Descubre entidades',
+    description: 'Empresas y organizaciones del ecosistema Punto Cero para seguir.',
+    category: 'navigation',
+    defaultPanel: 'right',
+    defaultOrder: 45,
   }),
   wrap(CapitalCtaWidget, {
     id: 'capital-cta',

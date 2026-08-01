@@ -53,12 +53,16 @@ def _slug(text: str) -> str:
 # COMPANIES
 # ---------------------------------------------------------------------------
 class SocialLinks(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     website: Optional[str] = None
     linkedin: Optional[str] = None
     twitter: Optional[str] = None
     instagram: Optional[str] = None
     youtube: Optional[str] = None
     facebook: Optional[str] = None
+    github: Optional[str] = None
+    tiktok: Optional[str] = None
+    rss: Optional[str] = None
 
 
 class CompanyServiceItem(BaseModel):

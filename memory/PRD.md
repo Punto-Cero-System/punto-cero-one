@@ -659,4 +659,63 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
   - **CERO cambios** al layout, sidebars, Mi Espacio, MessagesWidget, Header ni cualquier otro componente.
 
 
+- **2026-08 · Wave 4D — Discovery Platform (Ecosistema de Entidades)**:
+
+  ### Filosofía
+  - Punto Cero One deja de verse vacío incluso sin usuarios: todo gira alrededor de ENTIDADES (empresas, orgs, universidades, comunidades, LegalTech, canales, etc.).
+  - Cero pantallas nuevas · cero cambios de diseño · cero módulos duplicados.
+  - Reutilizamos: `companies` collection, `/api/companies`, `/api/search`, `/api/follows`, `CompanyProfilePage.jsx`, `FollowButton`, growth engine, workspace widgets.
+
+  ### Backend — nuevo paquete `services/discovery/`
+  - `seeds.py` — catálogo curado de 30+ entidades públicas reales:
+    - Big Tech (Microsoft, GitHub, OpenAI, AWS, Google Cloud, NVIDIA, Vercel, Cloudflare, Hugging Face)
+    - Consumer/FMCG (Coca-Cola, PepsiCo, Nestlé, Unilever, Mondelēz)
+    - LegalTech (vLex, LexisNexis, Clio, Harvey AI, Casetext)
+    - Universidades (Harvard, MIT, Stanford, Universidad Nacional de Colombia, Uniandes, UNAM)
+    - Consultoras (McKinsey, BCG)
+    - LatAm champions (Mercado Libre, Rappi, Nubank)
+    Cada entrada trae: descripción oficial, website, socials (linkedin/twitter/instagram/youtube/github/tiktok), hashtags, tags, `related_ids` para el motor de recomendaciones.
+  - `seeder.py` — upsert idempotente en `companies` collection al startup con `is_public_seed: true`, `verification: verified`, logo desde `logo.clearbit.com` por dominio.
+  - `resolver.py` — recolector de contenido relacionado desacoplado:
+    - `related_news(entity)` → filtra `growth_items` por tags/keywords/name (reuso 100% del Growth Engine)
+    - `related_repos(entity)` → GitHub REST API pública (`api.github.com/orgs/{org}/repos`, sin auth)
+    - `related_videos(entity)` → YouTube channel RSS público
+    - `related_jobs(entity)` → filtro sobre `jobs` collection existente
+    - `related_events(entity)` → filtro sobre `events` collection existente
+    - `similar_entities(entity)` → curated `related_ids` + fallback por vertical
+    - `gather(entity)` → asyncio.gather() → todo en paralelo, respuesta única
+  - Extensión `SocialLinks` (models_business): añadidos `github`, `tiktok`, `rss` (retro-compatible, campos opcionales).
+
+  ### Endpoints nuevos
+  - `GET /api/discovery/entity/{slug}` — ficha pública (reusa companies collection).
+  - `GET /api/discovery/entity/{slug}/related` — bundle: `{ entity, news, repos, videos, jobs, events, similar, generated_at }`.
+  - `GET /api/discovery/suggested?limit=N` — recomendaciones basadas en follows del usuario; fallback a seeds populares para anónimos.
+
+  ### Extensión de contratos existentes (retro-compatible)
+  - `/api/search` — extendido para matchear también por `tags` y `hashtags`. Devuelve `verified` + `is_public` flags. Ahora "LegalTech" devuelve vLex, Clio, Harvey AI, Casetext y LexisNexis (además de acme-legaltech creada por miembros).
+  - `/api/companies/{slug}` — sin cambios: ya funciona porque los seeds se insertan como companies normales.
+  - `/api/follows/company/{id}` — sin cambios: seguir Microsoft/Pepsi/Harvard funciona como seguir cualquier otra empresa.
+
+  ### Frontend (cero pantallas nuevas)
+  - `services/platformService.js` — `discoveryService.related(slug)` y `discoveryService.suggested(limit)`.
+  - `components/business/CompanyRelated.jsx` — se renderiza dentro de `CompanyProfilePage` (columna derecha, debajo de "Ubicación"). Muestra tarjetas widget-style para: Noticias · Videos oficiales · Repositorios GitHub (estrellas/forks/lenguaje reales) · Empleos · Eventos · Entidades relacionadas.
+  - `components/community/workspace/DiscoverEntitiesWidget.jsx` — nuevo widget de Mi Espacio (panel derecho, posición 45). Lista 6 entidades sugeridas con `FollowButton` inline; agregado al preset "Fundador".
+  - `pages/CompanyProfilePage.jsx` — solo se agregó el import + una línea `<CompanyRelated slug={company.slug} />` y se completó el mapa `SOCIAL_ICONS` con github/tiktok/rss. **Ningún estilo modificado.**
+
+  ### Fuentes públicas integradas
+  - RSS (ya en Growth Engine) · GitHub REST API pública · YouTube channel RSS · logo.clearbit.com · No scraping, no APIs privadas, respeto absoluto por licencias.
+
+  ### Tests
+  - `tests/test_discovery.py` — 7/7 pass: seed auto, search por nombre/tag/hashtag, ficha, related bundle, suggested fallback, 404.
+  - Regresión: `test_growth.py` 8/8 · `test_wave4_workspace.py` 7/7 · `test_wave4_follows.py` 11/11 = **33/33 PASS**.
+  - `yarn build` producción: 305.22 kB gzip.
+
+  ### Ejemplo end-to-end
+  El usuario escribe "Microsoft" en la barra de búsqueda → `/api/search` devuelve la entidad → click abre `/empresas/microsoft` → `CompanyProfilePage` renderiza header + socials (con GitHub) + botón Seguir → `CompanyRelated` llama `/api/discovery/entity/microsoft/related` → muestra 6 repos reales (DCVC, vcpkg 27k★, markitdown 170k★, etc.) + Amazon Web Services / GitHub / Google Cloud / OpenAI como entidades relacionadas. Al seguir Microsoft, aparece en Mi Espacio y sus noticias empiezan a interlear en el feed vía Growth Engine.
+
+  ### Archivos tocados
+  - Nuevos: `backend/services/discovery/{__init__,seeds,seeder,resolver}.py`, `backend/routes/discovery_routes.py`, `backend/tests/test_discovery.py`, `frontend/src/components/business/CompanyRelated.jsx`, `frontend/src/components/community/workspace/DiscoverEntitiesWidget.jsx`.
+  - Modificados: `backend/server.py` (router + seed en startup + índices), `backend/models_business.py` (SocialLinks +github/tiktok/rss), `backend/routes/search_routes.py` (match por tags/hashtags), `backend/routes/workspace_routes.py` (default incluye discover-entities), `frontend/src/services/platformService.js` (discoveryService), `frontend/src/services/workspaceRegistry.jsx` (registro), `frontend/src/services/workspacePresets.js` (fundador incluye discover), `frontend/src/contexts/WorkspaceContext.jsx` (fallback anon), `frontend/src/pages/CompanyProfilePage.jsx` (renderiza `CompanyRelated`).
+
+
 

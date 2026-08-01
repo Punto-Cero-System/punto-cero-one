@@ -87,7 +87,7 @@ export const WORKSPACE_PRESETS = [
       center: ['welcome-band', 'feed', 'inline-stats'],
       right: [
         'messages', 'rss-news', 'ai-tools', 'ai-of-the-day',
-        'marketplace', 'companies', 'investor-center', 'capital-cta',
+        'marketplace', 'discover-entities', 'companies', 'investor-center', 'capital-cta',
         'courses', 'launches',
       ],
     },

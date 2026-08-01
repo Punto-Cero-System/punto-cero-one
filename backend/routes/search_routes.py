@@ -59,14 +59,17 @@ async def search(
         cur = db.companies.find(
             {"is_deleted": {"$ne": True}, "$or": [
                 {"name": _regex(q)}, {"tagline": _regex(q)}, {"description": _regex(q)},
+                {"tags": _regex(q)}, {"hashtags": _regex(q)},
             ]},
-            {"_id": 0, "id": 1, "name": 1, "tagline": 1, "logo_url": 1, "slug": 1, "vertical": 1, "country": 1},
+            {"_id": 0, "id": 1, "name": 1, "tagline": 1, "logo_url": 1, "slug": 1, "vertical": 1, "country": 1, "is_public_seed": 1, "verification": 1},
         ).limit(limit)
         results["companies"] = [{
             "type": "companies", "id": c["id"],
             "title": c["name"], "subtitle": c.get("tagline") or c.get("vertical"),
             "image": c.get("logo_url"), "meta": c.get("country"),
             "url": f"/empresas/{c.get('slug') or c['id']}",
+            "verified": c.get("verification") == "verified",
+            "is_public": bool(c.get("is_public_seed")),
         } async for c in cur]
 
     if "posts" in results:

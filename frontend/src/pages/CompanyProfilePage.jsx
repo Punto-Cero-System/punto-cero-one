@@ -8,6 +8,7 @@ import {
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import CompanyMediaManager from '../components/business/CompanyMediaManager';
+import CompanyRelated from '../components/business/CompanyRelated';
 import FollowButton from '../components/community/FollowButton';
 import { companyService } from '../services/platformService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
@@ -19,12 +20,14 @@ const API = process.env.REACT_APP_BACKEND_URL;
 const SOCIAL_ICONS = {
   website:   { Icon: Globe,     label: 'Sitio web' },
   linkedin:  { Icon: Linkedin,  label: 'LinkedIn' },
+  twitter:   { Icon: Twitter,   label: 'X' },
+  x:         { Icon: Twitter,   label: 'X' },
   instagram: { Icon: Instagram, label: 'Instagram' },
   facebook:  { Icon: Facebook,  label: 'Facebook' },
-  twitter:   { Icon: Twitter,   label: 'Twitter/X' },
-  x:         { Icon: Twitter,   label: 'X' },
   youtube:   { Icon: Youtube,   label: 'YouTube' },
+  github:    { Icon: ExternalLink, label: 'GitHub' },
   tiktok:    { Icon: Music,     label: 'TikTok' },
+  rss:       { Icon: ExternalLink, label: 'RSS' },
 };
 
 /**
@@ -264,6 +267,9 @@ const CompanyProfilePage = () => {
                 <LabelValue label="Vertical" value={company.vertical} />
               </div>
             </SectionCard>
+
+            {/* Discovery — reuses public sources: news, videos, repos, jobs, events, similar */}
+            <CompanyRelated slug={company.slug} />
           </div>
         </section>
       </main>

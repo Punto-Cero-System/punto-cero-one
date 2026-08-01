@@ -69,3 +69,8 @@ export const profileService = {
   updateMe: (body) => fj('/api/community/users/me', { method: 'PATCH', body: JSON.stringify(body) }).then(throwOnError),
   publicProfile: (userId) => fj(`/api/community/users/${userId}`).then(throwOnError),
 };
+
+export const discoveryService = {
+  related: (slug) => fj(`/api/discovery/entity/${encodeURIComponent(slug)}/related`).then(throwOnError),
+  suggested: (limit = 10) => fj(`/api/discovery/suggested?limit=${limit}`).then(throwOnError),
+};
