@@ -35,6 +35,18 @@ class ProfileSocialLinks(BaseModel):
     youtube: Optional[str] = None
 
 
+class UIPreferences(BaseModel):
+    """Per-user visual customization applied globally on the frontend."""
+    model_config = ConfigDict(extra="ignore")
+    theme: Optional[str] = Field(default=None, pattern=r"^(light|dark|auto)$")
+    primary_color: Optional[str] = Field(default=None, max_length=20)
+    secondary_color: Optional[str] = Field(default=None, max_length=20)
+    accent_color: Optional[str] = Field(default=None, max_length=20)
+    button_color: Optional[str] = Field(default=None, max_length=20)
+    gradient: Optional[str] = Field(default=None, max_length=200)
+    background_url: Optional[str] = Field(default=None, max_length=400)
+
+
 class ProfileUpdate(BaseModel):
     model_config = ConfigDict(extra="ignore")
     name: Optional[str] = Field(default=None, max_length=120)
@@ -54,6 +66,7 @@ class ProfileUpdate(BaseModel):
     certifications: Optional[list[ProfileCertification]] = None
     portfolio_url: Optional[str] = Field(default=None, max_length=300)
     social: Optional[ProfileSocialLinks] = None
+    ui_preferences: Optional[UIPreferences] = None
 
 
 class ProfilePublic(BaseModel):
@@ -62,6 +75,7 @@ class ProfilePublic(BaseModel):
     email: str
     name: str
     picture: Optional[str] = None
+    cover_url: Optional[str] = None
     role: str
     headline: Optional[str] = None
     bio: Optional[str] = None
@@ -79,6 +93,7 @@ class ProfilePublic(BaseModel):
     certifications: list[ProfileCertification] = []
     portfolio_url: Optional[str] = None
     social: ProfileSocialLinks = ProfileSocialLinks()
+    ui_preferences: UIPreferences = UIPreferences()
     providers: list[str] = []
     posts_count: int = 0
     followers_count: int = 0

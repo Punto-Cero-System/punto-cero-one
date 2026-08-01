@@ -16,6 +16,25 @@ const authFetch = (path, opts = {}) =>
     },
   });
 
+const asJsonOrThrow = async (res) => {
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    let detail = data?.detail || 'auth_failed';
+    if (Array.isArray(detail)) {
+      detail = detail
+        .map((e) => (e && typeof e.msg === 'string' ? e.msg : JSON.stringify(e)))
+        .filter(Boolean)
+        .join(' · ');
+    } else if (detail && typeof detail === 'object' && typeof detail.msg === 'string') {
+      detail = detail.msg;
+    }
+    const err = new Error(String(detail));
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+};
+
 export const authService = {
   async listProviders() {
     const res = await authFetch('/api/community/auth/providers');
@@ -24,15 +43,10 @@ export const authService = {
   },
 
   async exchangeSession({ provider = 'google', sessionId }) {
-    const res = await authFetch('/api/community/auth/session', {
+    return asJsonOrThrow(await authFetch('/api/community/auth/session', {
       method: 'POST',
       body: JSON.stringify({ provider, session_id: sessionId }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || 'session_exchange_failed');
-    }
-    return res.json();
+    }));
   },
 
   async me() {
@@ -44,6 +58,35 @@ export const authService = {
 
   async logout() {
     await authFetch('/api/community/auth/logout', { method: 'POST' });
+  },
+
+  // Native email / password
+  async registerEmail({ email, password, name }) {
+    return asJsonOrThrow(await authFetch('/api/community/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name }),
+    }));
+  },
+
+  async loginEmail({ email, password }) {
+    return asJsonOrThrow(await authFetch('/api/community/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }));
+  },
+
+  async forgotPassword({ email }) {
+    return asJsonOrThrow(await authFetch('/api/community/auth/password/forgot', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }));
+  },
+
+  async resetPassword({ token, password }) {
+    return asJsonOrThrow(await authFetch('/api/community/auth/password/reset', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }));
   },
 };
 
@@ -68,4 +111,5 @@ export const AUTH_PROVIDERS = {
   linkedin: { key: 'linkedin', label: 'LinkedIn', available: false },
   apple: { key: 'apple', label: 'Apple', available: false },
   facebook: { key: 'facebook', label: 'Facebook', available: false },
+  twitter: { key: 'twitter', label: 'X', available: false },
 };

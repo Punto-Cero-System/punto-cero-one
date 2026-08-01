@@ -54,6 +54,7 @@ const LiveFeed = ({ initialCategory = null }) => {
   const [forYouMode, setForYouMode] = useState(null);
   const [growth, setGrowth] = useState([]);
   const [resolvedCountry, setResolvedCountry] = useState(null);
+  const [refreshTick, setRefreshTick] = useState(0);
   const isAuthed = !!user && typeof user === 'object';
   const sentinelRef = useRef(null);
   const inflight = useRef(false);
@@ -73,7 +74,7 @@ const LiveFeed = ({ initialCategory = null }) => {
       })
       .catch(() => setGrowth([]));
     return () => { cancelled = true; };
-  }, [category]);
+  }, [category, refreshTick]);
 
   // stable page loader — reads cursor/category via refs to avoid stale closures
   const loadMore = useCallback(async () => {
@@ -82,22 +83,32 @@ const LiveFeed = ({ initialCategory = null }) => {
     setLoading(true);
     setError('');
     try {
-      if (tab === 'for-you') {
-        // Ranked feed — single page (no pagination cursor). Backend picks the top N.
+      // "Para Ti" — first page is a ranked snapshot; subsequent pages fall
+      // through to chronological /posts to keep infinite scroll flowing.
+      if (tab === 'for-you' && nextCursorRef.current == null && items.length === 0) {
         const data = await feedService.forYou(30);
-        setItems(data.items || []);
+        const list = data.items || [];
+        setItems(list);
         setForYouMode(data.mode || 'CHRONOLOGICAL');
-        nextCursorRef.current = null;
-        hasMoreRef.current = false;
-        setCursor(null);
-        setHasMore(false);
+        // Prepare chronological cursor from the oldest ranked item so we can
+        // keep loading more content when the user scrolls beyond the ranking.
+        const oldest = list.length ? list[list.length - 1].created_at : null;
+        nextCursorRef.current = oldest;
+        hasMoreRef.current = !!oldest;
+        setCursor(oldest);
+        setHasMore(!!oldest);
       } else {
         const data = await feedService.listPosts({
           limit: 15,
           cursor: nextCursorRef.current || undefined,
           category_key: category || undefined,
         });
-        setItems((prev) => (nextCursorRef.current ? [...prev, ...data.items] : data.items));
+        setItems((prev) => {
+          if (!prev.length) return data.items;
+          const seen = new Set(prev.map((p) => p.id));
+          const next = data.items.filter((p) => !seen.has(p.id));
+          return [...prev, ...next];
+        });
         nextCursorRef.current = data.next_cursor;
         hasMoreRef.current = !!data.next_cursor;
         setCursor(data.next_cursor);
@@ -111,7 +122,7 @@ const LiveFeed = ({ initialCategory = null }) => {
       setLoading(false);
       inflight.current = false;
     }
-  }, [category, tab]);
+  }, [category, tab, items.length]);
 
   // reset when category OR tab changes
   useEffect(() => {
@@ -136,6 +147,27 @@ const LiveFeed = ({ initialCategory = null }) => {
     );
     io.observe(node);
     return () => io.disconnect();
+  }, [loadMore]);
+
+  // Follow-change bus — when the user follows/unfollows anything, refresh
+  // the feed so the recommendation ranking picks it up immediately.
+  useEffect(() => {
+    let t = null;
+    const handler = () => {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => {
+        nextCursorRef.current = null;
+        hasMoreRef.current = true;
+        setCursor(null); setHasMore(true); setItems([]);
+        setRefreshTick((n) => n + 1);
+        loadMore();
+      }, 350);
+    };
+    window.addEventListener('pc:follow-change', handler);
+    return () => {
+      window.removeEventListener('pc:follow-change', handler);
+      if (t) clearTimeout(t);
+    };
   }, [loadMore]);
 
   const onNewPost = async ({ text, categoryKey }) => {

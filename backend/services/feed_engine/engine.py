@@ -48,12 +48,22 @@ async def load_user_signals(db, user: Optional[dict]) -> FeedSignals:
     if followed_company_ids:
         async for c in db.companies.find(
             {"id": {"$in": list(followed_company_ids)}},
-            {"_id": 0, "owner_id": 1, "vertical": 1},
+            {"_id": 0, "owner_id": 1, "vertical": 1, "hashtags": 1, "tags": 1, "country": 1},
         ):
             if c.get("owner_id"):
                 followed_company_owner_ids.add(c["owner_id"])
             if c.get("vertical"):
                 verticals.add(c["vertical"].lower())
+            # Feed inherit: hashtags + tags declared on the followed company
+            # feed the hashtag/interaction scoring providers, so following a
+            # company immediately raises related content in the ranking even
+            # when the company itself doesn't have posts yet.
+            for t in (c.get("hashtags") or []):
+                followed_hashtags.add((t or "").lower().lstrip("#"))
+            for t in (c.get("tags") or []):
+                followed_hashtags.add((t or "").lower().lstrip("#"))
+            if c.get("country"):
+                followed_countries.add(str(c["country"]).lower())
 
     # Author affinity from past reactions + comments + saves (last 90 days).
     interaction_author_ids: set[str] = set()

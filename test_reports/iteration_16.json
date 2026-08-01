@@ -1,0 +1,43 @@
+{
+  "summary": "Wave 6 (Auth Email/Password + Password Reset + Profile Media + UI Preferences + Feed Layout) — 8/8 backend pytest tests PASSED. Frontend flows verified for /join tabs, register, forgot-password success message, reset-password page (invalid token error shown correctly), /perfil/personalizar (all data-testids present, theme-dark toggles data-theme='dark'), providers coming_soon badges present for apple/microsoft/linkedin/facebook/twitter, feed-scroll-sentinel present on home. Found ONE gap: CompaniesPage.onFollow does NOT dispatch pc:follow-change, so following from /empresas will NOT auto-refresh the feed — the requirement is only met from surfaces using FollowButton.jsx.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Follow → immediate feed refresh (P0)",
+        "issue": "CompaniesPage (/empresas) uses an inline follow button (data-testid company-follow-<id>) whose onFollow handler calls companyService.follow() but does NOT window.dispatchEvent(new CustomEvent('pc:follow-change')). LiveFeed listens for this event, so following a company from /empresas will not trigger automatic feed refresh on /. The FollowButton.jsx component DOES dispatch it, but is not used on CompaniesPage. Likely same for CompanyDetailPage — verify.",
+        "affected_selectors": ["[data-testid^='company-follow-']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_wave6_auth_email.py",
+    "/app/backend/tests/test_wave6_extended.py",
+    "/app/test_reports/pytest/wave6_all.xml"
+  ],
+  "action_items": [
+    "In CompaniesPage.jsx (and CompanyDetailPage if similar), after successful companyService.follow(), dispatch window.dispatchEvent(new CustomEvent('pc:follow-change', { detail: { entityType: 'company', entityId: id, following: r.following, count: ... } })) so LiveFeed refreshes automatically. Alternatively, replace the inline button with <FollowButton entityType='company' entityId={c.id} initialFollowing={c.my_following} onChange={...}/>."
+  ],
+  "critical_code_review_comments": [
+    "CompaniesPage.onFollow duplicates FollowButton logic but omits the pc:follow-change dispatch → violates the P0 real-time refresh contract.",
+    "Password reset endpoint correctly returns generic 200 for both existing and non-existing emails (anti-enumeration).",
+    "profile_media_routes correctly gates public streaming path with app_prefix check and enforces MIME whitelist + 8MB cap.",
+    "test_wave6_auth_email.py requires MONGO_URL env — pytest.ini may want load_dotenv hook so devs can run pytest without `set -a && source .env`.",
+    "community_auth_routes register upserts password onto social-only accounts — good UX, but consider requiring email verification before password login on such linked accounts."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_wave6_extended.py"
+  ],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "95% (all UI elements/testids present; 1 integration gap on /empresas follow refresh)"},
+  "test_credentials": "Fresh random pytest+<uuid>@puntocero.test-e2e.com / TestPwd12345 registered via POST /api/community/auth/register during each test run.",
+  "seed_data_creation": "No seed data mutated. New test users created with unique emails per run.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend Wave 6 fully green. Frontend UI renders /join (Social + Correo tabs with PRONTO badges), /reset-password (form + invalid-token error message), /perfil/personalizar (all controls with expected data-testids: profile-customize-page, theme-{light,dark,auto}, color-{primary,secondary,accent,button}, profile-media-picture-upload, profile-media-cover-upload, profile-reset-preferences), and Home feed shows feed-scroll-sentinel. Only pending issue is the pc:follow-change dispatch missing from CompaniesPage.onFollow. Once main agent adds the dispatch (or replaces inline button with FollowButton), re-run the follow→feed refresh assertion.",
+  "rca of the issue": "CompaniesPage.onFollow (src/pages/CompaniesPage.jsx:38-43) only updates local component state after companyService.follow(). LiveFeed.jsx:166 subscribes to 'pc:follow-change' via window.addEventListener, but that event is only fired by FollowButton.jsx:56. Since CompaniesPage renders its own inline button instead of using <FollowButton/>, the event never fires when the user follows from /empresas → LiveFeed's refresh tick never increments → feed does not reload automatically. Reproduction: register user, open /empresas, click '+ Seguir' on any company card, then navigate to /. The feed does not include a fresh signals refetch triggered by the follow. Mitigation: add `window.dispatchEvent(new CustomEvent('pc:follow-change', { detail: { entityType: 'company', entityId: id, following: r.following } }))` inside CompaniesPage.onFollow after setItems, or replace the inline button with FollowButton."
+}

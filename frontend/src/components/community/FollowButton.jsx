@@ -50,6 +50,18 @@ const FollowButton = ({
       const res = await fn(entityType, entityId);
       setFollowing(!!res.my_following);
       if (onChange) onChange(!!res.my_following, res.count || 0);
+      // Emit global follow-change so live surfaces (Feed, Recommendations,
+      // Discover widgets) can refetch immediately without a manual reload.
+      try {
+        window.dispatchEvent(new CustomEvent('pc:follow-change', {
+          detail: {
+            entityType,
+            entityId,
+            following: !!res.my_following,
+            count: res.count || 0,
+          },
+        }));
+      } catch { /* no-op */ }
     } catch {
       setFollowing(!optimistic); // rollback
     } finally { setBusy(false); }

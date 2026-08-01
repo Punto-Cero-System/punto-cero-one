@@ -23,37 +23,43 @@ const CommunityLayout = ({ top, left, center, right }) => {
       <style>{`
         .pc-community-top { width: 100%; }
         .pc-community-grid {
-          max-width: 1360px;
+          width: 100%;
+          max-width: 1600px;
           margin: 0 auto;
-          padding: 1.25rem 1rem 4rem;
+          padding: 1rem clamp(0.75rem, 2vw, 2rem) 4rem;
           display: grid;
           grid-template-columns: 260px minmax(0, 1fr) 320px;
-          gap: 1.5rem;
+          gap: clamp(1rem, 1.5vw, 1.5rem);
           align-items: start;
+          box-sizing: border-box;
         }
         .pc-community-col { min-width: 0; }
-        .pc-community-center { display: flex; flex-direction: column; gap: 1rem; }
+        .pc-community-center { display: flex; flex-direction: column; gap: 0.85rem; }
 
-        @media (max-width: 1280px) {
+        @media (max-width: 1400px) {
           .pc-community-grid {
             grid-template-columns: 240px minmax(0, 1fr) 300px;
-            gap: 1.15rem;
           }
         }
         @media (max-width: 1200px) {
           .pc-community-grid {
-            grid-template-columns: 240px minmax(0, 1fr);
-            gap: 1.25rem;
+            grid-template-columns: 220px minmax(0, 1fr);
+            gap: 1.15rem;
           }
           .pc-community-right { display: none; }
         }
         @media (max-width: 900px) {
           .pc-community-grid {
-            grid-template-columns: 1fr;
-            padding: 1rem 0.75rem 5rem;
-            gap: 1rem;
+            grid-template-columns: minmax(0, 1fr);
+            padding: 0.75rem 0.75rem 5rem;
+            gap: 0.85rem;
           }
           .pc-community-left { display: none; }
+        }
+        @media (max-width: 480px) {
+          .pc-community-grid {
+            padding: 0.5rem 0.5rem 5rem;
+          }
         }
       `}</style>
     </>

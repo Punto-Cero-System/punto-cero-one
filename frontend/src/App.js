@@ -10,6 +10,7 @@ import ExecutiveSummaryPage from './pages/ExecutiveSummaryPage';
 import CapitalStrategyPage from './pages/CapitalStrategyPage';
 import CapitalHubPage from './pages/CapitalHubPage';
 import JoinPage from './pages/JoinPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import InvestorSetupPage from './pages/InvestorSetupPage';
 import InvestorPortalPage from './pages/InvestorPortalPage';
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -35,11 +36,13 @@ import MarketplacePage from './pages/MarketplacePage';
 import CompanyProfilePage from './pages/CompanyProfilePage';
 import HashtagPage from './pages/HashtagPage';
 import MiEspacioConfigPage from './pages/MiEspacioConfigPage';
+import ProfileCustomizePage from './pages/ProfileCustomizePage';
 import MobileBottomNav from './components/community/MobileBottomNav';
 import { AuthProvider } from './contexts/AuthContext';
 import { CommunityAuthProvider } from './contexts/CommunityAuthContext';
 import { RealtimeProvider } from './contexts/RealtimeContext';
 import { WorkspaceProvider } from './contexts/WorkspaceContext';
+import { UIPreferencesProvider } from './contexts/UIPreferencesContext';
 
 function App() {
   useEffect(() => {
@@ -73,12 +76,14 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <CommunityAuthProvider>
-            <RealtimeProvider>
-              <WorkspaceProvider>
-                <AppRouter />
-                <MobileBottomNav />
-              </WorkspaceProvider>
-            </RealtimeProvider>
+            <UIPreferencesProvider>
+              <RealtimeProvider>
+                <WorkspaceProvider>
+                  <AppRouter />
+                  <MobileBottomNav />
+                </WorkspaceProvider>
+              </RealtimeProvider>
+            </UIPreferencesProvider>
           </CommunityAuthProvider>
         </AuthProvider>
       </BrowserRouter>
@@ -109,6 +114,7 @@ function AppRouter() {
       <Route path="/capital-strategy" element={<CapitalStrategyPage />} />
       <Route path="/capital" element={<CapitalHubPage />} />
       <Route path="/join" element={<JoinPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/noticias" element={<NewsPage />} />
       <Route path="/videos" element={<VideosPage />} />
       <Route path="/empleos" element={<JobsPage />} />
@@ -117,6 +123,7 @@ function AppRouter() {
       <Route path="/ia" element={<AiPage />} />
       <Route path="/comunidad" element={<CommunityPage />} />
       <Route path="/perfil" element={<ProfilePage />} />
+      <Route path="/perfil/personalizar" element={<ProfileCustomizePage />} />
       <Route path="/notificaciones" element={<NotificationsPage />} />
       <Route path="/mensajes" element={<MessagesPage />} />
       <Route path="/nuestra-historia" element={<NuestraHistoriaPage />} />

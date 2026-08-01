@@ -32,7 +32,9 @@ def _to_public(user: dict) -> ProfilePublic:
     providers = [p.get("provider") for p in (user.get("auth_providers") or []) if p.get("provider")]
     return ProfilePublic(
         id=user["id"], email=user.get("email", ""), name=user.get("name") or user.get("email", ""),
-        picture=user.get("picture"), role=user.get("role", "member"),
+        picture=user.get("picture"),
+        cover_url=user.get("cover_url"),
+        role=user.get("role", "member"),
         headline=user.get("headline"), bio=user.get("bio"),
         country=user.get("country"), city=user.get("city"),
         language=user.get("language"),
@@ -47,6 +49,7 @@ def _to_public(user: dict) -> ProfilePublic:
         certifications=user.get("certifications") or [],
         portfolio_url=user.get("portfolio_url"),
         social=user.get("social") or {},
+        ui_preferences=user.get("ui_preferences") or {},
         providers=providers,
         posts_count=int(user.get("posts_count", 0)),
         followers_count=int(user.get("followers_count", 0)),
@@ -67,6 +70,8 @@ async def update_me(payload: ProfileUpdate, request: Request,
     diff = {k: v for k, v in payload.model_dump(exclude_unset=True).items() if v is not None}
     if "social" in diff and hasattr(diff["social"], "model_dump"):
         diff["social"] = diff["social"].model_dump()
+    if "ui_preferences" in diff and hasattr(diff["ui_preferences"], "model_dump"):
+        diff["ui_preferences"] = diff["ui_preferences"].model_dump()
     if "experience" in diff:
         diff["experience"] = [e.model_dump() if hasattr(e, "model_dump") else e for e in diff["experience"]]
     if "certifications" in diff:

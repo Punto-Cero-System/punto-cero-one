@@ -181,6 +181,16 @@ const Header = () => {
                         color: '#FFFFFF', fontSize: '0.82rem', borderRadius: 8,
                       }}
                     >Configuración · Mi Espacio</Link>
+                    <Link
+                      to="/perfil/personalizar"
+                      onClick={() => setProfileMenuOpen(false)}
+                      data-testid="header-profile-customize-link"
+                      style={{
+                        width: '100%', display: 'inline-flex', alignItems: 'center', gap: 8,
+                        padding: '0.55rem 0.75rem', textDecoration: 'none',
+                        color: '#FFFFFF', fontSize: '0.82rem', borderRadius: 8,
+                      }}
+                    >Personalizar perfil</Link>
                     <button
                       onClick={handleLogout}
                       data-testid="header-logout"

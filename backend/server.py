@@ -46,6 +46,7 @@ from routes.admin_platform_routes import router as admin_platform_router
 from routes.realtime_routes import router as realtime_router
 from routes.widget_routes import router as widget_router
 from routes.company_media_routes import router as company_media_router
+from routes.profile_media_routes import router as profile_media_router
 from routes.email_routes import router as email_router
 from routes.follows_routes import router as follows_router
 from routes.workspace_routes import router as workspace_router
@@ -114,6 +115,7 @@ app.include_router(document_router)
 app.include_router(feed_router)
 app.include_router(category_router)
 app.include_router(company_media_router)
+app.include_router(profile_media_router)
 app.include_router(company_router)
 app.include_router(job_router)
 app.include_router(event_router)
@@ -161,6 +163,11 @@ async def ensure_indexes():
     await db.user_sessions.create_index("session_token", unique=True)
     await db.user_sessions.create_index("user_id")
     await db.user_sessions.create_index("expires_at")
+
+    # Password reset — TTL index on `expires_at` cleans up expired tokens.
+    await db.password_reset_tokens.create_index("token", unique=True)
+    await db.password_reset_tokens.create_index("user_id")
+    await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
     # Ensure the invitation_token can be queried quickly and is unique when present.
     await db.users.create_index(
         "invitation_token", unique=True, partialFilterExpression={"invitation_token": {"$type": "string"}}
