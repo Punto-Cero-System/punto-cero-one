@@ -718,4 +718,54 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
   - Modificados: `backend/server.py` (router + seed en startup + índices), `backend/models_business.py` (SocialLinks +github/tiktok/rss), `backend/routes/search_routes.py` (match por tags/hashtags), `backend/routes/workspace_routes.py` (default incluye discover-entities), `frontend/src/services/platformService.js` (discoveryService), `frontend/src/services/workspaceRegistry.jsx` (registro), `frontend/src/services/workspacePresets.js` (fundador incluye discover), `frontend/src/contexts/WorkspaceContext.jsx` (fallback anon), `frontend/src/pages/CompanyProfilePage.jsx` (renderiza `CompanyRelated`).
 
 
+- **2026-08 · Wave 5A — Centro de Fuentes del Ecosistema**:
+
+  ### Filosofía
+  - Admin puede registrar/editar/sincronizar cualquier tipo de fuente sin tocar código.
+  - CRUD + sync + import/export + logs en una sola pestaña del Admin existente.
+  - Cero páginas nuevas · cero cambios visuales.
+
+  ### Backend
+  - `models_source.py` — Pydantic (`SourceCreate/Update/Public`, kinds/frequency literales).
+  - `services/sources_center/engine.py` — dispatcher por `kind`:
+    - `rss` / `jobs_feed` / `events_feed` → RSSProvider + normalizer (reutiliza Growth Engine)
+    - `youtube_channel` → RSS de canal (channel_id de URL o config)
+    - `github_org` → GitHub REST público → colección `github_repos`
+    - `entity_seed` → upsert idempotente en `companies` con `is_public_seed`
+    - `api` → JSON API genérica con headers/params/token opcional
+  - `routes/sources_admin_routes.py` — CRUD + `/toggle` + `/sync` + `/test` + `/logs` + `/import` (JSON o multipart .json/.csv) + `/export` (JSON/CSV) + `/kinds`. Todo bajo `require_admin`.
+  - Colecciones nuevas: `sources` y `source_syncs` con índices.
+  - `services/growth/scheduler.py` extendido: cada tick también procesa `due_sources()` → **cualquier fuente registrada en la UI empieza a sincronizarse automáticamente**.
+  - Notificación cuando un sync falla (`notifications` con `kind: source_sync_failed`).
+
+  ### Frontend
+  - `pages/AdminSourcesTab.jsx` — CRUD table con filtros, modal de formulario, modal de historial, import/export, banner de feedback.
+  - `pages/AdminPlatformPage.jsx` — nueva pestaña "Centro de Fuentes" (icon Radio) que renderiza `<AdminSourcesTab />`.
+  - `services/coreServices.js` — `adminSourcesService` completo.
+
+  ### Integración automática con el ecosistema
+  - `entity_seed` → aparece en `/api/companies` → `CompanyProfilePage` → `/api/search` → seguible → alimenta Mi Espacio/Feed via Growth Engine.
+  - `rss/jobs_feed/events_feed` → items en `growth_items` → Feed regional los intercala por país/vertical.
+  - `github_org` → `github_repos` colección.
+  - `youtube_channel` → items en `growth_items`.
+
+  ### Endpoints creados (12)
+  - `GET/POST/PATCH/DELETE /api/admin/sources[/{id}]`
+  - `POST /api/admin/sources/{id}/toggle|sync|test`
+  - `GET /api/admin/sources/{id}/logs`
+  - `POST /api/admin/sources/import` (JSON o multipart)
+  - `GET /api/admin/sources/export?fmt=json|csv`
+  - `GET /api/admin/sources/kinds`
+
+  ### Tests
+  - `tests/test_sources_center.py` — **7/7 PASS** (auth, CRUD, sync real de BBC Mundo, kinds, bulk import, export, sync escribe growth_items).
+  - Regresión: sources 7 · discovery 7 · growth 8 · workspace 7 · follows 11 = **40/40 PASS**.
+  - `yarn build`: 310.24 kB gzip.
+
+  ### Archivos tocados
+  - Nuevos: `backend/models_source.py`, `backend/services/sources_center/{__init__,engine}.py`, `backend/routes/sources_admin_routes.py`, `backend/tests/test_sources_center.py`, `frontend/src/pages/AdminSourcesTab.jsx`.
+  - Modificados: `backend/server.py` (router + índices), `backend/services/growth/scheduler.py` (`_process_admin_sources`), `frontend/src/services/coreServices.js` (`adminSourcesService`), `frontend/src/pages/AdminPlatformPage.jsx` (tab).
+  - **CERO cambios a Mi Espacio, Feed, Follow, buscador, verticales, dashboards ni autenticación.**
+
+
 

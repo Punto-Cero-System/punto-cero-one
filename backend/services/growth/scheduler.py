@@ -18,6 +18,27 @@ logger = logging.getLogger("punto-cero-api.growth.scheduler")
 DEFAULT_INTERVAL = 60 * 30  # 30 minutes
 
 
+async def _process_admin_sources(db):
+    """Run any admin-managed source (Sources Center) whose `next_sync_at`
+    is due. Kept resilient — a failing source never breaks the loop.
+    """
+    try:
+        from services.sources_center.engine import due_sources, run_sync
+    except Exception as e:
+        logger.warning("sources_center import failed: %s", e)
+        return
+    try:
+        due = await due_sources(db)
+    except Exception as e:
+        logger.warning("due_sources failed: %s", e)
+        return
+    for src in due:
+        try:
+            await run_sync(db, src)
+        except Exception as e:
+            logger.warning("run_sync failed src=%s err=%s", src.get("id"), e)
+
+
 class GrowthScheduler:
     def __init__(self):
         self._task: asyncio.Task | None = None
@@ -34,6 +55,7 @@ class GrowthScheduler:
             # kick off an immediate run
             try:
                 await run_once(db)
+                await _process_admin_sources(db)
             except Exception as e:
                 logger.warning("initial growth run failed: %s", e)
             while not self._stop.is_set():
@@ -45,6 +67,7 @@ class GrowthScheduler:
                     break
                 try:
                     await run_once(db)
+                    await _process_admin_sources(db)
                 except Exception as e:
                     logger.warning("growth run failed: %s", e)
 

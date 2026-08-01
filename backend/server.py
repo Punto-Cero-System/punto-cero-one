@@ -51,6 +51,7 @@ from routes.follows_routes import router as follows_router
 from routes.workspace_routes import router as workspace_router
 from routes.growth_routes import router as growth_router
 from routes.discovery_routes import router as discovery_router
+from routes.sources_admin_routes import router as sources_admin_router
 from services.growth.scheduler import scheduler as growth_scheduler
 from services.discovery.seeder import seed_public_entities
 from models_category import DEFAULT_CATEGORIES
@@ -129,6 +130,7 @@ app.include_router(follows_router)
 app.include_router(workspace_router)
 app.include_router(growth_router)
 app.include_router(discovery_router)
+app.include_router(sources_admin_router)
 
 
 # -------------------- CORS --------------------
@@ -255,6 +257,16 @@ async def ensure_indexes():
         await seed_public_entities(db)
     except Exception as e:
         logger.warning(f"discovery seed warning: {e}")
+    # Sources Center — CRUD-driven fuentes
+    try:
+        await db.sources.create_index("id", unique=True)
+        await db.sources.create_index([("kind", 1), ("status", 1)])
+        await db.sources.create_index("country")
+        await db.sources.create_index("next_sync_at")
+        await db.source_syncs.create_index("source_id")
+        await db.source_syncs.create_index("started_at")
+    except Exception as e:
+        logger.warning(f"sources index warning: {e}")
     # Wave 3 — external widgets cache (TTL index for auto-eviction)
     try:
         await db.widget_cache.create_index(

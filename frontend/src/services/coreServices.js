@@ -64,3 +64,32 @@ export const adminPlatformService = {
   updateUserRole: (id, role) => fj(`/api/admin/users/${id}/role`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ role }) }).then(throwOnError),
   summary: () => fj('/api/analytics/summary', { headers: authHeaders() }).then(throwOnError),
 };
+
+export const adminSourcesService = {
+  list: (params) => fj(`/api/admin/sources?${qs(params)}`, { headers: authHeaders() }).then(throwOnError),
+  kinds: () => fj('/api/admin/sources/kinds', { headers: authHeaders() }).then(throwOnError),
+  get: (id) => fj(`/api/admin/sources/${id}`, { headers: authHeaders() }).then(throwOnError),
+  create: (body) => fj('/api/admin/sources', {
+    method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then(throwOnError),
+  update: (id, body) => fj(`/api/admin/sources/${id}`, {
+    method: 'PATCH', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then(throwOnError),
+  remove: (id) => fj(`/api/admin/sources/${id}`, { method: 'DELETE', headers: authHeaders() }).then(throwOnError),
+  toggle: (id) => fj(`/api/admin/sources/${id}/toggle`, { method: 'POST', headers: authHeaders() }).then(throwOnError),
+  sync: (id) => fj(`/api/admin/sources/${id}/sync`, { method: 'POST', headers: authHeaders() }).then(throwOnError),
+  test: (id) => fj(`/api/admin/sources/${id}/test`, { method: 'POST', headers: authHeaders() }).then(throwOnError),
+  logs: (id, limit = 25) => fj(`/api/admin/sources/${id}/logs?limit=${limit}`, { headers: authHeaders() }).then(throwOnError),
+  bulkImport: (items) => fj('/api/admin/sources/import', {
+    method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  }).then(throwOnError),
+  importFile: (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return fj('/api/admin/sources/import', { method: 'POST', headers: authHeaders(), body: fd }).then(throwOnError);
+  },
+  exportJson: () => fj('/api/admin/sources/export?fmt=json', { headers: authHeaders() }).then(throwOnError),
+};

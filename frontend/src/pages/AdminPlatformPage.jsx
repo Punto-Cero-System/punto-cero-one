@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Users, Building2, MessagesSquare, Briefcase, Calendar, Flag, Activity, BarChart3, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Users, Building2, MessagesSquare, Briefcase, Calendar, Flag, Activity, BarChart3, ShieldAlert, Radio } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { adminPlatformService } from '../services/coreServices';
+import AdminSourcesTab from './AdminSourcesTab';
 
 const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
@@ -16,6 +17,7 @@ const TABS = [
   { key: 'posts',     label: 'Publicaciones',  icon: MessagesSquare },
   { key: 'jobs',      label: 'Empleos',        icon: Briefcase },
   { key: 'events',    label: 'Eventos',        icon: Calendar },
+  { key: 'sources',   label: 'Centro de Fuentes', icon: Radio },
   { key: 'reports',   label: 'Reportes',       icon: Flag },
   { key: 'activity',  label: 'Activity Log',   icon: Activity },
 ];
@@ -35,6 +37,7 @@ const AdminPlatformPage = () => {
       else if (tab === 'events') setData(await adminPlatformService.events({ limit: 100 }));
       else if (tab === 'reports') setData(await adminPlatformService.reports({ resolved: false }));
       else if (tab === 'activity') setData(await adminPlatformService.activity({ limit: 200 }));
+      else if (tab === 'sources') setData({}); // AdminSourcesTab self-manages its data
     } catch (e) { setData({ error: e.message }); }
   }, [tab]);
 
@@ -89,6 +92,7 @@ const AdminPlatformPage = () => {
               </div>
             </div>
           )}
+          {tab === 'sources' && <AdminSourcesTab />}
           {(tab === 'users' || tab === 'companies' || tab === 'posts' || tab === 'jobs' || tab === 'events' || tab === 'reports' || tab === 'activity') && Array.isArray(data) && (
             <ResourceTable rows={data} tab={tab} />
           )}
