@@ -40,6 +40,13 @@ const CompaniesPage = () => {
     setItems((prev) => prev.map((c) =>
       c.id === id ? { ...c, my_following: r.following, followers_count: c.followers_count + (r.following ? 1 : -1) } : c
     ));
+    // Notify LiveFeed / Recommendations to refresh so the ranking picks up the
+    // change immediately without a manual reload.
+    try {
+      window.dispatchEvent(new CustomEvent('pc:follow-change', {
+        detail: { entityType: 'company', entityId: id, following: !!r.following },
+      }));
+    } catch { /* no-op */ }
   };
 
   const onCreated = (c) => setItems((prev) => [c, ...prev]);

@@ -768,4 +768,77 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
   - **CERO cambios a Mi Espacio, Feed, Follow, buscador, verticales, dashboards ni autenticación.**
 
 
+---
+
+## Wave 6 — Auth Email/Password + Profile Customization + Feed UX (01 ago 2026)
+
+### Corrección de bugs P0 reportados por el usuario
+1. **Feed sin espacios blancos**: `CommunityLayout.jsx` reescrito con `max-width: 1600px`, padding fluido `clamp(0.75rem, 2vw, 2rem)`, breakpoints 1400/1200/900/480. Feed uniforme en todas las resoluciones tipo LinkedIn/X.
+2. **Infinite Scroll real** en "Para Ti": tras la primera página ranked (30 items), cae a paginación cronológica (`/api/feed/posts?cursor=...`) manteniendo el `IntersectionObserver` con `rootMargin: 400px`.
+3. **Follow → refresh inmediato**:
+   - `FollowButton.jsx` dispara `window.dispatchEvent(new CustomEvent('pc:follow-change', ...))` en cada toggle.
+   - `CompaniesPage.jsx` también dispara el evento tras `companyService.follow`.
+   - `LiveFeed.jsx` escucha el evento y (con debounce 350ms) resetea items, incrementa `refreshTick` (fuerza refetch de growth) y recarga feed. Sin recarga manual.
+4. **Algoritmo mejora**: `load_user_signals` en `feed_engine/engine.py` ahora hereda `hashtags`, `tags`, `vertical` y `country` de las empresas seguidas → siguiendo Microsoft aumenta ranking de posts con esos tags/vertical.
+
+### Auth Email/Password (P0 · LIVE)
+- Coexiste con Google Auth existente sobre el mismo `users` collection y `auth_providers[]`.
+- Endpoints en `routes/community_auth_routes.py`:
+  - `POST /api/community/auth/register` — `{email, password, name?}` → session cookie
+  - `POST /api/community/auth/login` — bcrypt verify + brute-force lockout 5 fails / 15 min (por ip+email en `login_attempts`)
+  - `POST /api/community/auth/password/forgot` — genera token en `password_reset_tokens` (TTL 60min via Mongo TTL index en `expires_at`), envía email via Resend (`send_password_reset`), retorna 200 genérico (anti-enumeración)
+  - `POST /api/community/auth/password/reset` — consume token, cambia password, invalida otros tokens del user, limpia lockout counter, establece sesión
+- Providers UI: `providers` endpoint ahora incluye `coming_soon` = [apple, microsoft, linkedin, facebook, twitter/X] + `email_password: true`.
+
+### Personalización de Perfil (P1)
+- **Foto de perfil / Portada** — nuevo `routes/profile_media_routes.py`:
+  - `PUT /api/community/users/me/media/{slot}` — slot ∈ picture | cover (multipart image)
+  - `DELETE /api/community/users/me/media/{slot}` — clear
+  - `GET /api/community/users/media/{path}` — public streaming
+  - Storage: `services/object_storage.py` local (Emergent-managed compatible)
+- **UI Preferences** en `models_profile.py` (UIPreferences submodel):
+  - `theme` (light/dark/auto), `primary_color`, `secondary_color`, `accent_color`, `button_color`, `gradient`, `background_url`
+  - Aplicadas globalmente vía `UIPreferencesContext` → CSS vars `--pc-primary`, `--pc-secondary`, `--pc-accent`, `--pc-button`, `--pc-gradient`, `--pc-background-url` + `data-theme` en `<html>`.
+  - Autoguardado con debounce 700ms en `/api/community/users/me`.
+
+### Frontend nuevo
+- `pages/JoinPage.jsx` — completamente reescrita: tabs Social / Correo, modo login/register/forgot, campos password con toggle show, badges "PRONTO" para providers no activos, formulario Email con validación.
+- `pages/ResetPasswordPage.jsx` — nueva página en `/reset-password?token=...`, form con confirm password, redirige a `/` tras éxito.
+- `pages/ProfileCustomizePage.jsx` — nueva en `/perfil/personalizar`: preview banner en vivo, secciones (Foto, Portada, Tema, Colores, Gradiente, Fondo), autoguardado.
+- `contexts/UIPreferencesContext.jsx` — provider global montado en `App.js`, aplica CSS vars al `<html>`.
+- `services/profileService.js` — `me`, `patch`, `uploadMedia`, `deleteMedia`.
+- `services/authService.js` — `registerEmail`, `loginEmail`, `forgotPassword`, `resetPassword`.
+- `Header.jsx` — nuevo link "Personalizar perfil" en profile menu.
+
+### Rutas nuevas
+- `/reset-password` — `ResetPasswordPage`
+- `/perfil/personalizar` — `ProfileCustomizePage`
+
+### Colecciones nuevas
+- `password_reset_tokens` — `{token, user_id, email, created_at, expires_at (TTL), used}`
+- `login_attempts` — `{identifier: "ip:email", count, last_attempt, locked_until?}`
+
+### Índices nuevos (server.py)
+- `password_reset_tokens.token` (unique), `.user_id`, `.expires_at` (TTL 0s)
+
+### Tests
+- `tests/test_wave6_auth_email.py` — **3/3 PASS** (register/login flow, password reset full lifecycle, ui_preferences + profile media upload+public streaming+MIME whitelist).
+- Testing agent v3 (iteration_16): **backend 100% (8/8)** + **frontend 95%** (todos data-testids presentes en /join, /reset-password, /perfil/personalizar; 1 gap ya corregido: CompaniesPage ahora dispara pc:follow-change).
+
+### Data-testids clave
+- `join-tab-social`, `join-tab-email`, `join-input-email`, `join-input-password`, `join-input-name`, `join-email-submit`, `join-goto-forgot`, `join-goto-register`, `join-goto-login`, `join-toggle-password`, `join-{google,linkedin,microsoft,apple,facebook,twitter}`, `join-{provider}-soon`
+- `reset-form`, `reset-input-password`, `reset-input-confirm`, `reset-submit`, `reset-success`, `reset-error`
+- `profile-customize-page`, `profile-preview-banner`, `profile-media-{picture,cover}-{upload,delete,input,preview}`, `theme-{light,dark,auto}`, `color-{primary,secondary,accent,button}`, `gradient-*`, `background-url-input`, `profile-reset-preferences`
+
+### Env / Config
+- `PASSWORD_RESET_TTL_MINUTES` (default 60) — TTL del token de reset.
+- `MAX_PROFILE_MEDIA_BYTES` (default 8MB) — límite de subida.
+- `PUBLIC_APP_URL` (opcional) — dominio para el link de reset. Falla a Origin/Referer si no está seteado.
+
+### Preservación
+- **CERO regresiones** en Feed engine (tests wave3_foryou 7/7 pass), Follows (11/11), Growth (8/8), Discovery (7/7), Sources (7/7), Workspace (7/7).
+- Google Auth flow intacto.
+
+
+
 
