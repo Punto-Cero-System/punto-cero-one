@@ -839,6 +839,28 @@ admin_notes, submitted_at, updated_at, reviewed_by (admin id)
 - **CERO regresiones** en Feed engine (tests wave3_foryou 7/7 pass), Follows (11/11), Growth (8/8), Discovery (7/7), Sources (7/7), Workspace (7/7).
 - Google Auth flow intacto.
 
+---
+
+## Hotfix (01 ago 2026 · post-Wave 6) — "No abren algunos enlaces"
+
+### Reporte del usuario
+"HAY ALGUN PROBLEMA DE CONEXION EN LA PAGINA PORQUE NO ABRE ALGUNOS ENLACES".
+
+### RCA
+Todas las rutas SPA siempre devolvieron 200. Playwright reveló que la percepción "no abre" venía de **41 imágenes rotas en `/empresas` y 11 en `/empresas/:id`**: todos los `<img src="https://logo.clearbit.com/...">` fallaban con `ERR_NAME_NOT_RESOLVED` porque Clearbit discontinuó su Logo API pública en 2025 y su hostname ya no resuelve DNS.
+
+### Fix
+1. `backend/services/discovery/seeder.py::_logo_from_website` → ahora emite `https://www.google.com/s2/favicons?domain=<host>&sz=128` (servicio estable, resuelve DNS, retorna PNG). El backend re-seedea en startup, así los 30 seeds públicos quedaron actualizados automáticamente en Mongo.
+2. Nuevo `frontend/src/components/common/LogoImage.jsx` — wrapper de `<img>` con `onError` que fallback-ea a un badge cuadrado con la inicial de la entidad.
+3. `CompaniesPage`, `CompanyProfilePage`, `CompanyRelated`, `DiscoverEntitiesWidget` — todos los renders de `logo_url` ahora tienen `onError` handler que oculta la `<img>` rota y muestra el hermano `<div>` con iniciales.
+
+### Validación (testing_agent iteration_17)
+- **100% backend, 100% frontend**
+- 0 peticiones a clearbit (antes: 41 + 11)
+- 25/25 imágenes en `/empresas` renderizan, 10/10 en `/empresas/microsoft`
+- 18/18 rutas SPA responden 200
+
+
 
 
 
