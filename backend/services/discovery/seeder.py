@@ -23,13 +23,24 @@ logger = logging.getLogger("punto-cero-api.discovery.seeder")
 
 
 def _logo_from_website(url: str | None) -> str | None:
+    """Public logo URL derived from a website.
+
+    We used to point at ``logo.clearbit.com`` but Clearbit discontinued its
+    public logo API in 2025 and its hostname no longer resolves — every
+    company card ended up with a broken image which made the app feel like
+    it "didn't load". Google's ``s2/favicons`` endpoint is a stable, cache-
+    friendly and DNS-resolving fallback that returns a PNG for any domain.
+
+    NOTE: the frontend still handles ``onError`` to fall back to initials
+    for edge cases (e.g. Google returning a placeholder).
+    """
     if not url:
         return None
     try:
         host = urlparse(url).netloc.replace("www.", "")
         if not host:
             return None
-        return f"https://logo.clearbit.com/{host}"
+        return f"https://www.google.com/s2/favicons?domain={host}&sz=128"
     except Exception:
         return None
 

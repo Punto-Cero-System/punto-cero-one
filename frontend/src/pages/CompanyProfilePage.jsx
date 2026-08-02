@@ -150,14 +150,22 @@ const CompanyProfilePage = () => {
                 overflow: 'hidden', flexShrink: 0,
               }}>
                 {logoUrl ? (
-                  <img src={logoUrl} alt={company.name}
+                  <img src={logoUrl} alt={company.name} referrerPolicy="no-referrer" loading="lazy"
+                    onError={(e) => {
+                      const fb = e.target.nextSibling;
+                      e.target.style.display = 'none';
+                      if (fb) fb.style.display = 'flex';
+                    }}
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                ) : (
-                  <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '2.4rem',
-                                 fontWeight: 700, color: NAVY }}>
-                    {(company.name || 'C').charAt(0).toUpperCase()}
-                  </span>
-                )}
+                ) : null}
+                <span style={{
+                  display: logoUrl ? 'none' : 'flex',
+                  width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: '"Space Grotesk", sans-serif', fontSize: '2.4rem',
+                  fontWeight: 700, color: NAVY,
+                }}>
+                  {(company.name || 'C').charAt(0).toUpperCase()}
+                </span>
               </div>
               <div style={{ flex: 1, minWidth: 260, paddingTop: '1rem' }}>
                 <h1 style={{

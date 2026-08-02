@@ -199,17 +199,21 @@ const CompanyRelated = ({ slug }) => {
                 borderTop: '1px solid rgba(11,31,58,0.05)',
               }}>
               {s.logo_url ? (
-                <img src={s.logo_url} alt="" referrerPolicy="no-referrer"
+                <img src={s.logo_url} alt="" referrerPolicy="no-referrer" loading="lazy"
                   style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'cover', flexShrink: 0, background: '#F0F2F7' }}
-                  onError={(e) => { e.target.style.display = 'none'; }} />
-              ) : (
-                <div style={{
-                  width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-                  background: 'linear-gradient(135deg, #0B1F3A, #7C3AED)',
-                  color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: '0.75rem',
-                }}>{(s.name || 'M').charAt(0)}</div>
-              )}
+                  onError={(e) => {
+                    const fb = e.target.nextSibling;
+                    e.target.style.display = 'none';
+                    if (fb) fb.style.display = 'flex';
+                  }} />
+              ) : null}
+              <div style={{
+                width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+                background: 'linear-gradient(135deg, #0B1F3A, #7C3AED)',
+                color: '#FFFFFF', display: s.logo_url ? 'none' : 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: '0.75rem',
+              }}>{(s.name || 'M').charAt(0)}</div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>{s.name}</div>
                 <div style={{ fontSize: '0.66rem', color: 'rgba(11,31,58,0.55)' }}>

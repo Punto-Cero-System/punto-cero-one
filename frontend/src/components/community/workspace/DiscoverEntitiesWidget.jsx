@@ -43,17 +43,21 @@ const DiscoverEntitiesWidget = () => {
             flex: 1, minWidth: 0, textDecoration: 'none', color: NAVY,
           }}>
             {e.logo_url ? (
-              <img src={e.logo_url} alt="" referrerPolicy="no-referrer"
-                onError={(ev) => { ev.currentTarget.style.display = 'none'; }}
+              <img src={e.logo_url} alt="" referrerPolicy="no-referrer" loading="lazy"
+                onError={(ev) => {
+                  const fb = ev.currentTarget.nextSibling;
+                  ev.currentTarget.style.display = 'none';
+                  if (fb) fb.style.display = 'flex';
+                }}
                 style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'cover', background: '#F0F2F7', flexShrink: 0 }} />
-            ) : (
-              <div style={{
-                width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-                background: 'linear-gradient(135deg, #0B1F3A, #7C3AED)',
-                color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: '0.72rem',
-              }}>{(e.name || 'M').charAt(0)}</div>
-            )}
+            ) : null}
+            <div style={{
+              width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+              background: 'linear-gradient(135deg, #0B1F3A, #7C3AED)',
+              color: '#FFFFFF', display: e.logo_url ? 'none' : 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: '0.72rem',
+            }}>{(e.name || 'M').charAt(0)}</div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: '0.82rem', fontWeight: 700, color: NAVY,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</div>

@@ -7,6 +7,7 @@ import { companyService } from '../services/platformService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 import CompanyCreateModal from '../components/business/CompanyCreateModal';
 import CompanyMediaManager from '../components/business/CompanyMediaManager';
+import LogoImage from '../components/common/LogoImage';
 
 const CompaniesPage = () => {
   const { user } = useCommunityAuth();
@@ -108,15 +109,8 @@ const CompaniesPage = () => {
                 : 'linear-gradient(120deg, #0B1F3A 0%, #1E3A8A 40%, #7C3AED 100%)' }} />
             <div style={{ padding: '0.9rem 1.15rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', marginTop: -22 }}>
               <div style={{ display: 'flex', gap: '0.7rem', alignItems: 'flex-end' }}>
-                {c.logo_url ? (
-                  <img src={c.logo_url} alt={c.name} style={{ width: 46, height: 46, borderRadius: 10, border: '3px solid #FFFFFF', objectFit: 'cover' }} />
-                ) : (
-                  <div style={{
-                    width: 46, height: 46, borderRadius: 10, border: '3px solid #FFFFFF',
-                    background: NAVY, color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: '1.2rem',
-                  }}>{c.name.charAt(0).toUpperCase()}</div>
-                )}
+                <LogoImage src={c.logo_url} name={c.name} size={46} radius={10}
+                  border="3px solid #FFFFFF" />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h2 style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1rem', fontWeight: 700, color: NAVY, margin: 0, letterSpacing: '-0.01em', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                     <Link to={`/empresas/${c.id}`} data-testid={`company-link-${c.id}`}
