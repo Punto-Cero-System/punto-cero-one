@@ -88,6 +88,21 @@ export const authService = {
       body: JSON.stringify({ token, password }),
     }));
   },
+
+  // Email verification
+  async sendEmailVerification({ email } = {}) {
+    return asJsonOrThrow(await authFetch('/api/community/auth/verify/send', {
+      method: 'POST',
+      body: JSON.stringify(email ? { email } : {}),
+    }));
+  },
+
+  async confirmEmailVerification({ token }) {
+    return asJsonOrThrow(await authFetch('/api/community/auth/verify/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }));
+  },
 };
 
 /**
@@ -107,8 +122,18 @@ export const AUTH_PROVIDERS = {
       window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
     },
   },
-  microsoft: { key: 'microsoft', label: 'Microsoft', available: false },
-  linkedin: { key: 'linkedin', label: 'LinkedIn', available: false },
+  linkedin: {
+    key: 'linkedin', label: 'LinkedIn', available: false,
+    startLogin: () => {
+      window.location.href = `${process.env.REACT_APP_BACKEND_URL}/api/community/auth/oauth/linkedin/start`;
+    },
+  },
+  microsoft: {
+    key: 'microsoft', label: 'Microsoft', available: false,
+    startLogin: () => {
+      window.location.href = `${process.env.REACT_APP_BACKEND_URL}/api/community/auth/oauth/microsoft/start`;
+    },
+  },
   apple: { key: 'apple', label: 'Apple', available: false },
   facebook: { key: 'facebook', label: 'Facebook', available: false },
   twitter: { key: 'twitter', label: 'X', available: false },

@@ -32,6 +32,7 @@ from typing import Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from services.community_deps import require_current_user
+from services.notifications import dispatch as dispatch_notif
 
 
 logger = logging.getLogger("punto-cero-api.follows")
@@ -84,6 +85,36 @@ async def follow(entity_type: str, entity_id: str, request: Request,
         raise HTTPException(status_code=502, detail="No se pudo registrar la relación")
 
     count = await db.follows.count_documents({"entity_type": entity_type, "entity_id": eid})
+
+    # ---- Notification fan-out (Wave 7) ----------------------------------
+    # Notify the entity owner / subject when someone follows it. Uses the
+    # unified NotificationCenter — no second notification system.
+    try:
+        actor = {"id": user["id"], "name": user.get("name"), "picture": user.get("picture")}
+        recipient_id: Optional[str] = None
+        title = ""
+        subject_url = None
+        if entity_type == "user":
+            recipient_id = eid
+            title = f"{user.get('name') or 'Alguien'} empezó a seguirte"
+            subject_url = f"/u/{user['id']}"
+        elif entity_type == "company":
+            co = await db.companies.find_one({"$or": [{"id": eid}, {"slug": eid}]},
+                                             {"_id": 0, "owner_id": 1, "name": 1, "slug": 1, "id": 1})
+            if co and co.get("owner_id") and not str(co["owner_id"]).startswith("system-"):
+                recipient_id = co["owner_id"]
+                title = f"{user.get('name') or 'Alguien'} sigue a {co.get('name') or 'tu empresa'}"
+                subject_url = f"/empresas/{co.get('slug') or co.get('id')}"
+        if recipient_id:
+            await dispatch_notif(
+                db, recipient_id=recipient_id, kind="follower",
+                title=title, actor=actor,
+                subject_type=entity_type, subject_id=eid, subject_url=subject_url,
+                vertical="community",
+            )
+    except Exception as e:
+        logger.debug("follows.follow notification skipped: %s", e)
+
     return {"ok": True, "entity_type": entity_type, "entity_id": eid, "count": count, "my_following": True}
 
 

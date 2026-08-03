@@ -215,6 +215,29 @@ async def send_password_reset(to: str, reset_link: str) -> SendResult:
     )
 
 
+async def send_email_verification(to: str, verify_link: str, name: Optional[str] = None) -> SendResult:
+    """Sent right after Email/Password registration.
+
+    The link is one-shot: the receiving endpoint marks the token as used
+    before flipping the user's `email_verified` flag. Copy is intentionally
+    warm — verification is the first real handshake with the ecosystem.
+    """
+    hi = f"Hola {name}," if name else "Hola,"
+    body = (
+        f"<p>{hi}</p>"
+        "<p>Solo falta un paso para activar tu cuenta en <b>Punto Cero One</b>: "
+        "confirma que este correo es tuyo.</p>"
+        "<p>Este enlace es de un solo uso y expira en 24 horas. "
+        "Si no creaste esta cuenta, ignora el mensaje.</p>"
+    )
+    return await get_provider().send(
+        to=to,
+        subject="Confirma tu correo · Punto Cero One",
+        html=_wrap("Confirma tu correo", body,
+                   cta_label="Verificar mi correo", cta_url=verify_link),
+    )
+
+
 async def send_confirmation(to: str, subject: str, message_html: str,
                             cta_label: Optional[str] = None, cta_url: Optional[str] = None) -> SendResult:
     """Generic transactional confirmation (e.g. RSVP accepted, application submitted)."""

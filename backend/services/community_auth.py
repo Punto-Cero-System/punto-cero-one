@@ -129,6 +129,133 @@ class EmergentAuthProvider(BaseAuthProvider):
 
 
 # ---------------------------------------------------------------------------
+# Generic OAuth 2.0 Authorization Code provider — parent for LinkedIn / MS.
+# Providers only differ in URLs and user-info field mapping.
+# ---------------------------------------------------------------------------
+class OAuth2AuthorizationCodeProvider(BaseAuthProvider):
+    key: str = ""
+    label: str = ""
+    authorize_url: str = ""
+    token_url: str = ""
+    userinfo_url: str = ""
+    scope: str = ""
+    client_id_env: str = ""
+    client_secret_env: str = ""
+
+    @property
+    def client_id(self) -> Optional[str]:
+        return os.environ.get(self.client_id_env) or None
+
+    @property
+    def client_secret(self) -> Optional[str]:
+        return os.environ.get(self.client_secret_env) or None
+
+    def is_enabled(self) -> bool:
+        return bool(self.client_id and self.client_secret)
+
+    def authorize_endpoint(self, redirect_uri: str, state: str) -> str:
+        from urllib.parse import urlencode
+        params = {
+            "response_type": "code",
+            "client_id": self.client_id,
+            "redirect_uri": redirect_uri,
+            "scope": self.scope,
+            "state": state,
+        }
+        return f"{self.authorize_url}?{urlencode(params)}"
+
+    async def exchange_session(self, session_id: str) -> ProviderIdentity:
+        """`session_id` here carries the OAuth `code` from the callback.
+
+        The full code+state validation and redirect_uri round-trip happens in
+        the community_auth_routes OAuth endpoints — this method receives the
+        already-validated code + the *same* redirect_uri used in the auth URL
+        packed as `code|redirect_uri`.
+        """
+        try:
+            code, redirect_uri = session_id.split("|", 1)
+        except ValueError:
+            raise AuthProviderError("Formato OAuth interno inválido")
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": redirect_uri,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                tok = await client.post(self.token_url, data=data,
+                                        headers={"Accept": "application/json"})
+                if tok.status_code != 200:
+                    logger.info("%s token exchange failed: %s %s",
+                                self.key, tok.status_code, tok.text[:200])
+                    raise AuthProviderError("No se pudo obtener el token de acceso")
+                access_token = tok.json().get("access_token")
+                if not access_token:
+                    raise AuthProviderError("Respuesta OAuth incompleta")
+
+                ui = await client.get(self.userinfo_url,
+                                      headers={"Authorization": f"Bearer {access_token}"})
+                if ui.status_code != 200:
+                    logger.info("%s userinfo failed: %s %s",
+                                self.key, ui.status_code, ui.text[:200])
+                    raise AuthProviderError("No se pudo leer el perfil del usuario")
+                info = ui.json()
+        except httpx.HTTPError as e:
+            logger.warning("%s auth network error: %s", self.key, e)
+            raise AuthProviderError("Fallo de red con el proveedor") from e
+
+        return self._identity_from_userinfo(info)
+
+    def _identity_from_userinfo(self, info: dict) -> ProviderIdentity:  # override
+        raise NotImplementedError
+
+
+class LinkedInAuthProvider(OAuth2AuthorizationCodeProvider):
+    key = "linkedin"
+    label = "LinkedIn"
+    # OpenID Connect endpoints — public sign-in scope (2024+).
+    authorize_url = "https://www.linkedin.com/oauth/v2/authorization"
+    token_url = "https://www.linkedin.com/oauth/v2/accessToken"
+    userinfo_url = "https://api.linkedin.com/v2/userinfo"
+    scope = "openid profile email"
+    client_id_env = "LINKEDIN_CLIENT_ID"
+    client_secret_env = "LINKEDIN_CLIENT_SECRET"
+
+    def _identity_from_userinfo(self, info: dict) -> ProviderIdentity:
+        return ProviderIdentity(
+            provider=self.key,
+            provider_user_id=str(info.get("sub") or info.get("id") or ""),
+            email=(info.get("email") or "").lower().strip(),
+            name=info.get("name") or f"{info.get('given_name','')} {info.get('family_name','')}".strip() or "LinkedIn member",
+            picture=info.get("picture"),
+        )
+
+
+class MicrosoftAuthProvider(OAuth2AuthorizationCodeProvider):
+    key = "microsoft"
+    label = "Microsoft"
+    # `common` tenant accepts personal + work/school accounts.
+    authorize_url = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
+    token_url = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+    userinfo_url = "https://graph.microsoft.com/oidc/userinfo"
+    scope = "openid profile email User.Read"
+    client_id_env = "MICROSOFT_CLIENT_ID"
+    client_secret_env = "MICROSOFT_CLIENT_SECRET"
+
+    def _identity_from_userinfo(self, info: dict) -> ProviderIdentity:
+        return ProviderIdentity(
+            provider=self.key,
+            provider_user_id=str(info.get("sub") or info.get("id") or ""),
+            email=(info.get("email") or info.get("preferred_username") or "").lower().strip(),
+            name=info.get("name") or "Microsoft member",
+            picture=info.get("picture"),
+        )
+
+
+# ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
 class ProviderRegistry:
@@ -138,19 +265,24 @@ class ProviderRegistry:
         self._providers: dict[str, BaseAuthProvider] = {}
 
     def register(self, provider: BaseAuthProvider) -> None:
-        if provider.is_enabled():
-            self._providers[provider.key] = provider
-            logger.info("Auth provider enabled: %s", provider.key)
+        # Always register so unconfigured providers can still be introspected
+        # (e.g. return a proper "no configurado" 503 instead of a generic 404).
+        self._providers[provider.key] = provider
+        logger.info("Auth provider registered: %s (enabled=%s)", provider.key, provider.is_enabled())
 
     def get(self, key: str) -> Optional[BaseAuthProvider]:
         return self._providers.get(key)
 
     def enabled_list(self) -> list[dict]:
-        return [{"key": p.key, "label": p.label} for p in self._providers.values()]
+        return [{"key": p.key, "label": p.label}
+                for p in self._providers.values() if p.is_enabled()]
 
 
 registry = ProviderRegistry()
 registry.register(EmergentAuthProvider())
+# LinkedIn + Microsoft — auto-enabled when their CLIENT_ID/SECRET env vars are set.
+registry.register(LinkedInAuthProvider())
+registry.register(MicrosoftAuthProvider())
 
 
 # ---------------------------------------------------------------------------

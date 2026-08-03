@@ -68,19 +68,67 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
     catch { setPost(prev); }
   };
 
-  const share = async () => {
-    setPost((p) => ({ ...p, counts: { ...p.counts, shares: (p.counts.shares || 0) + 1 } }));
-    try {
-      const url = post.is_growth
-        ? (post.link_url || `${window.location.origin}/`)
-        : `${window.location.origin}/?post=${post.id}`;
-      if (navigator.share) { await navigator.share({ title: 'Punto Cero One', url }); }
-      else { await navigator.clipboard?.writeText(url); }
-      if (!post.is_growth) {
-        await feedService.share(post.id, navigator.share ? 'native' : 'clipboard');
-      }
-    } catch { /* ignore */ }
+  const [sharePopoverOpen, setSharePopoverOpen] = useState(false);
+  const [shareToast, setShareToast] = useState('');
+
+  const flashShare = (msg) => {
+    setShareToast(msg);
+    setTimeout(() => setShareToast(''), 2500);
   };
+
+  const buildShareUrl = () => post.is_growth
+    ? (post.link_url || `${window.location.origin}/`)
+    : `${window.location.origin}/?post=${post.id}`;
+
+  const trackShare = async (destination) => {
+    setPost((p) => ({ ...p, counts: { ...p.counts, shares: (p.counts.shares || 0) + 1 } }));
+    if (!post.is_growth) {
+      try { await feedService.share(post.id, destination); } catch { /* soft-fail */ }
+    }
+  };
+
+  const shareCopyLink = async () => {
+    setSharePopoverOpen(false);
+    const url = buildShareUrl();
+    try {
+      await navigator.clipboard.writeText(url);
+      flashShare('Enlace copiado');
+      await trackShare('clipboard');
+    } catch {
+      flashShare('No se pudo copiar');
+    }
+  };
+
+  const shareNative = async () => {
+    setSharePopoverOpen(false);
+    const url = buildShareUrl();
+    if (!navigator.share) return shareCopyLink();
+    try {
+      await navigator.share({ title: 'Punto Cero One', text: post.body?.slice(0, 140), url });
+      await trackShare('native');
+    } catch { /* user cancelled */ }
+  };
+
+  const shareToPuntoCero = async () => {
+    setSharePopoverOpen(false);
+    if (!isAuthed) return flashShare('Inicia sesión para compartir en tu feed');
+    const url = buildShareUrl();
+    const excerpt = (post.body || '').slice(0, 200).trim();
+    const author = post.author?.name || 'la comunidad';
+    const body = `💬 Compartiendo de ${author}: ${excerpt ? '"' + excerpt + '"' : ''}\n\n${url}`.trim();
+    try {
+      await feedService.createPost({ body, visibility: 'public' });
+      await trackShare('internal');
+      flashShare('Publicado en tu feed');
+      // trigger feed refresh
+      window.dispatchEvent(new CustomEvent('pc:feed-refresh'));
+    } catch (e) {
+      flashShare('No se pudo publicar');
+    }
+  };
+
+  // Kept for backwards-compat with keyboard shortcuts / external callers.
+  const share = () => setSharePopoverOpen((v) => !v);
 
   const openComments = async () => {
     setShowComments((v) => !v);
@@ -280,15 +328,20 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
             }}>
             Leer en {post.source?.name || 'la fuente'}
           </a>
-          <button onClick={share} data-testid={`feed-post-share-${post.id}`}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-              padding: '0.5rem 0.85rem', borderRadius: 100,
-              background: 'rgba(11,31,58,0.05)', color: NAVY, border: 'none', cursor: 'pointer',
-              fontSize: '0.76rem', fontWeight: 700,
-            }}>
-            <Share2 size={13} /> Compartir
-          </button>
+          <SharePopover open={sharePopoverOpen} onToggle={() => setSharePopoverOpen((v) => !v)}
+            onCopy={shareCopyLink} onNative={shareNative} onRepost={shareToPuntoCero}
+            postId={post.id} isAuthed={isAuthed} align="right">
+            <button data-testid={`feed-post-share-${post.id}`}
+              onClick={() => setSharePopoverOpen((v) => !v)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                padding: '0.5rem 0.85rem', borderRadius: 100,
+                background: 'rgba(11,31,58,0.05)', color: NAVY, border: 'none', cursor: 'pointer',
+                fontSize: '0.76rem', fontWeight: 700,
+              }}>
+              <Share2 size={13} /> Compartir
+            </button>
+          </SharePopover>
         </div>
       ) : (
         <div style={{
@@ -305,12 +358,27 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
           />
           <ActionButton icon={<MessageCircle size={16} />} label="Comentar" onClick={openComments}
             testid={`feed-post-comment-${post.id}`} />
-          <ActionButton icon={<Share2 size={16} />} label="Compartir" onClick={share}
-            testid={`feed-post-share-${post.id}`} />
+          <SharePopover open={sharePopoverOpen} onToggle={() => setSharePopoverOpen((v) => !v)}
+            onCopy={shareCopyLink} onNative={shareNative} onRepost={shareToPuntoCero}
+            postId={post.id} isAuthed={isAuthed}>
+            <ActionButton icon={<Share2 size={16} />} label="Compartir"
+              onClick={() => setSharePopoverOpen((v) => !v)}
+              testid={`feed-post-share-${post.id}`} />
+          </SharePopover>
           <ActionButton icon={<Bookmark size={16} />} label={post.my_saved ? 'Guardado' : 'Guardar'}
             active={post.my_saved} onClick={toggleSave} disabled={!isAuthed}
             testid={`feed-post-save-${post.id}`} />
         </div>
+      )}
+
+      {shareToast && (
+        <div data-testid={`feed-post-share-toast-${post.id}`}
+          style={{
+            position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+            padding: '0.45rem 0.9rem', borderRadius: 100, background: NAVY, color: '#FFFFFF',
+            fontSize: '0.72rem', fontWeight: 700, zIndex: 30,
+            boxShadow: '0 8px 24px rgba(11,31,58,0.25)',
+          }}>{shareToast}</div>
       )}
 
       {/* comments */}
@@ -545,3 +613,72 @@ const FeedPostMenu = ({ post, onSave, onShare, isAuthed }) => {
     </div>
   );
 };
+
+
+
+/**
+ * SharePopover — inline popover with the 3 share options.
+ *
+ *   1. Copiar enlace              (clipboard, always available)
+ *   2. Compartir a Punto Cero     (repost — auth-gated)
+ *   3. Compartir por…             (Web Share API — if supported)
+ *
+ * Renders its trigger via `children` so the caller keeps full control of
+ * layout/testid. The popover positions relative to the trigger using
+ * position:absolute inside a wrapping <span>.
+ */
+const SharePopover = ({ open, onToggle, onCopy, onNative, onRepost, postId, isAuthed, align = 'left', children }) => {
+  const nativeAvailable = typeof navigator !== 'undefined' && !!navigator.share;
+  return (
+    <span style={{ position: 'relative', display: 'inline-block' }}>
+      {children}
+      {open && (
+        <>
+          <div onClick={onToggle} style={{
+            position: 'fixed', inset: 0, zIndex: 40,
+          }} />
+          <div data-testid={`feed-post-share-popover-${postId}`}
+            style={{
+              position: 'absolute', top: 'calc(100% + 6px)',
+              [align === 'right' ? 'right' : 'left']: 0,
+              zIndex: 41, minWidth: 220,
+              background: '#FFFFFF', borderRadius: 12,
+              border: '1px solid rgba(11,31,58,0.08)',
+              boxShadow: '0 20px 60px rgba(11,31,58,0.15)',
+              padding: 6, display: 'flex', flexDirection: 'column', gap: 2,
+            }}>
+            <SharePopoverItem icon={<Copy size={14} />} label="Copiar enlace" onClick={onCopy}
+              testid={`feed-post-share-copy-${postId}`} />
+            <SharePopoverItem icon={<Send size={14} />} label="Compartir en Punto Cero"
+              onClick={onRepost} disabled={!isAuthed}
+              hint={!isAuthed ? 'Inicia sesión' : null}
+              testid={`feed-post-share-internal-${postId}`} />
+            {nativeAvailable && (
+              <SharePopoverItem icon={<Share2 size={14} />} label="Compartir por…"
+                onClick={onNative}
+                testid={`feed-post-share-native-${postId}`} />
+            )}
+          </div>
+        </>
+      )}
+    </span>
+  );
+};
+
+const SharePopoverItem = ({ icon, label, onClick, disabled, hint, testid }) => (
+  <button onClick={onClick} disabled={disabled} data-testid={testid}
+    style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '0.55rem 0.75rem', borderRadius: 8,
+      background: 'transparent', border: 'none', color: NAVY,
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      fontSize: '0.82rem', fontWeight: 600, textAlign: 'left',
+      opacity: disabled ? 0.55 : 1,
+    }}
+    onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.background = 'rgba(11,31,58,0.05)'; }}
+    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+    {icon}
+    <span style={{ flex: 1 }}>{label}</span>
+    {hint && <span style={{ fontSize: '0.65rem', color: 'rgba(11,31,58,0.5)' }}>{hint}</span>}
+  </button>
+);

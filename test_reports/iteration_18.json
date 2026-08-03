@@ -1,0 +1,37 @@
+{
+  "summary": "Wave 7 (Punto Cero One growth) full-stack test. Backend: 15/16 pytest passed (test_wave7_growth.py). Wave6 regression 3/3 passed. Frontend: JoinPage social providers show 'PRONTO' badge on LinkedIn/Microsoft/Apple/Facebook/X with 'estará disponible próximamente' flash on click (no backend redirect). VerifyEmailPage renders verify-email-page + verify-error + verify-resend-form on invalid token. PublicProfilePage /u/{userId} loads with all data-testid (public-profile-page, -name, -stats, -follow-btn) and shows Seguir when not-self. SharePopover on FeedPostCard opens popover with copy + internal items (native item correctly absent in headless where navigator.share is undefined) and toast fires on copy click.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/community/users/me", "issue": "Response omits the 'email_verified' field. Field exists in DB and is returned by POST /register + /verify/confirm, but ProfilePublic pydantic model (models_profile.py) has no 'email_verified' attribute, so it is silently stripped. This violates the P0 requirement 'Un GET a /api/community/users/me tras registro debe mostrar email_verified: false'. Frontend cannot gate UX (e.g. verification banner) using this endpoint.", "priority": "HIGH"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_wave7_growth.py",
+    "/app/test_reports/pytest/wave7_results.xml"
+  ],
+  "action_items": [
+    "Add 'email_verified: bool = False' (and optionally 'email_verified_at: Optional[str]') to ProfilePublic in /app/backend/models_profile.py so GET /api/community/users/me exposes the flag. Verify by re-running test_wave7_growth.py::TestEmailVerification::test_register_creates_unverified_user."
+  ],
+  "critical_code_review_comments": [
+    "ProfilePublic model in models_profile.py uses ConfigDict(extra='ignore') which silently drops any DB field not declared in the model — this bit us with email_verified. Consider a documented allowlist audit whenever new user-level flags are added.",
+    "SharePopover: 'Copiar enlace' currently uses navigator.clipboard.writeText which requires a user gesture + clipboard-write permission in secure context. In test/headless environments it falls back to 'No se pudo copiar' — expected. For end-users on production HTTPS with real click it works. No action needed but note for QA docs.",
+    "Verification email cooldown of 60s enforced correctly (429 returned). Consider surfacing the Retry-After header for client-side backoff UX (currently only in the JSON detail string).",
+    "OAuth start endpoints return 503 when unconfigured — good. Consider a JSON body ({error, provider, help_url}) instead of raw FastAPI HTTPException detail so the frontend can render a richer 'not yet available' UX."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_wave7_growth.py"
+  ],
+  "success_rate": {"backend": "94% (15/16 wave7 + 3/3 wave6 regression)", "frontend": "100% of covered flows"},
+  "test_credentials": "Ad-hoc pytest+<uuid>@puntocero.test-e2e.com / TestPwd12345 (created per test). No admin/session credentials needed for these flows.",
+  "seed_data_creation": "Each test creates its own ephemeral user(s) via /api/community/auth/register. No shared fixture data.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Wave 7 backend endpoints validated: verify/send (cooldown, generic 200), verify/confirm (session cookie set + invalidates outstanding tokens + reuse=400), follows notifications (user + company owner + seed suppressed), mentions regex (@user_<12hex> only, self-mention suppressed), unified search returns all 10 by_type keys and people.url starts with /u/, oauth linkedin/microsoft start=503 unconfigured, apple=404 (not registered), providers.enabled excludes linkedin/microsoft, coming_soon contains 5 keys. ONE outstanding: /users/me missing email_verified field (bug in ProfilePublic). Frontend data-testids validated for: verify-email-page/verify-error/verify-resend-form, public-profile-page/-name/-stats/-follow-btn (edit-cta correctly hidden when not-self), feed-post-share-popover-/copy-/internal-/toast- (native hidden when navigator.share undefined in headless). File /app/backend/tests/test_wave7_growth.py is the pytest module for regression.",
+  "rca of the issue": "Bug: GET /api/community/users/me strips email_verified. RCA: profile_routes.py::get_me returns db user dict serialized through ProfilePublic pydantic model. ProfilePublic (models_profile.py L72-101) does NOT declare email_verified, and its model_config has extra='ignore', so the field is dropped silently. Fix: add `email_verified: bool = False` (plus optional email_verified_at: Optional[str] = None) to ProfilePublic; no route changes required. Reproduce: register a fresh user, then GET /api/community/users/me — response JSON has no email_verified key."
+}

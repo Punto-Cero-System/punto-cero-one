@@ -35,7 +35,7 @@ async def search(
         [{ type, id, title, subtitle?, image?, meta?, url }]
     """
     db = request.app.state.db
-    wanted = [t.strip() for t in (types or "people,companies,posts,jobs,events,hashtags,categories").split(",") if t.strip()]
+    wanted = [t.strip() for t in (types or "people,companies,posts,jobs,events,videos,repos,news,hashtags,categories").split(",") if t.strip()]
     results: dict[str, list] = {t: [] for t in wanted}
 
     if "people" in results:
@@ -52,7 +52,7 @@ async def search(
             "title": u.get("name") or u.get("email", ""),
             "subtitle": u.get("headline") or "Miembro de la comunidad",
             "image": u.get("picture"),
-            "url": f"/perfil/{u['id']}",
+            "url": f"/u/{u['id']}",
         } async for u in cur]
 
     if "companies" in results:
@@ -132,6 +132,55 @@ async def search(
             "title": c["label"], "subtitle": c.get("group", "vertical"),
             "url": f"/?category={c['key']}",
         } async for c in cur]
+
+    # Videos + News come from `growth_items` (regional RSS + YouTube RSS
+    # ingestion via the Growth Engine). We split them by kind so the search
+    # panel can group them cleanly for the user.
+    if "videos" in results or "news" in results:
+        cur = db.growth_items.find(
+            {"$or": [
+                {"title": _regex(q)}, {"summary": _regex(q)},
+                {"source_name": _regex(q)}, {"tags": _regex(q)},
+            ]},
+            {"_id": 0, "id": 1, "title": 1, "summary": 1, "link": 1, "source_name": 1,
+             "kind": 1, "media": 1, "published_at": 1, "image_url": 1},
+        ).sort("published_at", -1).limit(limit * 2)
+        vids, news = [], []
+        async for g in cur:
+            item = {
+                "id": g["id"],
+                "title": g.get("title") or "",
+                "subtitle": g.get("source_name") or (g.get("published_at") or "")[:10],
+                "image": g.get("image_url") or (g.get("media") or {}).get("thumbnail"),
+                "url": g.get("link"),
+            }
+            if (g.get("kind") or "").lower() == "video" and len(vids) < limit:
+                vids.append({**item, "type": "videos"})
+            elif len(news) < limit:
+                news.append({**item, "type": "news"})
+        if "videos" in results:
+            results["videos"] = vids
+        if "news" in results:
+            results["news"] = news
+
+    # Public repositories (populated by Sources Center's `github_org` source)
+    if "repos" in results:
+        cur = db.github_repos.find(
+            {"$or": [
+                {"name": _regex(q)}, {"full_name": _regex(q)},
+                {"description": _regex(q)}, {"topics": _regex(q)},
+                {"owner_login": _regex(q)},
+            ]},
+            {"_id": 0, "id": 1, "full_name": 1, "name": 1, "description": 1,
+             "html_url": 1, "stars": 1, "language": 1, "owner_login": 1},
+        ).sort("stars", -1).limit(limit)
+        results["repos"] = [{
+            "type": "repos", "id": str(r.get("id") or r.get("full_name")),
+            "title": r.get("full_name") or r.get("name"),
+            "subtitle": (r.get("description") or "")[:110] or (r.get("language") or "repo"),
+            "meta": f"★ {r.get('stars', 0)}",
+            "url": r.get("html_url"),
+        } async for r in cur]
 
     total = sum(len(v) for v in results.values())
     return {

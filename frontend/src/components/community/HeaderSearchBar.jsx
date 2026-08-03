@@ -10,6 +10,7 @@ const TYPE_LABEL = {
   people: 'Persona', companies: 'Empresa', posts: 'Publicación',
   jobs: 'Empleo', events: 'Evento', hashtags: 'Hashtag',
   categories: 'Categoría', documents: 'Documento',
+  videos: 'Video', repos: 'Repositorio', news: 'Noticia',
 };
 
 /**
@@ -43,7 +44,13 @@ const HeaderSearchBar = () => {
 
   const goto = (r) => {
     setOpen(false); setQ('');
-    if (r.url) navigate(r.url);
+    if (!r.url) return;
+    // External resources (github, youtube, source article) open in a new tab.
+    if (/^https?:/i.test(r.url)) {
+      window.open(r.url, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(r.url);
+    }
   };
 
   return (

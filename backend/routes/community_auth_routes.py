@@ -30,6 +30,7 @@ from services.community_auth import (
     session_expiry,
     parse_expires_at,
     ProviderIdentity,
+    OAuth2AuthorizationCodeProvider,
 )
 
 logger = logging.getLogger("punto-cero-api.community_auth_routes")
@@ -60,6 +61,7 @@ class CommunityUserPublic(BaseModel):
     language: Optional[str] = None
     headline: Optional[str] = None
     providers: list[str] = []
+    email_verified: bool = False
     created_at: str
 
 
@@ -129,6 +131,8 @@ async def _upsert_user_from_identity(db, identity: ProviderIdentity) -> dict:
             "language": None,
             "headline": None,
             "auth_providers": [link],
+            "email_verified": True,  # Social providers already verified this email.
+            "email_verified_at": now,
             "created_at": now,
             "last_login_at": now,
         }
@@ -169,6 +173,7 @@ def _user_to_public(user: dict) -> CommunityUserPublic:
         language=user.get("language"),
         headline=user.get("headline"),
         providers=providers,
+        email_verified=bool(user.get("email_verified", False)),
         created_at=user.get("created_at", _now_iso()),
     )
 
@@ -375,6 +380,7 @@ async def register_email(
             "language": None,
             "headline": None,
             "password_hash": hash_password(payload.password),
+            "email_verified": False,
             "auth_providers": [{
                 "provider": "password",
                 "provider_user_id": email,
@@ -384,12 +390,16 @@ async def register_email(
             "last_login_at": now,
         }
         await db.users.insert_one(user_doc)
-        # Fire-and-forget welcome email
+        # Fire-and-forget welcome + verification email
         try:
             from services.email import send_welcome
             await send_welcome(email, user_doc["name"])
         except Exception:
             pass
+        try:
+            await _issue_verification_email(db, request, user_doc)
+        except Exception as e:
+            logger.warning("register_email: verification email failed: %s", e)
         user = {k: v for k, v in user_doc.items() if k != "password_hash"}
 
     await _issue_session_cookie(db, response, user, "password")
@@ -525,3 +535,251 @@ async def reset_password(
     user.pop("password_hash", None)
     await _issue_session_cookie(db, response, user, "password")
     return _user_to_public(user)
+
+
+
+# ---------------------------------------------------------------------------
+# Email verification — one-shot tokens stored in `email_verifications`.
+# TTL index on `expires_at` cleans expired rows automatically.
+# ---------------------------------------------------------------------------
+VERIFICATION_TTL_HOURS = int(os.environ.get("EMAIL_VERIFY_TTL_HOURS", "24"))
+VERIFICATION_RESEND_COOLDOWN_S = int(os.environ.get("EMAIL_VERIFY_RESEND_COOLDOWN_S", "60"))
+
+
+class VerifyResendInput(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    email: Optional[EmailStr] = None  # optional; falls back to authed user
+
+
+class VerifyConfirmInput(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    token: str = Field(min_length=8, max_length=200)
+
+
+def _build_verify_link(request: Request, token: str) -> str:
+    app_url = (os.environ.get("PUBLIC_APP_URL", "") or "").rstrip("/")
+    if not app_url:
+        origin = request.headers.get("origin") or request.headers.get("referer") or ""
+        app_url = origin.rstrip("/")
+    return f"{app_url}/verify-email?token={token}" if app_url else f"/verify-email?token={token}"
+
+
+async def _issue_verification_email(db, request: Request, user: dict) -> str:
+    """Create a fresh verification token and email the link.
+    Existing outstanding tokens for the same user are dropped so only the
+    latest link is valid — this prevents token accumulation on resend spam.
+    """
+    now = datetime.now(timezone.utc)
+    token = secrets.token_urlsafe(32)
+    await db.email_verifications.delete_many({"user_id": user["id"], "used": False})
+    await db.email_verifications.insert_one({
+        "token": token,
+        "user_id": user["id"],
+        "email": user["email"],
+        "created_at": now.isoformat(),
+        "expires_at": now + timedelta(hours=VERIFICATION_TTL_HOURS),
+        "used": False,
+    })
+    link = _build_verify_link(request, token)
+    try:
+        from services.email import send_email_verification
+        await send_email_verification(user["email"], link, user.get("name"))
+    except Exception as e:
+        logger.warning("verification email send failed: %s", e)
+    return link
+
+
+@router.post("/verify/send")
+async def send_verification(
+    payload: VerifyResendInput,
+    request: Request,
+    session_token: Optional[str] = Cookie(default=None),
+    authorization: Optional[str] = Header(default=None),
+):
+    """Send (or re-send) the verification email.
+
+    Two modes:
+      1. Authed user + no payload → verify their own email.
+      2. Anonymous + payload.email → allows resend from the /join UX right
+         after registration. Always returns 200 generic — avoids enumeration.
+    """
+    db = request.app.state.db
+    user = None
+    token_str = _extract_token(session_token, authorization)
+    if token_str:
+        sess = await db.user_sessions.find_one({"session_token": token_str}, {"_id": 0})
+        if sess:
+            user = await db.users.find_one({"id": sess["user_id"]}, {"_id": 0})
+    if user is None and payload.email:
+        user = await db.users.find_one({"email": str(payload.email).lower().strip()}, {"_id": 0})
+
+    generic = {"ok": True, "message": "Si la cuenta existe y aún no está verificada, enviamos un nuevo enlace."}
+    if not user:
+        return generic
+    if user.get("email_verified"):
+        return {"ok": True, "message": "Este correo ya está verificado."}
+
+    # cooldown per user to avoid spam
+    last = await db.email_verifications.find_one(
+        {"user_id": user["id"]}, sort=[("created_at", -1)])
+    if last:
+        try:
+            created = datetime.fromisoformat(last["created_at"])
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            elapsed = (datetime.now(timezone.utc) - created).total_seconds()
+            if elapsed < VERIFICATION_RESEND_COOLDOWN_S:
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Espera {int(VERIFICATION_RESEND_COOLDOWN_S - elapsed)}s antes de solicitar otro correo.",
+                )
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
+    await _issue_verification_email(db, request, user)
+    return generic
+
+
+@router.post("/verify/confirm")
+async def confirm_verification(
+    payload: VerifyConfirmInput,
+    request: Request,
+    response: Response,
+):
+    db = request.app.state.db
+    rec = await db.email_verifications.find_one({"token": payload.token}, {"_id": 0})
+    if not rec or rec.get("used"):
+        raise HTTPException(status_code=400, detail="Enlace inválido o ya utilizado")
+    expires = rec.get("expires_at")
+    if isinstance(expires, str):
+        try:
+            expires = datetime.fromisoformat(expires)
+        except Exception:
+            expires = None
+    now = datetime.now(timezone.utc)
+    if not expires:
+        raise HTTPException(status_code=400, detail="Enlace inválido")
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires < now:
+        raise HTTPException(status_code=400, detail="El enlace expiró. Solicita uno nuevo.")
+
+    user = await db.users.find_one({"id": rec["user_id"]}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=400, detail="Usuario no encontrado")
+
+    # Atomically mark token used + flip flag on user.
+    await db.email_verifications.update_one({"token": payload.token}, {"$set": {"used": True}})
+    await db.email_verifications.delete_many({"user_id": user["id"], "token": {"$ne": payload.token}})
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"email_verified": True, "email_verified_at": _now_iso()}},
+    )
+    # Auto-establish a session so the verify link → home flow is 1-click.
+    user["email_verified"] = True
+    user.pop("password_hash", None)
+    await _issue_session_cookie(db, response, user, user.get("auth_providers", [{}])[0].get("provider", "password"))
+    return _user_to_public(user)
+
+
+# ---------------------------------------------------------------------------
+# OAuth 2.0 Authorization Code — LinkedIn + Microsoft.
+# Uses the shared OAuth2AuthorizationCodeProvider abstraction from
+# services.community_auth so new providers become 1-class additions.
+# ---------------------------------------------------------------------------
+from fastapi.responses import RedirectResponse
+
+
+def _oauth_state_ttl_min() -> int:
+    return int(os.environ.get("OAUTH_STATE_TTL_MINUTES", "10"))
+
+
+def _oauth_redirect_uri(request: Request, provider_key: str) -> str:
+    """Compute the callback URL that must EXACTLY match what's whitelisted
+    in the provider's app config. Uses PUBLIC_APP_URL if set, else Origin.
+    """
+    base = (os.environ.get("PUBLIC_APP_URL", "") or "").rstrip("/")
+    if not base:
+        origin = request.headers.get("origin") or request.headers.get("referer") or ""
+        base = origin.rstrip("/")
+    return f"{base}/api/community/auth/oauth/{provider_key}/callback"
+
+
+@router.get("/oauth/{provider_key}/start")
+async def oauth_start(provider_key: str, request: Request):
+    """Kicks off the Authorization Code flow: creates a signed state cookie
+    and redirects the browser to the provider's authorize URL.
+    """
+    provider = registry.get(provider_key)
+    if not provider or not isinstance(provider, OAuth2AuthorizationCodeProvider):
+        raise HTTPException(status_code=404, detail="Proveedor no disponible")
+    if not provider.is_enabled():
+        raise HTTPException(status_code=503,
+                            detail=f"{provider.label} aún no está configurado. Contacta al administrador.")
+
+    db = request.app.state.db
+    state = secrets.token_urlsafe(24)
+    redirect_uri = _oauth_redirect_uri(request, provider_key)
+    now = datetime.now(timezone.utc)
+    await db.oauth_states.insert_one({
+        "state": state,
+        "provider": provider_key,
+        "redirect_uri": redirect_uri,
+        "created_at": now.isoformat(),
+        "expires_at": now + timedelta(minutes=_oauth_state_ttl_min()),
+    })
+    return RedirectResponse(provider.authorize_endpoint(redirect_uri, state))
+
+
+@router.get("/oauth/{provider_key}/callback")
+async def oauth_callback(
+    provider_key: str,
+    request: Request,
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    error: Optional[str] = None,
+):
+    """Provider redirects here after user consent. We validate state, exchange
+    code for an access token, fetch userinfo, upsert the user, mint session,
+    and redirect to the SPA landing.
+    """
+    if error:
+        return RedirectResponse(f"/join?oauth_error={error}", status_code=302)
+    provider = registry.get(provider_key)
+    if not provider or not isinstance(provider, OAuth2AuthorizationCodeProvider):
+        raise HTTPException(status_code=404, detail="Proveedor no disponible")
+    if not code or not state:
+        raise HTTPException(status_code=400, detail="Faltan code/state")
+
+    db = request.app.state.db
+    rec = await db.oauth_states.find_one_and_delete(
+        {"state": state, "provider": provider_key})
+    if not rec:
+        raise HTTPException(status_code=400, detail="State inválido o expirado")
+
+    try:
+        identity = await provider.exchange_session(f"{code}|{rec['redirect_uri']}")
+    except AuthProviderError as e:
+        return RedirectResponse(f"/join?oauth_error={e}", status_code=302)
+
+    if not identity.email:
+        return RedirectResponse("/join?oauth_error=email_missing", status_code=302)
+
+    user = await _upsert_user_from_identity(db, identity)
+    token = new_session_token()
+    await db.user_sessions.update_one(
+        {"session_token": token},
+        {"$set": {
+            "session_token": token, "user_id": user["id"],
+            "provider": identity.provider,
+            "expires_at": session_expiry().isoformat(),
+            "created_at": _now_iso(),
+        }},
+        upsert=True,
+    )
+    resp = RedirectResponse("/", status_code=302)
+    _set_session_cookie(resp, token)
+    return resp
+

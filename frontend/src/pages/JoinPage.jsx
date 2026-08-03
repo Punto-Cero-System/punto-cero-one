@@ -46,12 +46,19 @@ const JoinPage = () => {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [enabledProviders, setEnabledProviders] = useState(['google']); // fallback
   const navigate = useNavigate();
   const { user, refresh } = useCommunityAuth();
 
   useEffect(() => {
     if (user && typeof user === 'object') navigate('/', { replace: true });
   }, [user, navigate]);
+
+  useEffect(() => {
+    authService.listProviders()
+      .then((p) => setEnabledProviders((p.enabled || []).map((x) => x.key)))
+      .catch(() => { /* keep fallback */ });
+  }, []);
 
   const flash = (msg, kind = 'ok') => {
     if (kind === 'ok') { setNotice(msg); setError(''); setTimeout(() => setNotice(''), 4500); }
@@ -60,7 +67,8 @@ const JoinPage = () => {
 
   const handleSocial = (providerKey, label) => {
     const provider = AUTH_PROVIDERS[providerKey];
-    if (provider?.available && provider.startLogin) {
+    const isEnabled = enabledProviders.includes(providerKey) && provider?.startLogin;
+    if (isEnabled) {
       provider.startLogin();
       return;
     }
@@ -153,7 +161,7 @@ const JoinPage = () => {
           <motion.div key="social" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
             {SOCIALS.map((s) => {
-              const available = AUTH_PROVIDERS[s.key]?.available;
+              const available = enabledProviders.includes(s.key);
               return (
                 <motion.button key={s.key}
                   whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}

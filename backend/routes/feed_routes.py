@@ -104,6 +104,51 @@ def _extract_hashtags(body: str) -> list[str]:
     return seen
 
 
+# Matches @user_<12 hex chars> — the canonical mention token emitted by the
+# frontend composer. Kept intentionally strict: free-form @name is ambiguous
+# and would cause false-positive notifications.
+_MENTION_RE = re.compile(r"@(user_[a-f0-9]{12})")
+
+
+def _extract_mentions(body: str) -> list[str]:
+    if not body:
+        return []
+    seen: list[str] = []
+    for m in _MENTION_RE.findall(body):
+        if m not in seen:
+            seen.append(m)
+        if len(seen) >= 20:
+            break
+    return seen
+
+
+async def _dispatch_mentions(db, *, body: str, actor: dict, subject_id: str,
+                             subject_type: str = "post", subject_url: Optional[str] = None) -> None:
+    """Notify every unique user_id referenced with @user_xxxxxxxxxxxx.
+    Silently skips the actor themselves and non-existent users.
+    """
+    mentions = _extract_mentions(body)
+    if not mentions:
+        return
+    async for u in db.users.find(
+        {"id": {"$in": mentions}}, {"_id": 0, "id": 1, "name": 1}
+    ):
+        if u["id"] == actor.get("id"):
+            continue
+        try:
+            await dispatch_notif(
+                db, recipient_id=u["id"], kind="mention",
+                title=f"{actor.get('name') or 'Alguien'} te mencionó",
+                body=body[:140] if body else None,
+                actor=actor,
+                subject_type=subject_type, subject_id=subject_id,
+                subject_url=subject_url or f"/?post={subject_id}",
+                vertical="community",
+            )
+        except Exception:
+            continue
+
+
 def _author_mini(user: dict) -> PostAuthorMini:
     return PostAuthorMini(
         id=user["id"],
@@ -243,6 +288,12 @@ async def create_post(
             {"$inc": {"posts_total": 1}, "$set": {"last_used": now}},
             upsert=True,
         )
+    # Fan-out @mentions
+    await _dispatch_mentions(
+        db, body=body,
+        actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
+        subject_id=doc["id"], subject_type="post",
+    )
     return await _serialize_post(db, doc, user)
 
 
@@ -360,6 +411,12 @@ async def add_comment(
             actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
             subject_type="post", subject_id=post_id, subject_url=f"/?post={post_id}",
         )
+    # Fan-out @mentions inside the comment body
+    await _dispatch_mentions(
+        db, body=payload.body,
+        actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
+        subject_id=post_id, subject_type="post",
+    )
     return CommentPublic(
         id=doc["id"], post_id=post_id, body=doc["body"],
         author=_author_mini(user), created_at=doc["created_at"],
@@ -507,6 +564,17 @@ async def share_post(
         "created_at": _now(),
     })
     await db.posts.update_one({"id": post_id}, {"$inc": {"counts.shares": 1}})
+    # Notify the original author when a member (not anon) shares the post.
+    if viewer:
+        author_doc = await db.posts.find_one({"id": post_id}, {"_id": 0, "author_id": 1})
+        if author_doc and author_doc.get("author_id") and author_doc["author_id"] != viewer["id"]:
+            await dispatch_notif(
+                db, recipient_id=author_doc["author_id"], kind="reaction",  # share is a lightweight positive signal
+                title=f"{viewer.get('name','Alguien')} compartió tu publicación",
+                actor={"id": viewer["id"], "name": viewer.get("name"), "picture": viewer.get("picture")},
+                subject_type="post", subject_id=post_id, subject_url=f"/?post={post_id}",
+                vertical="community",
+            )
     return {"ok": True}
 
 

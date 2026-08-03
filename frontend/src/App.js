@@ -11,6 +11,8 @@ import CapitalStrategyPage from './pages/CapitalStrategyPage';
 import CapitalHubPage from './pages/CapitalHubPage';
 import JoinPage from './pages/JoinPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import PublicProfilePage from './pages/PublicProfilePage';
 import InvestorSetupPage from './pages/InvestorSetupPage';
 import InvestorPortalPage from './pages/InvestorPortalPage';
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -115,6 +117,8 @@ function AppRouter() {
       <Route path="/capital" element={<CapitalHubPage />} />
       <Route path="/join" element={<JoinPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/u/:userId" element={<PublicProfilePage />} />
       <Route path="/noticias" element={<NewsPage />} />
       <Route path="/videos" element={<VideosPage />} />
       <Route path="/empleos" element={<JobsPage />} />

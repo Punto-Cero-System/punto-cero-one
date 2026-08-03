@@ -168,6 +168,11 @@ async def ensure_indexes():
     await db.password_reset_tokens.create_index("token", unique=True)
     await db.password_reset_tokens.create_index("user_id")
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+
+    # Email verification — same TTL pattern.
+    await db.email_verifications.create_index("token", unique=True)
+    await db.email_verifications.create_index("user_id")
+    await db.email_verifications.create_index("expires_at", expireAfterSeconds=0)
     # Ensure the invitation_token can be queried quickly and is unique when present.
     await db.users.create_index(
         "invitation_token", unique=True, partialFilterExpression={"invitation_token": {"$type": "string"}}
