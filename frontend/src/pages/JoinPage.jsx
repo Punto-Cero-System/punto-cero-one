@@ -5,6 +5,7 @@ import { Mail, ArrowLeft, Sparkles, Lock, Eye, EyeOff, Loader2 } from 'lucide-re
 import BrandMark from '../components/BrandMark';
 import { AUTH_PROVIDERS, authService } from '../services/authService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+import { armWelcome } from '../components/community/WelcomeModal';
 
 const NAVY = '#0B1F3A';
 
@@ -82,8 +83,10 @@ const JoinPage = () => {
     try {
       if (mode === 'register') {
         if (password.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres.');
-        await authService.registerEmail({ email: email.trim(), password, name: name.trim() || undefined });
-        await refresh();
+        const created = await authService.registerEmail({ email: email.trim(), password, name: name.trim() || undefined });
+        const refreshed = await refresh();
+        const uid = created?.id || refreshed?.id;
+        if (uid) armWelcome(uid);
         navigate('/', { replace: true });
       } else if (mode === 'login') {
         await authService.loginEmail({ email: email.trim(), password });

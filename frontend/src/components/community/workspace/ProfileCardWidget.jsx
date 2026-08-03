@@ -10,8 +10,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Users } from 'lucide-react';
 import { useCommunityAuth } from '../../../contexts/CommunityAuthContext';
+import useCommunityStats, { formatCount } from '../../../hooks/useCommunityStats';
 
 const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
@@ -25,6 +26,9 @@ const GOLD = '#D4AF37';
 const ProfileCardWidget = () => {
   const { user } = useCommunityAuth();
   const isAuthed = !!user && typeof user === 'object';
+  const { stats } = useCommunityStats(45000);
+  const memberCount = stats?.total_members ?? null;
+  const memberLabel = memberCount == null ? '…' : formatCount(memberCount);
   return (
     <div data-testid="workspace-profile-card" style={{
       background: '#FFFFFF', borderRadius: 16, overflow: 'hidden',
@@ -43,7 +47,7 @@ const ProfileCardWidget = () => {
               border: '3px solid #FFFFFF', objectFit: 'cover',
               boxShadow: '0 4px 12px rgba(11,31,58,0.15)',
             }} />
-        ) : (
+        ) : isAuthed ? (
           <div style={{
             width: 60, height: 60, borderRadius: '50%',
             background: '#0A0F1C', margin: '0 auto',
@@ -51,13 +55,55 @@ const ProfileCardWidget = () => {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: '"Space Grotesk", sans-serif',
             color: '#FFFFFF', fontWeight: 700, fontSize: '1.35rem',
-          }}>{isAuthed ? (user.name || user.email || '0').charAt(0).toUpperCase() : '0'}</div>
+          }}>{(user.name || user.email || 'M').charAt(0).toUpperCase()}</div>
+        ) : (
+          <div
+            data-testid="workspace-members-counter"
+            title={`${memberLabel} miembros en Punto Cero One`}
+            style={{
+              width: 60, height: 60, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #0A0F1C 0%, #1E3A8A 60%, #4C1D95 100%)',
+              margin: '0 auto',
+              border: '3px solid #FFFFFF',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: '"Space Grotesk", sans-serif',
+              color: '#FFFFFF', fontWeight: 800,
+              fontSize: memberLabel.length > 4 ? '0.85rem' : '1.1rem',
+              lineHeight: 1,
+              boxShadow: '0 4px 14px rgba(11,31,58,0.25), inset 0 0 0 1px rgba(0,200,150,0.35)',
+              whiteSpace: 'nowrap',
+              padding: '0 6px',
+            }}
+          >{memberLabel}</div>
         )}
         <div style={{ marginTop: '0.6rem', fontWeight: 700, fontSize: '0.95rem', color: NAVY }}>
           {isAuthed ? user.name : 'Bienvenido a Mi Espacio'}
         </div>
         <div style={{ fontSize: '0.75rem', color: 'rgba(11,31,58,0.55)', marginTop: '0.15rem' }}>
           {isAuthed ? (user.headline || user.email) : 'Personaliza tu escritorio profesional'}
+        </div>
+        {/* Live community pulse — always visible so the widget feels alive */}
+        <div
+          data-testid="workspace-members-pulse"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+            marginTop: '0.65rem',
+            padding: '0.28rem 0.7rem',
+            background: 'linear-gradient(120deg, rgba(0,200,150,0.10), rgba(124,58,237,0.08))',
+            border: '1px solid rgba(0,200,150,0.28)',
+            borderRadius: 100,
+            fontSize: '0.68rem', fontWeight: 700, color: '#00825E',
+            letterSpacing: '0.01em',
+          }}
+        >
+          <motion.span
+            animate={{ scale: [1, 1.25, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ width: 7, height: 7, borderRadius: '50%', background: EMERALD, display: 'inline-block' }}
+          />
+          <Users size={11} />
+          <span data-testid="workspace-members-count">{memberLabel}</span>
+          <span style={{ color: 'rgba(11,31,58,0.55)', fontWeight: 500 }}>miembros creciendo</span>
         </div>
         {!isAuthed ? (
           <Link to="/join" style={{

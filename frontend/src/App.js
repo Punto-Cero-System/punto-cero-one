@@ -40,6 +40,7 @@ import HashtagPage from './pages/HashtagPage';
 import MiEspacioConfigPage from './pages/MiEspacioConfigPage';
 import ProfileCustomizePage from './pages/ProfileCustomizePage';
 import MobileBottomNav from './components/community/MobileBottomNav';
+import WelcomeModal from './components/community/WelcomeModal';
 import { AuthProvider } from './contexts/AuthContext';
 import { CommunityAuthProvider } from './contexts/CommunityAuthContext';
 import { RealtimeProvider } from './contexts/RealtimeContext';
@@ -83,6 +84,7 @@ function App() {
                 <WorkspaceProvider>
                   <AppRouter />
                   <MobileBottomNav />
+                  <WelcomeModal />
                 </WorkspaceProvider>
               </RealtimeProvider>
             </UIPreferencesProvider>
