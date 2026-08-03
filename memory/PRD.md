@@ -860,6 +860,96 @@ Todas las rutas SPA siempre devolvieron 200. Playwright reveló que la percepci�
 - 25/25 imágenes en `/empresas` renderizan, 10/10 en `/empresas/microsoft`
 - 18/18 rutas SPA responden 200
 
+---
+
+## Wave 7 — Growth Wave · Ecosistema profesional inteligente (03 ago 2026)
+
+### Objetivo
+Convertir Punto Cero One en un ecosistema donde el usuario descubra, siga e interactúe con entidades públicas reales (empresas, personas, videos, repositorios, noticias). CERO módulos nuevos: todo integrado en la arquitectura existente.
+
+### Ejecutado (6 fases)
+
+1. **Verificación de email** (P0)
+   - `POST /api/community/auth/verify/send` — genera token TTL 24 h, cooldown 60 s, respuesta genérica anti-enumeración.
+   - `POST /api/community/auth/verify/confirm` — one-shot (token used=true, invalida otros del user, cookie sesión).
+   - Registro Email/Password ahora crea usuarios con `email_verified: false` y dispara email automáticamente.
+   - Registro social (Google) marca `email_verified: true` (provider ya verificó).
+   - Plantilla HTML en `services/email.send_email_verification` reutilizando `_wrap`.
+   - Colección `email_verifications` con TTL index en `expires_at`.
+
+2. **Social graph completo** (P0)
+   - Sin código nuevo — el registro ya soporta user/company/hashtag/vertical/country/event.
+   - `follows_routes.py::follow` ahora dispara `dispatch_notif(kind="follower")` al owner cuando el target es user o company (no dispara para seeds públicos sin owner).
+
+3. **Notificaciones en tiempo real** (P0)
+   - Menciones: helper `_dispatch_mentions` con regex estricto `@user_<12 hex>` conectado en `create_post`, `create_comment`.
+   - Share: `share_post` ahora notifica al autor original.
+   - Todo va al Notification Center existente (`services/notifications.dispatch`).
+
+4. **Perfil público** (P1)
+   - Nueva ruta `/u/:userId` → `pages/PublicProfilePage.jsx` (reutiliza `<FeedPostCard>` para publicaciones recientes).
+   - Muestra: portada, avatar (con fallback iniciales), nombre + headline + badge verificado, país/empresa, stats (posts/followers/following), bio, especialidades, verticales, intereses, enlaces sociales, publicaciones (via `feedService.listPosts({author_id})`).
+   - SEO: título dinámico + meta description a partir de headline/bio.
+   - CTA Seguir/Siguiendo (usuarios), Editar perfil (self) — dispatch `pc:follow-change`.
+
+5. **Compartir publicaciones** (P1)
+   - `<SharePopover>` embebido en `FeedPostCard` con 3 opciones:
+     - Copiar enlace (siempre disponible, clipboard + toast).
+     - Compartir en Punto Cero (repost interno via `feedService.createPost` con cita del original — solo autenticados).
+     - Compartir por… (Web Share API, solo si `navigator.share` disponible).
+   - Cada acción llama `feedService.share(id, destination)` con destino `clipboard | internal | native`.
+
+6. **Login social LinkedIn + Microsoft** (P0 — arquitectura preparada)
+   - Clase base genérica `OAuth2AuthorizationCodeProvider` en `services/community_auth.py`.
+   - `LinkedInAuthProvider` (OpenID Connect `sub/name/email/picture`) y `MicrosoftAuthProvider` (Graph `userinfo`).
+   - Endpoints `GET /api/community/auth/oauth/{provider}/start|callback` con state cookie firmado.
+   - Registry ahora registra siempre; `enabled_list()` filtra por `is_enabled()` (chequea `LINKEDIN_CLIENT_ID/SECRET` y `MICROSOFT_CLIENT_ID/SECRET` en env).
+   - Sin credenciales: `/oauth/{p}/start` → 503 "no configurado" (no rompe UI que muestra "PRONTO").
+   - Al setear las env vars: LinkedIn y Microsoft aparecen automáticamente como `enabled` en `/providers` y son clicables en `/join`.
+
+### BONUS — Buscador unificado ampliado
+`GET /api/search` ahora devuelve `by_type` con **10 categorías**: people, companies, posts, jobs, events, **videos**, **repos**, **news**, hashtags, categories.
+- Videos + News desde `growth_items` (Growth Engine + YouTube RSS) diferenciados por `kind`.
+- Repos desde `github_repos` (Sources Center) ordenados por stars.
+- People `url` ahora apunta a `/u/{id}` (perfil público).
+- `HeaderSearchBar` abre URLs http externas en nueva pestaña, mantiene navigate() para rutas internas.
+
+### Archivos modificados/nuevos
+Backend:
+- `routes/community_auth_routes.py` — verify + oauth endpoints + email_verified marker en social flow
+- `services/community_auth.py` — OAuth2AuthorizationCodeProvider + LinkedIn/Microsoft; registry siempre registra
+- `services/email.py` — `send_email_verification`
+- `routes/follows_routes.py` — dispatch_notif kind="follower"
+- `routes/feed_routes.py` — `_dispatch_mentions`, dispatch en post/comment/share
+- `routes/search_routes.py` — videos/repos/news + `/u/{id}` para personas
+- `server.py` — TTL index `email_verifications`
+- `models_profile.py` — `email_verified` + `email_verified_at` en ProfilePublic
+- `routes/profile_routes.py` — _to_public copia campos
+- `tests/test_wave7_growth.py` — 16 tests
+
+Frontend:
+- `pages/PublicProfilePage.jsx` (nuevo)
+- `pages/VerifyEmailPage.jsx` (nuevo)
+- `pages/JoinPage.jsx` — enabled providers dinámicos
+- `services/authService.js` — sendEmailVerification, confirmEmailVerification + startLogin LinkedIn/MS
+- `components/community/FeedPostCard.jsx` — SharePopover + toast
+- `components/community/HeaderSearchBar.jsx` — nuevos type labels + URLs externas
+- `App.js` — rutas `/verify-email` y `/u/:userId`
+
+### Validación (testing_agent iteration_18 + retest 19)
+- **Backend 100 %** (19/19 = 16 wave7 + 3 wave6 regression)
+- **Frontend 100 %** de flujos cubiertos (JoinPage social, VerifyEmailPage, PublicProfilePage, SharePopover)
+- Bug reportado en iter_18 (email_verified faltaba en /me) → fix aplicado + retest iter_19 → 100 %
+
+### Env vars nuevas (opcionales)
+- `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` — activa LinkedIn
+- `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` — activa Microsoft
+- `OAUTH_STATE_TTL_MINUTES` (default 10)
+- `EMAIL_VERIFY_TTL_HOURS` (default 24)
+- `EMAIL_VERIFY_RESEND_COOLDOWN_S` (default 60)
+- `PUBLIC_APP_URL` — usado en verify + reset + OAuth callback links
+
+
 
 
 
