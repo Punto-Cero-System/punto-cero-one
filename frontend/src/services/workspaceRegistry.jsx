@@ -42,6 +42,7 @@ import SuggestedPeopleWidget from '../components/community/workspace/SuggestedPe
 import CapitalCtaWidget from '../components/community/workspace/CapitalCtaWidget';
 import MessagesWidget from '../components/community/workspace/MessagesWidget';
 import DiscoverEntitiesWidget from '../components/community/workspace/DiscoverEntitiesWidget';
+import TrendingCompaniesWidget from '../components/community/workspace/TrendingCompaniesWidget';
 
 /**
  * Small helpers to wrap the existing decorative widgets that live inside
@@ -311,6 +312,14 @@ export const WORKSPACE_WIDGETS = [
     category: 'navigation',
     defaultPanel: 'right',
     defaultOrder: 45,
+  }),
+  wrap(TrendingCompaniesWidget, {
+    id: 'trending-companies',
+    title: 'Empresas trending',
+    description: 'Empresas activas hoy — ordenadas por menciones + posts + seguidores reales.',
+    category: 'community',
+    defaultPanel: 'right',
+    defaultOrder: 30,
   }),
   wrap(CapitalCtaWidget, {
     id: 'capital-cta',

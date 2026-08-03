@@ -67,7 +67,7 @@ export const WorkspaceProvider = ({ children }) => {
             panels: {
               left: ['profile-card', 'nuestra-historia', 'activity', 'groups', 'quick-links', 'weather-mini', 'calendar-mini', 'podcast-mini'],
               center: ['welcome-band', 'feed', 'inline-stats'],
-              right: ['messages', 'rss-news', 'trending', 'trending-editorial', 'events', 'discover-entities', 'companies', 'investor-center', 'ai-tools', 'crypto-live', 'fx-live', 'weather-live', 'youtube-live', 'markets', 'ai-of-the-day', 'poll', 'launches', 'courses', 'marketplace', 'suggested-people', 'capital-cta'],
+              right: ['messages', 'trending-companies', 'rss-news', 'trending', 'trending-editorial', 'events', 'discover-entities', 'companies', 'investor-center', 'ai-tools', 'crypto-live', 'fx-live', 'weather-live', 'youtube-live', 'markets', 'ai-of-the-day', 'poll', 'launches', 'courses', 'marketplace', 'suggested-people', 'capital-cta'],
             },
             widgets: {},
             theme: 'auto',

@@ -15,6 +15,9 @@ from typing import Any, Optional
 from .sources import SOURCES, merge_with_overrides
 from .providers import fetch_all
 from .normalizer import normalize_entry
+from services.discovery.autotag import (
+    get_company_aliases, autotag_item_payload, backfill_autotag,
+)
 
 
 logger = logging.getLogger("punto-cero-api.growth.aggregator")
@@ -38,13 +41,25 @@ async def run_once(db) -> dict[str, Any]:
 
     fetched = await fetch_all(sources)
     now = datetime.now(timezone.utc).isoformat()
+    aliases = await get_company_aliases(db)
     ingested = 0
     updated = 0
+    tagged = 0
     for src, entries in fetched:
         for e in entries[:30]:  # cap per-source to keep DB compact
             item = normalize_entry(src, e)
             if not item:
                 continue
+            # Inline auto-tag — every new item is instantly discoverable via
+            # the Company Discovery ficha the moment it lands.
+            auto = autotag_item_payload(
+                item.get("title"), item.get("summary"), aliases,
+                existing_tags=item.get("tags") or [],
+            )
+            if auto:
+                item["related_companies"] = auto["related_companies"]
+                item["tags"] = auto["tags"]
+                tagged += 1
             res = await db.growth_items.update_one(
                 {"id": item["id"]},
                 {
@@ -62,9 +77,16 @@ async def run_once(db) -> dict[str, Any]:
                 ingested += 1
             elif res.modified_count:
                 updated += 1
-    logger.info("growth run sources=%d ingested=%d updated=%d",
-                len(sources), ingested, updated)
-    return {"sources": len(sources), "ingested": ingested, "updated": updated}
+    # Best-effort backfill for legacy items that predated the inline tagger.
+    try:
+        legacy_tagged = await backfill_autotag(db, limit=500)
+    except Exception as e:
+        logger.warning("backfill autotag failed: %s", e)
+        legacy_tagged = 0
+    logger.info("growth run sources=%d ingested=%d updated=%d tagged=%d backfill=%d",
+                len(sources), ingested, updated, tagged, legacy_tagged)
+    return {"sources": len(sources), "ingested": ingested, "updated": updated,
+            "auto_tagged": tagged, "backfilled": legacy_tagged}
 
 
 async def latest_items(

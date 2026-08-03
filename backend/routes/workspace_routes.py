@@ -91,6 +91,7 @@ def default_workspace() -> Dict[str, Any]:
             ],
             "right": [
                 "messages",
+                "trending-companies",
                 "rss-news",
                 "trending",
                 "trending-editorial",

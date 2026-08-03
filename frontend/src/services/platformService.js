@@ -73,4 +73,6 @@ export const profileService = {
 export const discoveryService = {
   related: (slug) => fj(`/api/discovery/entity/${encodeURIComponent(slug)}/related`).then(throwOnError),
   suggested: (limit = 10) => fj(`/api/discovery/suggested?limit=${limit}`).then(throwOnError),
+  trending: (limit = 8, hours = 48) =>
+    fj(`/api/discovery/trending?limit=${limit}&hours=${hours}`).then(throwOnError),
 };

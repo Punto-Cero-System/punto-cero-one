@@ -8,7 +8,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader, ExternalLink, Star, GitFork, Youtube, Newspaper, Briefcase, Calendar, Building2 } from 'lucide-react';
+import { Loader, ExternalLink, Star, GitFork, Youtube, Newspaper, Briefcase, Calendar, Building2, Users, Hash } from 'lucide-react';
 import { discoveryService } from '../../services/platformService';
 
 const NAVY = '#0B1F3A';
@@ -66,8 +66,8 @@ const CompanyRelated = ({ slug }) => {
   }
   if (!data) return null;
 
-  const { news = [], repos = [], videos = [], jobs = [], events = [], similar = [] } = data;
-  const anything = news.length + repos.length + videos.length + jobs.length + events.length + similar.length;
+  const { news = [], repos = [], videos = [], jobs = [], events = [], similar = [], people = [], hashtags = [] } = data;
+  const anything = news.length + repos.length + videos.length + jobs.length + events.length + similar.length + people.length + hashtags.length;
   if (anything === 0) return null;
 
   return (
@@ -218,6 +218,65 @@ const CompanyRelated = ({ slug }) => {
                 <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>{s.name}</div>
                 <div style={{ fontSize: '0.66rem', color: 'rgba(11,31,58,0.55)' }}>
                   {s.tagline || s.vertical}
+                </div>
+              </div>
+            </Link>
+          ))}
+        </Card>
+      )}
+
+      {hashtags.length > 0 && (
+        <Card title="Hashtags relacionados" icon={Hash} testid="company-related-hashtags">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', padding: '0.35rem 0.15rem' }}>
+            {hashtags.slice(0, 12).map((h) => (
+              <Link key={h.tag} to={h.url} data-testid={`related-hashtag-${h.tag}`}
+                style={{
+                  padding: '0.28rem 0.65rem', borderRadius: 100,
+                  background: 'rgba(0,200,150,0.08)',
+                  border: '1px solid rgba(0,200,150,0.22)',
+                  color: '#00825E', fontSize: '0.72rem', fontWeight: 700,
+                  textDecoration: 'none',
+                }}>
+                #{String(h.tag).replace(/^#/, '')}
+                {h.count > 0 && (
+                  <span style={{ marginLeft: 5, opacity: 0.65, fontWeight: 500 }}>{h.count}</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {people.length > 0 && (
+        <Card title="Personas que siguen" icon={Users} testid="company-related-people">
+          {people.slice(0, 6).map((p) => (
+            <Link key={p.id} to={p.url || `/u/${p.id}`} data-testid={`related-person-${p.id}`}
+              style={{
+                display: 'flex', gap: '0.55rem', alignItems: 'center',
+                padding: '0.5rem 0.15rem', textDecoration: 'none', color: NAVY,
+                borderTop: '1px solid rgba(11,31,58,0.05)',
+              }}>
+              {p.picture ? (
+                <img src={p.picture} alt="" referrerPolicy="no-referrer" loading="lazy"
+                  onError={(ev) => {
+                    const fb = ev.currentTarget.nextSibling;
+                    ev.currentTarget.style.display = 'none';
+                    if (fb) fb.style.display = 'flex';
+                  }}
+                  style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', background: '#F0F2F7', flexShrink: 0 }} />
+              ) : null}
+              <div style={{
+                width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg, #0B1F3A, #7C3AED)',
+                color: '#FFFFFF', display: p.picture ? 'none' : 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, fontSize: '0.75rem',
+              }}>{(p.name || 'P').charAt(0).toUpperCase()}</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>{p.name || 'Miembro'}</div>
+                <div style={{ fontSize: '0.66rem', color: 'rgba(11,31,58,0.55)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {p.headline || p.current_company || 'Punto Cero One'}
                 </div>
               </div>
             </Link>

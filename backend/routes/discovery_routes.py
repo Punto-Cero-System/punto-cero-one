@@ -52,6 +52,103 @@ async def entity_related(slug: str, request: Request):
     return await resolver.gather(db, entity)
 
 
+@router.get("/trending")
+async def trending_companies(
+    request: Request,
+    limit: int = Query(default=8, ge=1, le=30),
+    hours: int = Query(default=48, ge=1, le=720),
+):
+    """Empresas trending del ecosistema — ranking calculado a partir de datos
+    reales que ya viven en Mongo:
+      • mentions      = # de `growth_items` recientes con `related_companies`
+      • followers     = valor cacheado en `companies.followers` (bridged)
+      • posts         = # de posts sociales que mencionen tag/hashtag/slug
+    Fórmula: mentions*3 + followers*1 + posts*2 · reciente < `hours`.
+    """
+    from datetime import datetime, timedelta, timezone
+    db = request.app.state.db
+    since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+
+    # 1) Recuento de menciones en growth_items recientes (fuente principal).
+    mentions_pipeline = [
+        {"$match": {"related_companies": {"$exists": True, "$ne": []},
+                     "published_at": {"$gte": since}}},
+        {"$unwind": "$related_companies"},
+        {"$group": {"_id": "$related_companies", "n": {"$sum": 1}}},
+        {"$sort": {"n": -1}},
+        {"$limit": limit * 4},
+    ]
+    mentions: dict[str, int] = {}
+    async for r in db.growth_items.aggregate(mentions_pipeline):
+        if r.get("_id"):
+            mentions[r["_id"]] = r.get("n", 0)
+
+    # 2) Recuento de posts recientes con menciones (hashtag/slug/company_id).
+    posts_pipeline = [
+        {"$match": {"created_at": {"$gte": since},
+                     "moderation_status": {"$ne": "removed"}}},
+        {"$project": {"tags": {"$ifNull": ["$hashtags", []]},
+                       "company_id": 1}},
+    ]
+    posts_by_slug: dict[str, int] = {}
+    # Cheap: iterate small window
+    async for p in db.posts.find({"created_at": {"$gte": since},
+                                    "moderation_status": {"$ne": "removed"}},
+                                   {"_id": 0, "hashtags": 1, "body": 1, "company_id": 1}).limit(2000):
+        seen_here: set[str] = set()
+        for h in (p.get("hashtags") or []):
+            k = str(h).lower().lstrip("#")
+            if k and k not in seen_here:
+                seen_here.add(k)
+        if p.get("company_id"):
+            seen_here.add(str(p["company_id"]))
+        for s in seen_here:
+            posts_by_slug[s] = posts_by_slug.get(s, 0) + 1
+
+    # 3) Merge slug universe.
+    candidate_slugs: set[str] = set(mentions.keys()) | set(posts_by_slug.keys())
+    if not candidate_slugs:
+        return {"items": [], "hours": hours, "generated_at": datetime.now(timezone.utc).isoformat()}
+
+    # 4) Enrich with company metadata + follower counts.
+    companies = {}
+    async for c in db.companies.find(
+        {"slug": {"$in": list(candidate_slugs)}, "is_deleted": {"$ne": True}},
+        {"_id": 0, "id": 1, "slug": 1, "name": 1, "tagline": 1, "vertical": 1,
+         "country": 1, "logo_url": 1, "hashtags": 1, "tags": 1},
+    ):
+        companies[c["slug"]] = c
+
+    # Follower counts (bridged in follows/company_follows).
+    follower_counts: dict[str, int] = {}
+    if companies:
+        ids_or_slugs = list(companies.keys()) + [c["id"] for c in companies.values() if c.get("id")]
+        async for r in db.follows.aggregate([
+            {"$match": {"entity_type": "company", "entity_id": {"$in": ids_or_slugs}}},
+            {"$group": {"_id": "$entity_id", "n": {"$sum": 1}}},
+        ]):
+            follower_counts[r["_id"]] = r.get("n", 0)
+
+    ranked: list[dict] = []
+    for slug, c in companies.items():
+        m = mentions.get(slug, 0)
+        p = posts_by_slug.get(slug, 0)
+        f = follower_counts.get(slug, 0) or follower_counts.get(c.get("id") or "", 0)
+        score = m * 3 + p * 2 + f * 1
+        if score <= 0:
+            continue
+        ranked.append({
+            **c,
+            "score": score,
+            "mentions_recent": m,
+            "posts_recent": p,
+            "followers": f,
+        })
+    ranked.sort(key=lambda x: (-x["score"], x.get("name") or ""))
+    return {"items": ranked[:limit], "hours": hours,
+            "generated_at": datetime.now(timezone.utc).isoformat()}
+
+
 @router.get("/suggested")
 async def suggested_entities(
     request: Request,

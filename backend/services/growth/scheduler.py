@@ -56,6 +56,13 @@ class GrowthScheduler:
             try:
                 await run_once(db)
                 await _process_admin_sources(db)
+                # One-shot backfill of items ingested before the inline tagger.
+                try:
+                    from services.discovery.autotag import backfill_autotag
+                    tagged = await backfill_autotag(db, limit=2000)
+                    logger.info("initial autotag backfill tagged=%d", tagged)
+                except Exception as e:
+                    logger.warning("initial autotag backfill failed: %s", e)
             except Exception as e:
                 logger.warning("initial growth run failed: %s", e)
             while not self._stop.is_set():

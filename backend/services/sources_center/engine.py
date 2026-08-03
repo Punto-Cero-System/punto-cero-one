@@ -21,6 +21,9 @@ from urllib.parse import urlparse
 from services.growth.providers import RSSProvider
 from services.growth.normalizer import normalize_entry
 from services.growth.aggregator import active_sources as growth_active_sources  # noqa: F401
+from services.discovery.autotag import (
+    get_company_aliases, autotag_item_payload, backfill_autotag,
+)
 from services.integrations.base import http
 from models_source import FREQUENCY_SECONDS
 
@@ -58,7 +61,9 @@ async def _sync_rss_like(db, source: dict, *, target_collection: str,
     entries = await _rss_provider.fetch(src_shape)
     ingested = 0
     updated = 0
+    auto_tagged = 0
     now = datetime.now(timezone.utc).isoformat()
+    aliases = await get_company_aliases(db)
     for e in entries[:40]:
         item = normalize_entry(src_shape, e)
         if not item:
@@ -66,6 +71,15 @@ async def _sync_rss_like(db, source: dict, *, target_collection: str,
         if extra_defaults:
             for k, v in extra_defaults.items():
                 item.setdefault(k, v)
+        # Inline auto-tag — classification happens during ingestion, not later.
+        auto = autotag_item_payload(
+            item.get("title"), item.get("summary"), aliases,
+            existing_tags=item.get("tags") or [],
+        )
+        if auto:
+            item["related_companies"] = auto["related_companies"]
+            item["tags"] = auto["tags"]
+            auto_tagged += 1
         res = await db.growth_items.update_one(
             {"id": item["id"]},
             {
@@ -79,7 +93,8 @@ async def _sync_rss_like(db, source: dict, *, target_collection: str,
             ingested += 1
         elif res.modified_count:
             updated += 1
-    return {"ingested": ingested, "updated": updated, "errors": []}
+    return {"ingested": ingested, "updated": updated, "errors": [],
+            "auto_tagged": auto_tagged}
 
 
 async def sync_rss(db, source: dict) -> dict:
@@ -310,15 +325,25 @@ async def sync_remotive_jobs(db, source: dict) -> dict:
     jobs = data.get("jobs") or []
     now = datetime.now(timezone.utc).isoformat()
     ingested = updated = 0
+    auto_tagged = 0
+    aliases = await get_company_aliases(db)
     for j in jobs[:40]:
         doc_id = f"rmv_{j.get('id')}"
+        summary = (j.get("description") or "").replace("<", "&lt;")[:400]
+        title = j.get("title") or ""
+        base_tags = [t.lower() for t in (j.get("tags") or [])[:10]]
+        auto = autotag_item_payload(title, summary, aliases, existing_tags=base_tags)
+        related_companies = auto["related_companies"] if auto else []
+        final_tags = auto["tags"] if auto else base_tags
+        if auto:
+            auto_tagged += 1
         item = {
             "id": doc_id,
             "source_id": source["id"],
             "source_name": "Remotive",
             "url": j.get("url"),
-            "title": j.get("title"),
-            "summary": (j.get("description") or "").replace("<", "&lt;")[:400],
+            "title": title,
+            "summary": summary,
             "author": j.get("company_name"),
             "image_url": j.get("company_logo"),
             "language": "en",
@@ -326,7 +351,8 @@ async def sync_remotive_jobs(db, source: dict) -> dict:
             "city": None,
             "vertical": "empleos",
             "category": j.get("category"),
-            "tags": [t.lower() for t in (j.get("tags") or [])[:10]],
+            "tags": final_tags,
+            "related_companies": related_companies,
             "kind": "job",
             "published_at": j.get("publication_date"),
             "ingested_at": now,
@@ -353,16 +379,16 @@ async def sync_remotive_jobs(db, source: dict) -> dict:
             {"id": job_id},
             {"$setOnInsert": {"id": job_id, "created_at": now, "is_deleted": False},
              "$set": {
-                 "title": j.get("title") or "",
+                 "title": title,
                  "company_name": j.get("company_name"),
                  "company_logo": j.get("company_logo"),
-                 "description": item["summary"],
+                 "description": summary,
                  "url": j.get("url"),
                  "location": j.get("candidate_required_location"),
                  "remote": True,
                  "job_type": j.get("job_type"),
                  "salary": j.get("salary"),
-                 "tags": item["tags"],
+                 "tags": final_tags,
                  "external_source": "remotive",
                  "external_id": str(j.get("id")),
                  "is_active": True,
@@ -370,72 +396,26 @@ async def sync_remotive_jobs(db, source: dict) -> dict:
              }},
             upsert=True,
         )
-    return {"ingested": ingested, "updated": updated, "errors": []}
+    return {"ingested": ingested, "updated": updated, "errors": [],
+            "auto_tagged": auto_tagged}
 
 
 HANDLERS["remotive_jobs"] = sync_remotive_jobs
 
 
 # ---------------------------------------------------------------------------
-# Auto-tagging — after any RSS/YouTube/Jobs ingest we relate items to public
-# companies whose name/tag/hashtag appears in the item's title+summary. Result
-# stored on `growth_items.related_companies` (list of slugs). This is what
-# powers Discovery ficha "news / videos / jobs" for a given company.
+# Auto-tagging — during ingestion each item is tagged inline (see
+# `_sync_rss_like` and `sync_remotive_jobs`). After a successful ingest we
+# additionally run a bounded backfill so legacy items that were ingested
+# before the inline tagger, or whose match set has grown (new seeded
+# companies), catch up.
 # ---------------------------------------------------------------------------
 
 async def _autotag_growth_items(db, source: dict, since_iso: str) -> int:
-    """Scan growth_items missing `related_companies` and tag them with matching
-    company slugs. Idempotent: only touches items without the field yet, so it
-    scales linearly with fresh ingests.
+    """Delegate to the shared inline auto-tagger. Kept as a thin wrapper so
+    other call sites (tests, admin sync) keep working without changes.
     """
-    # Build the alias → slug map from seeded + member companies (single query).
-    companies = await db.companies.find(
-        {"is_deleted": {"$ne": True}},
-        {"_id": 0, "slug": 1, "name": 1, "tags": 1, "hashtags": 1}
-    ).to_list(length=500)
-    if not companies:
-        return 0
-
-    aliases: dict[str, str] = {}  # lowercased alias → slug
-    for c in companies:
-        slug = c.get("slug")
-        if not slug:
-            continue
-        if c.get("name"):
-            aliases[c["name"].lower()] = slug
-        for t in (c.get("tags") or []) + (c.get("hashtags") or []):
-            k = str(t).lower().strip()
-            if len(k) >= 3:
-                aliases.setdefault(k, slug)
-
-    tagged = 0
-    # Idempotent: only touch items still missing the field.
-    query = {"$or": [
-        {"related_companies": {"$exists": False}},
-        {"related_companies": []},
-    ]}
-    async for g in db.growth_items.find(query, {"_id": 0, "id": 1, "title": 1, "summary": 1, "tags": 1}).limit(2000):
-        haystack = f" {(g.get('title') or '').lower()} {(g.get('summary') or '').lower()} "
-        matches: list[str] = []
-        for alias, slug in aliases.items():
-            needle = f" {alias} " if len(alias) <= 4 else alias
-            if needle in haystack:
-                if slug not in matches:
-                    matches.append(slug)
-            if len(matches) >= 5:
-                break
-        if matches:
-            existing_tags = set(g.get("tags") or [])
-            existing_tags.update(matches)
-            await db.growth_items.update_one(
-                {"id": g["id"]},
-                {"$set": {
-                    "related_companies": matches,
-                    "tags": sorted(existing_tags),
-                }},
-            )
-            tagged += 1
-    return tagged
+    return await backfill_autotag(db, limit=2000)
 
 
 # ---------------------------------------------------------------------------
