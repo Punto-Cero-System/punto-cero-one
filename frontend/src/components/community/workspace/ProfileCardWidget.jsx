@@ -7,12 +7,13 @@
  * are simply making the current UI addressable by ID.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, Users } from 'lucide-react';
+import { Sparkles, ArrowRight, Users, Globe2, ChevronDown } from 'lucide-react';
 import { useCommunityAuth } from '../../../contexts/CommunityAuthContext';
 import useCommunityStats, { formatCount } from '../../../hooks/useCommunityStats';
+import useUserRegion, { LATAM_COUNTRIES } from '../../../hooks/useUserRegion';
 
 const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
@@ -27,6 +28,8 @@ const ProfileCardWidget = () => {
   const { user } = useCommunityAuth();
   const isAuthed = !!user && typeof user === 'object';
   const { stats } = useCommunityStats(45000);
+  const region = useUserRegion();
+  const [showRegionPicker, setShowRegionPicker] = useState(false);
   const memberCount = stats?.total_members ?? null;
   const memberLabel = memberCount == null ? '…' : formatCount(memberCount);
   return (
@@ -104,6 +107,70 @@ const ProfileCardWidget = () => {
           <Users size={11} />
           <span data-testid="workspace-members-count">{memberLabel}</span>
           <span style={{ color: 'rgba(11,31,58,0.55)', fontWeight: 500 }}>miembros creciendo</span>
+        </div>
+        {/* Regional chip — clicking opens a lightweight country picker */}
+        <div style={{ marginTop: '0.5rem', position: 'relative' }}>
+          <button
+            type="button"
+            data-testid="workspace-region-chip"
+            onClick={() => setShowRegionPicker((v) => !v)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+              padding: '0.28rem 0.65rem',
+              background: 'rgba(255,255,255,0.9)',
+              border: '1px solid rgba(11,31,58,0.12)',
+              borderRadius: 100,
+              fontSize: '0.68rem', fontWeight: 700, color: NAVY,
+              letterSpacing: '0.01em', cursor: 'pointer',
+            }}
+            title="Elige tu país para ver contenido regional"
+          >
+            <span style={{ fontSize: '0.9rem', lineHeight: 1 }}>{region.flag}</span>
+            <Globe2 size={10} color="#7C3AED" />
+            <span data-testid="workspace-region-label">
+              {region.label ? region.label : 'Elige tu país'}
+            </span>
+            <ChevronDown size={10} style={{ opacity: 0.5 }} />
+          </button>
+          {showRegionPicker && (
+            <div
+              data-testid="workspace-region-picker"
+              style={{
+                position: 'absolute', top: '100%', left: '50%',
+                transform: 'translateX(-50%)',
+                marginTop: 6, minWidth: 220, maxHeight: 260, overflowY: 'auto',
+                background: '#FFFFFF',
+                border: '1px solid rgba(11,31,58,0.10)',
+                borderRadius: 12,
+                boxShadow: '0 12px 30px rgba(11,31,58,0.15)',
+                padding: '0.35rem',
+                zIndex: 5,
+              }}>
+              {Object.entries(LATAM_COUNTRIES).map(([code, name]) => (
+                <button
+                  key={code}
+                  type="button"
+                  data-testid={`workspace-region-option-${code}`}
+                  onClick={() => { region.setRegion(code); setShowRegionPicker(false); }}
+                  style={{
+                    display: 'flex', width: '100%', alignItems: 'center', gap: '0.5rem',
+                    padding: '0.4rem 0.55rem', borderRadius: 8, cursor: 'pointer',
+                    background: region.country === code ? 'rgba(0,200,150,0.10)' : 'transparent',
+                    border: 'none', textAlign: 'left', color: NAVY,
+                    fontSize: '0.74rem', fontWeight: region.country === code ? 700 : 500,
+                  }}
+                >
+                  <span style={{ fontSize: '0.95rem' }}>{{
+                    AR:'🇦🇷',BO:'🇧🇴',BR:'🇧🇷',CL:'🇨🇱',CO:'🇨🇴',CR:'🇨🇷',CU:'🇨🇺',DO:'🇩🇴',
+                    EC:'🇪🇨',SV:'🇸🇻',GT:'🇬🇹',HN:'🇭🇳',MX:'🇲🇽',NI:'🇳🇮',PA:'🇵🇦',PY:'🇵🇾',
+                    PE:'🇵🇪',UY:'🇺🇾',VE:'🇻🇪',ES:'🇪🇸',US:'🇺🇸'
+                  }[code] || '🌎'}</span>
+                  <span style={{ flex: 1 }}>{name}</span>
+                  <span style={{ fontSize: '0.6rem', opacity: 0.5, fontWeight: 500 }}>{code}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         {!isAuthed ? (
           <Link to="/join" style={{

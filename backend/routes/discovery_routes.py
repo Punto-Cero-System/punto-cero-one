@@ -16,9 +16,55 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Cookie, HTTPException, Query, Request
+from fastapi import APIRouter, Cookie, Header, HTTPException, Query, Request
 
 from services.discovery import resolver
+from services.discovery.regional import (
+    normalize_country, regional_sort, filter_scope, LATAM_PLUS_ES,
+)
+
+
+async def _resolve_user_country(request: Request,
+                                 session_token: Optional[str] = None,
+                                 authorization: Optional[str] = None,
+                                 override: Optional[str] = None) -> Optional[str]:
+    """Best-effort user country resolution.
+
+    Priority:
+      1. explicit `?country=` override in the request
+      2. authenticated user's stored `country` field
+      3. `X-Region-Country` header (client-side geolocation hint)
+      4. `Accept-Language` first tag mapped to a LATAM country (es-CO → CO, etc.)
+    """
+    if override:
+        return normalize_country(override)
+    # Try the community session cookie first.
+    db = request.app.state.db
+    try:
+        token = None
+        if session_token:
+            token = session_token
+        elif authorization and authorization.lower().startswith("bearer "):
+            token = authorization.split(" ", 1)[1].strip()
+        if token:
+            sess = await db.user_sessions.find_one({"session_token": token}, {"_id": 0, "user_id": 1})
+            if sess:
+                u = await db.users.find_one({"id": sess["user_id"]}, {"_id": 0, "country": 1})
+                if u and u.get("country"):
+                    return normalize_country(u["country"])
+    except Exception:  # pragma: no cover — degrade silently
+        pass
+    hdr = request.headers.get("x-region-country")
+    if hdr:
+        return normalize_country(hdr)
+    al = request.headers.get("accept-language", "")
+    if al:
+        first = al.split(",", 1)[0].strip()
+        if "-" in first:
+            tail = first.split("-", 1)[1].split(";", 1)[0].strip().upper()
+            if len(tail) == 2 and tail in LATAM_PLUS_ES:
+                return tail
+    return None
 
 
 logger = logging.getLogger("punto-cero-api.discovery")
@@ -44,12 +90,21 @@ async def entity_ficha(slug: str, request: Request):
 
 
 @router.get("/entity/{slug}/related")
-async def entity_related(slug: str, request: Request):
+async def entity_related(
+    slug: str,
+    request: Request,
+    country: Optional[str] = Query(default=None, description="ISO alpha-2 override (e.g. CO)"),
+    session_token: Optional[str] = Cookie(default=None),
+    authorization: Optional[str] = Header(default=None),
+):
     db = request.app.state.db
     entity = await _find_entity(db, slug)
     if not entity:
         raise HTTPException(404, "entity not found")
-    return await resolver.gather(db, entity)
+    user_country = await _resolve_user_country(
+        request, session_token=session_token, authorization=authorization, override=country,
+    )
+    return await resolver.gather(db, entity, user_country=user_country)
 
 
 @router.get("/trending")
@@ -57,16 +112,29 @@ async def trending_companies(
     request: Request,
     limit: int = Query(default=8, ge=1, le=30),
     hours: int = Query(default=48, ge=1, le=720),
+    scope: str = Query(default="all", pattern="^(all|country|latam|global)$"),
+    country: Optional[str] = Query(default=None),
+    session_token: Optional[str] = Cookie(default=None),
+    authorization: Optional[str] = Header(default=None),
 ):
     """Empresas trending del ecosistema — ranking calculado a partir de datos
     reales que ya viven en Mongo:
       • mentions      = # de `growth_items` recientes con `related_companies`
       • followers     = valor cacheado en `companies.followers` (bridged)
       • posts         = # de posts sociales que mencionen tag/hashtag/slug
-    Fórmula: mentions*3 + followers*1 + posts*2 · reciente < `hours`.
+    Fórmula base: mentions*3 + followers*1 + posts*2 · reciente < `hours`.
+
+    Regional weighting (60/25/15 country/LATAM/global) is applied on top of
+    the base score. `scope` allows the frontend to slice into a specific
+    tier without new endpoints — 'Trending Colombia', 'Trending LATAM' and
+    'Trending Global' all live here.
     """
     from datetime import datetime, timedelta, timezone
+    from services.discovery.regional import region_score, filter_scope as _filter_scope
     db = request.app.state.db
+    user_country = await _resolve_user_country(
+        request, session_token=session_token, authorization=authorization, override=country,
+    )
     since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
 
     # 1) Recuento de menciones en growth_items recientes (fuente principal).
@@ -134,18 +202,28 @@ async def trending_companies(
         m = mentions.get(slug, 0)
         p = posts_by_slug.get(slug, 0)
         f = follower_counts.get(slug, 0) or follower_counts.get(c.get("id") or "", 0)
-        score = m * 3 + p * 2 + f * 1
-        if score <= 0:
+        base = m * 3 + p * 2 + f * 1
+        if base <= 0:
             continue
+        # Regional boost — multiplies by 1.0 (country), 0.42 (LATAM), 0.25 (global)
+        # by default (60/25/15 normalized to 100 → 1.0/0.417/0.25).
+        reg_w = region_score(c.get("country"), user_country) / 60.0 if user_country else 1.0
+        score = base * (reg_w if user_country else 1.0)
         ranked.append({
             **c,
-            "score": score,
+            "score": round(score, 3),
+            "base_score": base,
+            "regional_weight": round(reg_w, 3),
             "mentions_recent": m,
             "posts_recent": p,
             "followers": f,
         })
+    # Optional slice by explicit tier.
+    if scope != "all" and user_country:
+        ranked = _filter_scope(ranked, scope, user_country)
     ranked.sort(key=lambda x: (-x["score"], x.get("name") or ""))
     return {"items": ranked[:limit], "hours": hours,
+            "user_country": user_country, "scope": scope,
             "generated_at": datetime.now(timezone.utc).isoformat()}
 
 
@@ -153,7 +231,9 @@ async def trending_companies(
 async def suggested_entities(
     request: Request,
     session_token: Optional[str] = Cookie(default=None),
+    authorization: Optional[str] = Header(default=None),
     limit: int = Query(default=10, ge=1, le=30),
+    country: Optional[str] = Query(default=None),
 ):
     """Recommend entities based on the viewer's follows.
 
@@ -162,8 +242,12 @@ async def suggested_entities(
       2. Collect their `related_ids`.
       3. Return those minus the ones already followed. Fill up with popular
          seeds if we don't hit the limit.
+      4. Apply the regional 60/25/15 sort so local companies come first.
     """
     db = request.app.state.db
+    user_country = await _resolve_user_country(
+        request, session_token=session_token, authorization=authorization, override=country,
+    )
 
     followed_slugs: set[str] = set()
     if session_token:
@@ -202,15 +286,30 @@ async def suggested_entities(
         ).limit(limit)
         entities.extend([c async for c in cursor])
 
-    # Fallback: fill up with popular public seeds not yet followed
+    # Fallback: fill up with popular public seeds not yet followed. When we
+    # know the user's country, prefer local seeds first so the fallback tier
+    # also feels regional.
     if len(entities) < limit:
         already = followed_slugs | {e["slug"] for e in entities}
-        cursor = db.companies.find(
-            {"is_public_seed": True, "is_deleted": {"$ne": True},
-             "slug": {"$nin": list(already)}},
-            {"_id": 0, "id": 1, "slug": 1, "name": 1, "tagline": 1, "vertical": 1,
-             "country": 1, "logo_url": 1, "hashtags": 1}
-        ).limit(limit - len(entities))
-        entities.extend([c async for c in cursor])
+        base_q = {"is_public_seed": True, "is_deleted": {"$ne": True},
+                  "slug": {"$nin": list(already)}}
+        if user_country:
+            local_q = {**base_q, "country": user_country}
+            cursor = db.companies.find(
+                local_q,
+                {"_id": 0, "id": 1, "slug": 1, "name": 1, "tagline": 1, "vertical": 1,
+                 "country": 1, "logo_url": 1, "hashtags": 1}
+            ).limit(limit - len(entities))
+            entities.extend([c async for c in cursor])
+            already |= {e["slug"] for e in entities}
+        if len(entities) < limit:
+            cursor = db.companies.find(
+                {**base_q, "slug": {"$nin": list(already)}},
+                {"_id": 0, "id": 1, "slug": 1, "name": 1, "tagline": 1, "vertical": 1,
+                 "country": 1, "logo_url": 1, "hashtags": 1}
+            ).limit(limit - len(entities))
+            entities.extend([c async for c in cursor])
 
-    return {"items": entities, "based_on": len(followed_slugs)}
+    entities = regional_sort(entities, user_country)
+    return {"items": entities, "based_on": len(followed_slugs),
+            "user_country": user_country}

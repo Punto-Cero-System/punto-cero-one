@@ -11,10 +11,40 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Cookie, Header, Query, Request
+
+from services.discovery.regional import regional_sort, normalize_country, LATAM_PLUS_ES
 
 
 router = APIRouter(prefix="/api/search", tags=["search"])
+
+
+async def _viewer_country(db, request: Request,
+                          session_token: Optional[str],
+                          authorization: Optional[str],
+                          override: Optional[str]) -> Optional[str]:
+    if override:
+        return normalize_country(override)
+    token = None
+    if session_token:
+        token = session_token
+    elif authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1].strip()
+    if token:
+        s = await db.user_sessions.find_one({"session_token": token}, {"_id": 0, "user_id": 1})
+        if s:
+            u = await db.users.find_one({"id": s["user_id"]}, {"_id": 0, "country": 1})
+            if u and u.get("country"):
+                return normalize_country(u["country"])
+    hdr = request.headers.get("x-region-country")
+    if hdr:
+        return normalize_country(hdr)
+    al = request.headers.get("accept-language", "")
+    if al and "-" in al:
+        tail = al.split(",", 1)[0].split("-", 1)[1].split(";", 1)[0].strip().upper()
+        if len(tail) == 2 and tail in LATAM_PLUS_ES:
+            return tail
+    return None
 
 
 def _regex(q: str) -> dict:
@@ -29,12 +59,16 @@ async def search(
     q: str = Query(min_length=1, max_length=120),
     types: Optional[str] = Query(default=None, description="Comma-separated: people,companies,posts,jobs,events,hashtags,categories"),
     limit: int = Query(default=8, ge=1, le=25),
+    country: Optional[str] = Query(default=None),
+    session_token: Optional[str] = Cookie(default=None),
+    authorization: Optional[str] = Header(default=None),
 ):
     """Fan-out to every requested resource type and merge results with a
     consistent shape:
         [{ type, id, title, subtitle?, image?, meta?, url }]
     """
     db = request.app.state.db
+    user_country = await _viewer_country(db, request, session_token, authorization, country)
     wanted = [t.strip() for t in (types or "people,companies,posts,jobs,events,videos,repos,news,hashtags,categories").split(",") if t.strip()]
     results: dict[str, list] = {t: [] for t in wanted}
 
@@ -189,9 +223,23 @@ async def search(
             "url": r.get("html_url"),
         } async for r in cur]
 
+    # Regional weighting — companies/news/videos/jobs/events fetched above
+    # already carry a country attribute (companies.country, growth_items.country,
+    # jobs.location country, events.country). Reorder them so the user sees
+    # local hits first without dropping global matches.
+    if user_country:
+        # Companies get a synthetic `country` key from `meta` for the helper.
+        for c in results.get("companies", []):
+            c.setdefault("country", c.get("meta"))
+        results["companies"] = regional_sort(results.get("companies", []), user_country)
+        for key in ("news", "videos", "jobs", "events"):
+            if key in results and results[key]:
+                results[key] = regional_sort(results[key], user_country)
+
     total = sum(len(v) for v in results.values())
     return {
         "q": q, "total": total, "by_type": results,
+        "user_country": user_country,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 

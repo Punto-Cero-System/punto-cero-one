@@ -1,0 +1,39 @@
+{
+  "summary": "Wave 9 — Regional Discovery Engine LATAM. Backend: 28/28 wave9 pytest pass on preview URL — regional helper unit (region_score 60/25/15, regional_sort CO/MX/US), Discovery Related (?country=CO, Accept-Language: es-CO, no-country baseline; user_country propagated; CO seeds ordered first), Trending scopes (country=only CO w=1.0; latam⊂LATAM_PLUS_ES; global excludes CO; all mixes by effective score with CO items on top), Trending no-country (base_score present, regional_weight≈1.0), Search regional (Accept-Language: es-CO → first 6 companies all country=CO under by_type.companies), Suggested (?country=CO returns bancolombia/grupo-sura + user_country='CO'), CO companies seeded (bancolombia/grupo-sura/grupo-nutresa/ecopetrol/alpina/avianca all 200 country=CO; /api/companies?country=CO&limit=20 includes rappi + universidades), CO sources seeded (co-eltiempo/co-larepublica/co-portafolio/co-semana/co-mintic/co-supersociedades/co-ccb all present), PATCH /api/community/auth/me/region (valid CO=200, invalid ZZ=422, all 21 codes accepted AR/BO/BR/CL/CO/CR/CU/DO/EC/SV/GT/HN/MX/NI/PA/PY/PE/UY/VE/ES/US), E2E cookie session picks user_country from stored field, regression (community/stats, mongodb/google/bancolombia related all 200 + bancolombia similar contains CO seeds). Regression suite: 77/77 pass across wave6_auth_email + wave6_extended + wave7_growth + wave8a_ecosystem + wave8b_prodready + discovery + sources_center + growth (target was 58, exceeded). Frontend: region chip data-testid='workspace-region-chip' visible on desktop (1440x900) with initial label 'Estados Unidos' (US inferred from navigator); clicking opens data-testid='workspace-region-picker'; clicking data-testid='workspace-region-option-CO' changes label to 'Colombia' and closes picker; localStorage['pcone_country']='CO' persists across reload; after CO selection Trending items favor CO (Rappi/Universidad Nacional appear); /empresas/bancolombia renders with country=CO, related news + sobre nosotros + enlaces + ubicación sections, no empty gaps at both 1440 and 360. Responsive: no horizontal scroll at 360/414/768/1440 (scrollWidth==clientWidth). ONE FINDING: the region chip is present in the DOM at all breakpoints but only VISIBLE at desktop widths (workspace sidebar with ProfileCardWidget is hidden on ≤lg viewports on the anon Home). This means mobile/tablet users cannot reach the region picker via UI — they can only get regionalization via navigator language auto-guess or by first visiting desktop. Backend regional weighting still applies for them via X-Region-Country header seeded by useUserRegion hook.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ProfileCardWidget region chip", "issue": "workspace-region-chip is present in DOM but NOT visible on mobile/tablet viewports (360/414/768). ProfileCardWidget lives inside the desktop-only workspace sidebar on the anon Home. Spec requires 'region chip visible and clickable' at 360/414/768/1440. Chip only visible/clickable at 1440.", "selector": "[data-testid=\"workspace-region-chip\"]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_wave9_regional.py",
+    "/app/test_reports/pytest/iteration_23_wave9.xml"
+  ],
+  "action_items": [
+    "Consider exposing the region chip on mobile/tablet — either mirror it inside the mobile top-nav or the bottom-nav 'Mi Espacio' pane so anon users on phones can pick their country. Backend already regionalizes via X-Region-Country header, so any UI entry point is sufficient (a small flag button in the header works)."
+  ],
+  "critical_code_review_comments": [
+    "regional.py: LATAM_PLUS_ES intentionally boosts ES into the LATAM tier — this is documented and desired. filter_scope treats country ⊂ LATAM (good).",
+    "regional_sort is stable (uses sorted with tier_rank key) — recency inside tiers is preserved as required.",
+    "PATCH /api/community/auth/me/region accepts US alongside 20 LATAM codes (21 total accepted) — matches spec.",
+    "Frontend platformService/feedService attach X-Region-Country from localStorage['pcone_country'] — anonymous users get regional content once a country is picked (verified via Trending CO-favored after localStorage set).",
+    "Search response uses by_type.companies (not top-level companies) — this is the existing shape; any external consumers depending on top-level key would need to adapt (not a Wave 9 issue).",
+    "Trending scope=all effective ordering is by score = base_score * regional_weight (highest first), not by regional_weight alone — this matches 'boosts by regional_weight' semantically and produces expected CO-first ordering when a CO user has seeds.",
+    "useUserRegion hook default appears to be US inferred from navigator language — for a Spanish-preview user with es-CO in Accept-Language the backend correctly picks CO, but the frontend default label still shows 'Estados Unidos' until the user picks or the navigator is es-XX. Consider aligning frontend default guess with backend Accept-Language parsing."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_wave9_regional.py"
+  ],
+  "success_rate": {"backend": "100% (28/28 wave9 + 77/77 regression)", "frontend": "12/13 spec assertions (region chip not visible on mobile viewports is the exception)"},
+  "test_credentials": "member.demo@puntocero.test-e2e.com / MemberDemo2026 (verified working, PATCH /me/region succeeds)",
+  "seed_data_creation": "None. Only PATCH /me/region called (idempotent, restores to 'CO' at end of run).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Wave 9 Regional Discovery LATAM: all backend behavior verified and correct on preview URL. Test file at /app/backend/tests/test_wave9_regional.py has 28 tests reusable for regression. Only cosmetic UX finding: region chip UI is desktop-only (mobile/tablet lacks a chip entry point but backend regionalizes via localStorage-driven X-Region-Country header). If E1 adds a mobile entry point, retest at 360/414/768 by scrolling to the chip and verifying picker doesn't clip. During run, Cloudflare bot verification kicked in twice due to rapid viewport-change navigations — space out mobile tests or use single-session resize to avoid it."
+}

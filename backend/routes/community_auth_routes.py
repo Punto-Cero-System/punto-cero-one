@@ -281,6 +281,43 @@ async def logout(
 
 
 # ---------------------------------------------------------------------------
+# Region — user country self-service. Powers the Regional Discovery engine
+# (60 / 25 / 15 country / LATAM / global weighting).
+# ---------------------------------------------------------------------------
+_ALLOWED_COUNTRIES = {
+    "AR", "BO", "BR", "CL", "CO", "CR", "CU", "DO",
+    "EC", "SV", "GT", "HN", "MX", "NI", "PA", "PY",
+    "PE", "UY", "VE", "ES", "US",
+}
+
+
+class RegionInput(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    country: str = Field(min_length=2, max_length=2)
+    city: Optional[str] = Field(default=None, max_length=80)
+
+
+@router.patch("/me/region")
+async def patch_me_region(
+    payload: RegionInput,
+    request: Request,
+    session_token: Optional[str] = Cookie(default=None),
+    authorization: Optional[str] = Header(default=None),
+):
+    user = await _get_current_user(request, session_token, authorization)
+    code = payload.country.upper().strip()
+    if code not in _ALLOWED_COUNTRIES:
+        raise HTTPException(status_code=422, detail=f"País '{code}' no soportado")
+    db = request.app.state.db
+    update = {"country": code, "updated_at": _now_iso()}
+    if payload.city is not None:
+        update["city"] = payload.city.strip() or None
+    await db.users.update_one({"id": user["id"]}, {"$set": update})
+    user.update(update)
+    return _user_to_public(user)
+
+
+# ---------------------------------------------------------------------------
 # Email / Password — coexists with the social provider flow above.
 # ---------------------------------------------------------------------------
 PASSWORD_MIN_LEN = 8

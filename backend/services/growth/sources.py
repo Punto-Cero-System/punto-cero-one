@@ -73,11 +73,29 @@ SOURCES = [
     {"id": "cl-emol", "name": "Emol Nacional", "url": "https://www.emol.com/sitemap/noticias/rss/nacional.xml",
      "country": "CL", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
 
-    # Colombia
+    # Colombia — grupos multimedia + institucionales públicos
     {"id": "co-eltiempo", "name": "El Tiempo", "url": "https://www.eltiempo.com/rss/colombia.xml",
      "country": "CO", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
     {"id": "co-larepublica", "name": "La República", "url": "https://www.larepublica.co/rss",
      "country": "CO", "vertical": "empresas", "language": "es", "category": "Negocios", "enabled": True},
+    {"id": "co-portafolio", "name": "Portafolio",
+     "url": "https://www.portafolio.co/arc/outboundfeeds/rss/",
+     "country": "CO", "vertical": "empresas", "language": "es", "category": "Negocios", "enabled": True},
+    {"id": "co-semana", "name": "Semana",
+     "url": "https://www.semana.com/arc/outboundfeeds/rss/",
+     "country": "CO", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
+    {"id": "co-dinero", "name": "Dinero / Semana Negocios",
+     "url": "https://www.semana.com/economia/rss/",
+     "country": "CO", "vertical": "empresas", "language": "es", "category": "Negocios", "enabled": True},
+    {"id": "co-mintic", "name": "MinTIC Colombia",
+     "url": "https://www.mintic.gov.co/portal/inicio/Sala-de-prensa/Noticias/rss.xml",
+     "country": "CO", "vertical": "tecnologia", "language": "es", "category": "Gobierno", "enabled": True},
+    {"id": "co-supersociedades", "name": "SuperSociedades",
+     "url": "https://www.supersociedades.gov.co/rss",
+     "country": "CO", "vertical": "empresas", "language": "es", "category": "Regulador", "enabled": True},
+    {"id": "co-ccb", "name": "Cámara de Comercio de Bogotá",
+     "url": "https://www.ccb.org.co/es/rss.xml",
+     "country": "CO", "vertical": "empresas", "language": "es", "category": "Cámaras", "enabled": True},
 
     # Costa Rica
     {"id": "cr-nacion", "name": "La Nación (CR)", "url": "https://www.nacion.com/arc/outboundfeeds/rss/",

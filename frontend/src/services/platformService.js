@@ -4,12 +4,20 @@
  */
 const API = process.env.REACT_APP_BACKEND_URL;
 
+const _regionHeader = () => {
+  try {
+    const c = localStorage.getItem('pcone_country');
+    return c ? { 'X-Region-Country': c } : {};
+  } catch { return {}; }
+};
+
 const fj = (path, opts = {}) =>
   fetch(`${API}${path}`, {
     credentials: 'include',
     ...opts,
     headers: {
       ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
+      ..._regionHeader(),
       ...(opts.headers || {}),
     },
   });

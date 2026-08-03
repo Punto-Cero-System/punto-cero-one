@@ -16,9 +16,11 @@ import asyncio
 import logging
 import re
 from datetime import datetime, timezone
+from typing import Optional
 from urllib.parse import urlparse
 
 from services.integrations.base import http
+from services.discovery.regional import regional_sort
 
 
 logger = logging.getLogger("punto-cero-api.discovery.resolver")
@@ -336,7 +338,7 @@ async def similar_entities(db, entity: dict, limit: int = 8) -> list[dict]:
 # One-shot bundle
 # ---------------------------------------------------------------------------
 
-async def gather(db, entity: dict) -> dict:
+async def gather(db, entity: dict, user_country: Optional[str] = None) -> dict:
     (news, repos_stored, videos_stored, jobs_stored,
      repos_live, videos_live, jobs_local, events,
      similar, people, hashtags) = await asyncio.gather(
@@ -364,12 +366,21 @@ async def gather(db, entity: dict) -> dict:
     videos = _merge(list(videos_stored), videos_live)
     jobs = _merge(list(jobs_stored), list(jobs_local))
 
+    # Apply regional weighting (country → LATAM → global) so users see
+    # local content first on any Discovery ficha.
+    news = regional_sort(news, user_country)
+    videos = regional_sort(videos, user_country)
+    jobs = regional_sort(jobs, user_country)
+    events = regional_sort(events, user_country)
+    similar = regional_sort(similar, user_country)
+
     return {
         "entity": {
             "id": entity.get("id"), "slug": entity.get("slug"),
             "name": entity.get("name"), "logo_url": entity.get("logo_url"),
             "vertical": entity.get("vertical"), "country": entity.get("country"),
         },
+        "user_country": user_country or None,
         "news": news, "repos": repos, "videos": videos,
         "jobs": jobs, "events": events, "similar": similar,
         "people": people, "hashtags": hashtags,
