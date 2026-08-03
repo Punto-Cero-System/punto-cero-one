@@ -954,3 +954,55 @@ Frontend:
 
 
 
+
+---
+
+## Wave 8A — Activación del Ecosistema (03 ago 2026)
+
+Objetivo: ecosistema profesional vivo sin nuevos módulos. Solo activar/conectar lo existente.
+
+### Cambios de código (mínimos, máximo impacto)
+- `services/sources_center/engine.py`
+  - Handlers setean `kind` al insertar en `growth_items`: rss→"news", youtube_channel→"video", remotive_jobs→"job", jobs_feed→"job", events_feed→"event".
+  - Nuevo handler `sync_remotive_jobs` — API pública Remotive (sin auth) mirror to `growth_items` (kind=job) **y** `jobs`.
+  - Nueva función `_autotag_growth_items` idempotente que asigna `related_companies: [slug]` cuando título/summary matchea nombre/tags/hashtags de una empresa.
+  - `run_sync` invoca auto-tagger tras cada ingest exitoso.
+- `services/discovery/resolver.py`
+  - `related_news` usa índice pre-computado `related_companies` (fallback keyword regex).
+  - Nuevas funciones: `related_videos_stored`, `related_jobs_stored`, `related_repos_stored`, `related_people` (miembros que siguen la empresa), `related_hashtags` (agregados desde growth_items tagged).
+  - `gather()` incluye people + hashtags y mezcla stored+live sin duplicar.
+- `routes/discovery_routes.py::suggested_entities` — acepta tanto `id` como `slug` en `follows.entity_id`.
+- `routes/job_routes.py::_job_to_public` — tolera jobs externos sin `company_id`.
+- `routes/search_routes.py::jobs` — tolera company_id ausente + `url` externa para jobs Remotive.
+- `models_business.py::JobPublic.company_id` Optional; `JobModality` añade `"unspecified"`.
+
+### Datos activados (30 nuevas fuentes)
+- Tech RSS (11): TechCrunch, The Verge, Ars Technica, Wired, Hacker News, Dev.to, Google Devs, MS Devs, OpenAI, AWS, MongoDB.
+- GitHub Orgs (13): microsoft, google, openai, kubernetes, docker, redis, mongodb, supabase, firebase, postgres, NVIDIA, aws, Azure.
+- YouTube Channels (5): MSFT Developer, Google Developers, MongoDB, Docker, OpenAI.
+- Remotive Jobs (4): software-dev, data, design, product.
+- 7 empresas seed nuevas: mongodb, redis, docker, kubernetes, supabase, firebase, postgresql.
+
+### Estado del ecosistema
+- `growth_items` **1505**: kind=news 1399, kind=video 75, kind=job 31.
+- `github_repos` **185**, `jobs` **32**, growth_items con `related_companies` **320**.
+- Discovery ficha `microsoft`: news 8, videos 6, repos 11, jobs 3, similar 8, people 4, hashtags 8 (antes: repos 6, resto 0).
+- Discovery ficha `mongodb`: news 8, videos 6, repos 10, jobs 3, similar 6, hashtags 8 (antes: 404).
+- Suggested: seguir microsoft → sugiere AWS, GitHub, Google Cloud, OpenAI, NVIDIA (based_on=1).
+
+### Validación (testing_agent iteration_20)
+**Backend 100 % (36/36 tests)** — nuevo `tests/test_wave8a_ecosystem.py` (17 tests) + regresión wave6/wave7 (19 tests). Cero regresiones.
+
+### Verificación de criterios de la Wave
+- ✅ Microsoft: companies+videos+repos+news
+- ✅ MongoDB: videos+repos+news reales
+- ✅ Google: companies+jobs+videos+repos+news
+- ✅ Follows influyen en `/suggested`
+- ✅ growth_items clasificados por `kind`
+- ✅ GitHub poblando (185 repos), YouTube (75 videos), Remotive (32 jobs)
+- ✅ Discovery relaciona empresas con noticias, videos, empleos, repositorios, personas, hashtags
+
+### Pendientes no bloqueantes
+- Habilitar el scheduler del aggregator para runs periódicos automáticos (endpoints ya existen).
+- Configurar `LINKEDIN_CLIENT_ID/SECRET` + `MICROSOFT_CLIENT_ID/SECRET` en producción.
+
