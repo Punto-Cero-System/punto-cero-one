@@ -75,7 +75,12 @@ async def suggested_entities(
             uid = s["user_id"]
             async for f in db.follows.find({"user_id": uid, "entity_type": "company"},
                                            {"_id": 0, "entity_id": 1}):
-                c = await db.companies.find_one({"id": f["entity_id"]}, {"_id": 0, "slug": 1})
+                # entity_id can be either the company `id` or the `slug` —
+                # try both so recommendations kick in for both writer paths.
+                c = await db.companies.find_one(
+                    {"$or": [{"id": f["entity_id"]}, {"slug": f["entity_id"]}]},
+                    {"_id": 0, "slug": 1}
+                )
                 if c and c.get("slug"):
                     followed_slugs.add(c["slug"])
 

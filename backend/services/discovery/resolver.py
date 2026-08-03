@@ -40,18 +40,139 @@ def _keywords_for_entity(entity: dict) -> list[str]:
 
 
 async def related_news(db, entity: dict, limit: int = 8) -> list[dict]:
+    """Prefer the pre-computed relation index (populated by the source-center
+    auto-tagger) and fall back to keyword regex for entities not yet indexed.
+    """
+    slug = entity.get("slug")
+    docs: list[dict] = []
+    if slug:
+        cursor = db.growth_items.find(
+            {"related_companies": slug, "kind": {"$in": ["news", None]}},
+            {"_id": 0}
+        ).sort([("published_at", -1)]).limit(limit)
+        docs = [d async for d in cursor]
+    if docs:
+        return docs
+
     keywords = _keywords_for_entity(entity)
     if not keywords:
         return []
     ors: list[dict] = []
     for k in keywords:
-        # match anywhere in title or summary (case-insensitive)
         escaped = re.escape(k)
         ors.append({"title": {"$regex": escaped, "$options": "i"}})
         ors.append({"summary": {"$regex": escaped, "$options": "i"}})
         ors.append({"tags": k})
     cursor = db.growth_items.find({"$or": ors}, {"_id": 0}).sort([("published_at", -1)]).limit(limit)
     return [d async for d in cursor]
+
+
+async def related_videos_stored(db, entity: dict, limit: int = 6) -> list[dict]:
+    """Videos surfaced from growth_items with kind='video' + auto-tag match.
+    Complements the on-demand YouTube RSS fetch (related_videos) which needs
+    a channel URL. Uses the same pre-computed relation index as news.
+    """
+    slug = entity.get("slug")
+    if not slug:
+        return []
+    cursor = db.growth_items.find(
+        {"related_companies": slug, "kind": "video"},
+        {"_id": 0}
+    ).sort([("published_at", -1)]).limit(limit)
+    return [d async for d in cursor]
+
+
+async def related_jobs_stored(db, entity: dict, limit: int = 5) -> list[dict]:
+    """Jobs from growth_items kind='job' matched via auto-tagger."""
+    slug = entity.get("slug")
+    if not slug:
+        return []
+    cursor = db.growth_items.find(
+        {"related_companies": slug, "kind": "job"},
+        {"_id": 0}
+    ).sort([("published_at", -1)]).limit(limit)
+    return [d async for d in cursor]
+
+
+async def related_repos_stored(db, entity: dict, limit: int = 6) -> list[dict]:
+    """Repos previously ingested by the Sources Center (via github_org kind).
+    Falls back to related_repos() on-demand call if we have none in DB.
+    """
+    social = entity.get("social") or {}
+    gh = social.get("github") or ""
+    if not gh:
+        return []
+    org = _github_org_from_url(gh)
+    if not org:
+        return []
+    cursor = db.github_repos.find(
+        {"org": {"$regex": f"^{re.escape(org)}$", "$options": "i"}},
+        {"_id": 0, "id": 1, "name": 1, "full_name": 1, "description": 1,
+         "url": 1, "language": 1, "stars": 1, "forks": 1, "updated_at": 1}
+    ).sort([("stars", -1)]).limit(limit)
+    return [d async for d in cursor]
+
+
+async def related_people(db, entity: dict, limit: int = 6) -> list[dict]:
+    """Members who follow the given company/organization — pure DB lookup on
+    the existing `follows` collection. Zero external calls.
+    """
+    slug = entity.get("slug")
+    if not slug:
+        return []
+    # slug OR id may be used as entity_id — try both
+    ids = [slug]
+    if entity.get("id"):
+        ids.append(entity["id"])
+    follower_ids: list[str] = []
+    cursor = db.follows.find(
+        {"entity_type": "company", "entity_id": {"$in": ids}},
+        {"_id": 0, "user_id": 1}
+    ).limit(limit * 3)
+    async for f in cursor:
+        if f.get("user_id") and f["user_id"] not in follower_ids:
+            follower_ids.append(f["user_id"])
+        if len(follower_ids) >= limit:
+            break
+    if not follower_ids:
+        return []
+    users = await db.users.find(
+        {"id": {"$in": follower_ids}},
+        {"_id": 0, "id": 1, "name": 1, "picture": 1, "headline": 1, "current_company": 1}
+    ).to_list(length=limit)
+    return [{
+        "id": u["id"], "name": u.get("name"),
+        "picture": u.get("picture"), "headline": u.get("headline"),
+        "current_company": u.get("current_company"),
+        "url": f"/u/{u['id']}",
+    } for u in users]
+
+
+async def related_hashtags(db, entity: dict, limit: int = 8) -> list[dict]:
+    """Hashtags inferred from the growth_items tagged to this company."""
+    slug = entity.get("slug")
+    if not slug:
+        return []
+    pipeline = [
+        {"$match": {"related_companies": slug, "tags": {"$exists": True, "$ne": []}}},
+        {"$unwind": "$tags"},
+        {"$match": {"tags": {"$ne": slug}}},  # exclude the company's own slug
+        {"$group": {"_id": "$tags", "c": {"$sum": 1}}},
+        {"$sort": {"c": -1}},
+        {"$limit": limit},
+    ]
+    out: list[dict] = []
+    async for r in db.growth_items.aggregate(pipeline):
+        tag = r.get("_id")
+        if not tag:
+            continue
+        out.append({"tag": tag, "count": r.get("c", 0),
+                    "url": f"/h/{tag.lstrip('#')}"})
+    # If nothing indexed yet, fall back to the entity's own hashtags
+    if not out:
+        for h in (entity.get("hashtags") or [])[:limit]:
+            out.append({"tag": h, "count": 0, "url": f"/h/{str(h).lstrip('#')}"})
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -216,14 +337,33 @@ async def similar_entities(db, entity: dict, limit: int = 8) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 async def gather(db, entity: dict) -> dict:
-    news, repos, videos, jobs, events, similar = await asyncio.gather(
+    (news, repos_stored, videos_stored, jobs_stored,
+     repos_live, videos_live, jobs_local, events,
+     similar, people, hashtags) = await asyncio.gather(
         related_news(db, entity),
-        related_repos(entity),
-        related_videos(entity),
+        related_repos_stored(db, entity),
+        related_videos_stored(db, entity),
+        related_jobs_stored(db, entity),
+        related_repos(entity),          # live GitHub fallback
+        related_videos(entity),         # live YouTube fallback
         related_jobs(db, entity),
         related_events(db, entity),
         similar_entities(db, entity),
+        related_people(db, entity),
+        related_hashtags(db, entity),
     )
+    # Prefer stored content, keep live results as backfill (deduped by url/id)
+    def _merge(stored: list, live: list) -> list:
+        seen = {i.get("url") or i.get("id") for i in stored}
+        for it in live:
+            if (it.get("url") or it.get("id")) not in seen:
+                stored.append(it)
+        return stored
+
+    repos = _merge(list(repos_stored), repos_live)
+    videos = _merge(list(videos_stored), videos_live)
+    jobs = _merge(list(jobs_stored), list(jobs_local))
+
     return {
         "entity": {
             "id": entity.get("id"), "slug": entity.get("slug"),
@@ -232,5 +372,6 @@ async def gather(db, entity: dict) -> dict:
         },
         "news": news, "repos": repos, "videos": videos,
         "jobs": jobs, "events": events, "similar": similar,
+        "people": people, "hashtags": hashtags,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }

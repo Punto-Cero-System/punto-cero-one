@@ -83,17 +83,18 @@ async def _sync_rss_like(db, source: dict, *, target_collection: str,
 
 
 async def sync_rss(db, source: dict) -> dict:
-    return await _sync_rss_like(db, source, target_collection="growth_items")
+    return await _sync_rss_like(db, source, target_collection="growth_items",
+                                extra_defaults={"kind": "news"})
 
 
 async def sync_jobs_feed(db, source: dict) -> dict:
     return await _sync_rss_like(db, source, target_collection="growth_items",
-                                extra_defaults={"vertical": "empleos"})
+                                extra_defaults={"vertical": "empleos", "kind": "job"})
 
 
 async def sync_events_feed(db, source: dict) -> dict:
     return await _sync_rss_like(db, source, target_collection="growth_items",
-                                extra_defaults={"vertical": "eventos"})
+                                extra_defaults={"vertical": "eventos", "kind": "event"})
 
 
 async def sync_youtube_channel(db, source: dict) -> dict:
@@ -106,7 +107,8 @@ async def sync_youtube_channel(db, source: dict) -> dict:
     if not channel_id:
         return {"ingested": 0, "updated": 0, "errors": ["missing channel_id (config.channel_id or /channel/UC... url)"]}
     feed = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-    return await _sync_rss_like(db, {**source, "url": feed})
+    return await _sync_rss_like(db, {**source, "url": feed}, target_collection="growth_items",
+                                extra_defaults={"kind": "video", "vertical": source.get("vertical") or "videos"})
 
 
 async def sync_github_org(db, source: dict) -> dict:
@@ -278,7 +280,162 @@ HANDLERS = {
     "jobs_feed": sync_jobs_feed,
     "events_feed": sync_events_feed,
     "api": sync_api,
+    "remotive_jobs": None,  # patched below to avoid forward-ref
 }
+
+
+# ---------------------------------------------------------------------------
+# Remotive — free public jobs feed (no key). https://remotive.com/api/remote-jobs
+# ---------------------------------------------------------------------------
+
+async def sync_remotive_jobs(db, source: dict) -> dict:
+    """Ingest remote-jobs from Remotive.com's free public API.
+    Items land in BOTH `growth_items` (kind=job) and the `jobs` collection
+    so the existing `/api/community/jobs` endpoint surfaces them directly.
+    """
+    try:
+        cfg = source.get("config") or {}
+        params = {}
+        if cfg.get("category"):
+            params["category"] = cfg["category"]
+        if cfg.get("company"):
+            params["company_name"] = cfg["company"]
+        if cfg.get("search"):
+            params["search"] = cfg["search"]
+        r = await http().get("https://remotive.com/api/remote-jobs", params=params, timeout=15.0)
+        r.raise_for_status()
+        data = r.json()
+    except Exception as e:
+        return {"ingested": 0, "updated": 0, "errors": [f"remotive: {e}"]}
+    jobs = data.get("jobs") or []
+    now = datetime.now(timezone.utc).isoformat()
+    ingested = updated = 0
+    for j in jobs[:40]:
+        doc_id = f"rmv_{j.get('id')}"
+        item = {
+            "id": doc_id,
+            "source_id": source["id"],
+            "source_name": "Remotive",
+            "url": j.get("url"),
+            "title": j.get("title"),
+            "summary": (j.get("description") or "").replace("<", "&lt;")[:400],
+            "author": j.get("company_name"),
+            "image_url": j.get("company_logo"),
+            "language": "en",
+            "country": None,
+            "city": None,
+            "vertical": "empleos",
+            "category": j.get("category"),
+            "tags": [t.lower() for t in (j.get("tags") or [])[:10]],
+            "kind": "job",
+            "published_at": j.get("publication_date"),
+            "ingested_at": now,
+            "priority": 3,
+            "meta": {
+                "company_name": j.get("company_name"),
+                "job_type": j.get("job_type"),
+                "salary": j.get("salary"),
+                "candidate_required_location": j.get("candidate_required_location"),
+            },
+        }
+        res = await db.growth_items.update_one(
+            {"id": doc_id},
+            {"$setOnInsert": {"first_seen_at": now}, "$set": item},
+            upsert=True,
+        )
+        if res.upserted_id:
+            ingested += 1
+        elif res.modified_count:
+            updated += 1
+        # Also mirror into `jobs` collection (surfaced by /api/community/jobs)
+        job_id = doc_id
+        await db.jobs.update_one(
+            {"id": job_id},
+            {"$setOnInsert": {"id": job_id, "created_at": now, "is_deleted": False},
+             "$set": {
+                 "title": j.get("title") or "",
+                 "company_name": j.get("company_name"),
+                 "company_logo": j.get("company_logo"),
+                 "description": item["summary"],
+                 "url": j.get("url"),
+                 "location": j.get("candidate_required_location"),
+                 "remote": True,
+                 "job_type": j.get("job_type"),
+                 "salary": j.get("salary"),
+                 "tags": item["tags"],
+                 "external_source": "remotive",
+                 "external_id": str(j.get("id")),
+                 "is_active": True,
+                 "updated_at": now,
+             }},
+            upsert=True,
+        )
+    return {"ingested": ingested, "updated": updated, "errors": []}
+
+
+HANDLERS["remotive_jobs"] = sync_remotive_jobs
+
+
+# ---------------------------------------------------------------------------
+# Auto-tagging — after any RSS/YouTube/Jobs ingest we relate items to public
+# companies whose name/tag/hashtag appears in the item's title+summary. Result
+# stored on `growth_items.related_companies` (list of slugs). This is what
+# powers Discovery ficha "news / videos / jobs" for a given company.
+# ---------------------------------------------------------------------------
+
+async def _autotag_growth_items(db, source: dict, since_iso: str) -> int:
+    """Scan growth_items missing `related_companies` and tag them with matching
+    company slugs. Idempotent: only touches items without the field yet, so it
+    scales linearly with fresh ingests.
+    """
+    # Build the alias → slug map from seeded + member companies (single query).
+    companies = await db.companies.find(
+        {"is_deleted": {"$ne": True}},
+        {"_id": 0, "slug": 1, "name": 1, "tags": 1, "hashtags": 1}
+    ).to_list(length=500)
+    if not companies:
+        return 0
+
+    aliases: dict[str, str] = {}  # lowercased alias → slug
+    for c in companies:
+        slug = c.get("slug")
+        if not slug:
+            continue
+        if c.get("name"):
+            aliases[c["name"].lower()] = slug
+        for t in (c.get("tags") or []) + (c.get("hashtags") or []):
+            k = str(t).lower().strip()
+            if len(k) >= 3:
+                aliases.setdefault(k, slug)
+
+    tagged = 0
+    # Idempotent: only touch items still missing the field.
+    query = {"$or": [
+        {"related_companies": {"$exists": False}},
+        {"related_companies": []},
+    ]}
+    async for g in db.growth_items.find(query, {"_id": 0, "id": 1, "title": 1, "summary": 1, "tags": 1}).limit(2000):
+        haystack = f" {(g.get('title') or '').lower()} {(g.get('summary') or '').lower()} "
+        matches: list[str] = []
+        for alias, slug in aliases.items():
+            needle = f" {alias} " if len(alias) <= 4 else alias
+            if needle in haystack:
+                if slug not in matches:
+                    matches.append(slug)
+            if len(matches) >= 5:
+                break
+        if matches:
+            existing_tags = set(g.get("tags") or [])
+            existing_tags.update(matches)
+            await db.growth_items.update_one(
+                {"id": g["id"]},
+                {"$set": {
+                    "related_companies": matches,
+                    "tags": sorted(existing_tags),
+                }},
+            )
+            tagged += 1
+    return tagged
 
 
 # ---------------------------------------------------------------------------
@@ -300,6 +457,18 @@ async def run_sync(db, source: dict) -> dict:
             logger.exception("sync failed src=%s kind=%s", source.get("id"), kind)
             result = {"ingested": 0, "updated": 0, "errors": [str(e)]}
     finished_at = now_iso()
+
+    # After a successful ingest into growth_items, run the auto-tagger over
+    # the newly-added items only. This is what wires news/videos/jobs to the
+    # company ficha (Discovery) without any manual mapping.
+    if not result.get("errors") and result.get("ingested", 0) and kind in (
+        "rss", "jobs_feed", "events_feed", "youtube_channel", "remotive_jobs"
+    ):
+        try:
+            tagged = await _autotag_growth_items(db, source, started_at)
+            result["auto_tagged"] = tagged
+        except Exception as e:
+            logger.warning("autotag failed src=%s: %s", source.get("id"), e)
 
     errors: list[str] = result.get("errors") or []
     ok = not errors

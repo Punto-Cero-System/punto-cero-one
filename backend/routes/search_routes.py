@@ -88,16 +88,23 @@ async def search(
         cur = db.jobs.find(
             {"is_deleted": {"$ne": True}, "is_active": True,
              "$or": [{"title": _regex(q)}, {"description": _regex(q)}, {"tags": _regex(q)}]},
-            {"_id": 0, "id": 1, "title": 1, "company_id": 1, "location": 1, "modality": 1},
+            {"_id": 0, "id": 1, "title": 1, "company_id": 1, "company_name": 1,
+             "company_logo": 1, "location": 1, "modality": 1, "url": 1, "external_source": 1},
         ).sort("created_at", -1).limit(limit)
         results["jobs"] = []
         async for j in cur:
-            c = await db.companies.find_one({"id": j["company_id"]}, {"_id": 0, "name": 1, "logo_url": 1})
+            c = None
+            if j.get("company_id"):
+                c = await db.companies.find_one({"id": j["company_id"]}, {"_id": 0, "name": 1, "logo_url": 1})
+            company_name = (c or {}).get("name") or j.get("company_name") or ""
+            logo = (c or {}).get("logo_url") or j.get("company_logo")
+            # External (Remotive) jobs link to the source URL; internal ones to /empleos/:id
+            job_url = j["url"] if j.get("external_source") and j.get("url") else f"/empleos/{j['id']}"
             results["jobs"].append({
                 "type": "jobs", "id": j["id"], "title": j["title"],
-                "subtitle": f"{(c or {}).get('name', '')} · {j.get('location') or j.get('modality')}",
-                "image": (c or {}).get("logo_url"),
-                "url": f"/empleos/{j['id']}",
+                "subtitle": f"{company_name} · {j.get('location') or j.get('modality') or ''}",
+                "image": logo,
+                "url": job_url,
             })
 
     if "events" in results:

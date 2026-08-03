@@ -62,8 +62,11 @@ async def _can_manage_company(company: dict, user: dict) -> bool:
 
 
 async def _job_to_public(db, job: dict, viewer: Optional[dict]) -> JobPublic:
-    company = await db.companies.find_one({"id": job["company_id"]},
-                                          {"_id": 0, "name": 1, "logo_url": 1, "slug": 1})
+    company_id = job.get("company_id")
+    company = None
+    if company_id:
+        company = await db.companies.find_one({"id": company_id},
+                                              {"_id": 0, "name": 1, "logo_url": 1, "slug": 1})
     my_applied = my_saved = False
     if viewer:
         a = await db.job_applications.find_one(
@@ -77,14 +80,14 @@ async def _job_to_public(db, job: dict, viewer: Optional[dict]) -> JobPublic:
         my_saved = bool(s)
     return JobPublic(
         id=job["id"],
-        company_id=job["company_id"],
-        company_name=(company or {}).get("name"),
-        company_logo=(company or {}).get("logo_url"),
+        company_id=company_id,
+        company_name=(company or {}).get("name") or job.get("company_name"),
+        company_logo=(company or {}).get("logo_url") or job.get("company_logo"),
         company_slug=(company or {}).get("slug"),
         title=job["title"],
-        description=job["description"],
-        modality=job["modality"],
-        employment=job["employment"],
+        description=job.get("description") or "",
+        modality=job.get("modality") or ("remote" if job.get("remote") else "unspecified"),
+        employment=job.get("employment") or job.get("job_type") or "full_time",
         location=job.get("location"),
         country=job.get("country"),
         salary_range=job.get("salary_range"),

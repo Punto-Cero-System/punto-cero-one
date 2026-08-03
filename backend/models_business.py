@@ -26,7 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 # Shared enums
 # ---------------------------------------------------------------------------
 VerificationStatus = Literal["unverified", "pending", "verified", "flagged"]
-JobModality = Literal["remote", "hybrid", "onsite"]
+JobModality = Literal["remote", "hybrid", "onsite", "unspecified"]
 JobEmployment = Literal["full_time", "part_time", "contract", "internship", "freelance"]
 ApplicationStatus = Literal["submitted", "reviewing", "interview", "offer", "hired", "rejected", "withdrawn"]
 EventModality = Literal["online", "in_person", "hybrid"]
@@ -190,14 +190,14 @@ class JobUpdate(BaseModel):
 
 class JobPublic(BaseModel):
     id: str
-    company_id: str
+    company_id: Optional[str] = None
     company_name: Optional[str] = None
     company_logo: Optional[str] = None
     company_slug: Optional[str] = None
     title: str
     description: str
-    modality: JobModality
-    employment: JobEmployment
+    modality: JobModality = "unspecified"
+    employment: JobEmployment = "full_time"
     location: Optional[str] = None
     country: Optional[str] = None
     salary_range: Optional[str] = None
