@@ -51,6 +51,8 @@ def _to_public(user: dict) -> ProfilePublic:
         social=user.get("social") or {},
         ui_preferences=user.get("ui_preferences") or {},
         providers=providers,
+        email_verified=bool(user.get("email_verified", False)),
+        email_verified_at=user.get("email_verified_at"),
         posts_count=int(user.get("posts_count", 0)),
         followers_count=int(user.get("followers_count", 0)),
         following_count=int(user.get("following_count", 0)),

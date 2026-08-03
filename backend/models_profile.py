@@ -95,6 +95,8 @@ class ProfilePublic(BaseModel):
     social: ProfileSocialLinks = ProfileSocialLinks()
     ui_preferences: UIPreferences = UIPreferences()
     providers: list[str] = []
+    email_verified: bool = False
+    email_verified_at: Optional[str] = None
     posts_count: int = 0
     followers_count: int = 0
     following_count: int = 0
