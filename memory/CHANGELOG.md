@@ -1,5 +1,91 @@
 # Punto Cero System — Changelog
 
+## 2026-08-04 — Wave 11.1: Growth Activation (OAuth + Share + Invitations + SEO)
+
+### OAuth — GitHub + Facebook (backend wired, activables por env)
+- **NEW** `GitHubAuthProvider` en `services/community_auth.py` — subclase de `OAuth2AuthorizationCodeProvider`. Scopes `read:user user:email`. Se activa con `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET`.
+- **NEW** `FacebookAuthProvider` — Graph API v18. Scopes `email public_profile`. Se activa con `FACEBOOK_APP_ID` + `FACEBOOK_APP_SECRET`.
+- Ambos reutilizan **el mismo flujo** que LinkedIn/Microsoft (JWT, refresh, user profile, roles) — cero autenticación paralela.
+- `/api/community/auth/providers` ahora lista `linkedin, microsoft, github, facebook, apple, twitter` en `coming_soon` hasta que sus env vars aparezcan.
+
+### Compartir contenido — ShareButton universal
+- **NEW** `components/community/ShareButton.jsx` — botón + popover con URLs oficiales:
+  - LinkedIn: `linkedin.com/sharing/share-offsite/`
+  - Facebook: `facebook.com/sharer/sharer.php`
+  - X (Twitter): `twitter.com/intent/tweet`
+  - WhatsApp: `api.whatsapp.com/send`
+  - Telegram: `t.me/share/url`
+  - Copiar link (clipboard API)
+- Usa `navigator.share()` (Web Share API) cuando está disponible; fallback al popover.
+- Data-testids: `share-button-{id}`, `share-menu-{id}`, `share-menu-{network}-{id}`.
+
+### Invitaciones (viral loop)
+- **NEW** `GET /api/community/auth/me/invite` — devuelve `{code, url, invited_registered, share_message}`. Código deterministic: SHA-256(user.id) truncado a 8 hex uppercase → **sin escritura extra en DB**, idempotente.
+- **NEW** `POST /api/community/auth/register` acepta `invite_code` opcional. Al registrarse con código válido, `db.invite_redemptions` guarda `{invited_user_id, referrer_id, code}` (upsert idempotente por `invited_user_id`).
+- **NEW** `InviteBlock` dentro de `ProfileCardWidget` (Mi Espacio) — muestra código + contador de invitados + botón Copiar + ShareButton. Cero pantalla nueva.
+- `JoinPage` lee `?invite=CODE` de la URL y lo pasa a `registerEmail`.
+
+### SEO / OpenGraph / Sitemap
+- **NEW** `routes/seo_routes.py`:
+  - `GET /api/seo/sitemap.xml` — sitemap dinámico con empresas seeded (≥15 URLs).
+  - `GET /api/seo/robots.txt` — enlaza al sitemap.
+  - `GET /api/seo/og/company/{slug}` — HTML con OpenGraph + Twitter Card + JSON-LD `Organization` schema.org + canonical + `<meta http-equiv=refresh>` para que usuarios reales rebotan al SPA.
+- Todo bajo `/api/seo/*` para que la infraestructura Kubernetes existente (que rutea `/api/*` al backend) los sirva sin cambios de config.
+
+### Funcionalidades implementadas (checklist P0)
+| Item | Estado |
+|---|---|
+| LinkedIn OAuth wired | ✅ desde Wave 8B, coming_soon |
+| Microsoft OAuth wired | ✅ desde Wave 8B, coming_soon |
+| Facebook OAuth wired | ✅ Wave 11.1, coming_soon |
+| GitHub OAuth wired | ✅ Wave 11.1, coming_soon |
+| Compartir a LinkedIn/FB/X/WhatsApp/Telegram/Copy | ✅ oficial URLs, sin SDK |
+| OpenGraph + Twitter Cards + JSON-LD | ✅ `/api/seo/og/company/{slug}` |
+| Sitemap + robots | ✅ dinámicos |
+| Invitaciones (código + URL + contador) | ✅ perfil |
+| Métricas de invitación registradas | ✅ `db.invite_redemptions` |
+
+### Variables de entorno para activación producción
+```
+# GitHub OAuth
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+
+# Facebook OAuth
+FACEBOOK_APP_ID=
+FACEBOOK_APP_SECRET=
+
+# LinkedIn (ya listo desde Wave 8B)
+LINKEDIN_CLIENT_ID=
+LINKEDIN_CLIENT_SECRET=
+
+# Microsoft (ya listo desde Wave 8B)
+MICROSOFT_CLIENT_ID=
+MICROSOFT_CLIENT_SECRET=
+```
+
+Redirect URIs a registrar en cada portal (misma pauta que Wave 8B):
+- `https://puntoceromultiservicios.com/api/community/auth/oauth/{provider}/callback`
+- `https://future-core-5.preview.emergentagent.com/api/community/auth/oauth/{provider}/callback`
+
+### Testing
+- `testing_agent_v3_fork` iteración 27 — **0 bugs**.
+- Backend: **11/11 wave 11.1** verde + **58/58 regresión** (wave6/7/8a/8b/9/9.1/9.2/11 sin cambios).
+- Frontend: invite block renderizado, código de 8 caracteres, copy button escribe URL correcta al clipboard, share menu con las 6 opciones oficiales, `window.open` invoca con las URLs de deep-link exactas del brief.
+
+### Errores corregidos
+- El endpoint `/providers` no listaba `github` en `coming_soon` — corregido.
+- El label helper `_label` centralizado — cambio compacto sin duplicación.
+
+### Estado final
+- Cero módulos nuevos fuera de los 2 archivos SEO + 1 share component.
+- Cero pantallas nuevas · Cero refactor · Cero regresiones.
+- LinkedIn/Microsoft/GitHub/Facebook OAuth quedan listos con **solo activar env vars** en producción.
+- Viral loop operacional end-to-end: link único por usuario → contador se actualiza automáticamente cada registro nuevo con ese código.
+- SEO discoverable: sitemap.xml + OG tags por empresa + JSON-LD schema.org.
+
+---
+
 ## 2026-08-04 — Wave 11: LATAM Public Data Platform (18 países)
 
 ### Framework de conectores (nuevo, reutilizable)
