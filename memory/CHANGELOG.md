@@ -1,5 +1,37 @@
 # Punto Cero System — Changelog
 
+## 2026-08-04 — Wave 12 Fase 6: Editorial Composer (fix del feed aleatorio)
+
+### Problema
+El usuario reportó que el Intelligent Mixed Feed se veía aleatorio, sin criterio editorial (a veces 3 noticias seguidas, a veces salto brusco). Se pedía transformar la experiencia en algo tipo "revista profesional" con jerarquía visual y orden de bloques predecible.
+
+### Fix: `_compose_editorial`
+- Nuevo `EDITORIAL_TEMPLATE` de 20 slots en `backend/routes/content_sources_routes.py` que define kind + layout por bloque: news(hero), job(medium), event(medium), user_post(large), news(medium), company(medium), marketplace(medium), video(medium), job(medium), community(small), news(medium), user_post(large), event(medium), company(medium), job(medium), news(medium), marketplace(medium), video(medium), podcast(small), repo(small). Distribución: news 20%, job 15%, event 10%, user_post 10%, company 10%, marketplace 10%, video 10%, community 5%, podcast 5%, repo 5%.
+- Reemplazado el `_interleave` aleatorio por `_compose_editorial` determinístico:
+  - Múltiples pases sobre el template.
+  - Slots con pool vacío se OMITEN (no se sustituyen aleatoriamente → nunca "3 noticias seguidas").
+  - Nunca dos items consecutivos con el mismo kind.
+  - Solo 1 hero por respuesta.
+  - Layouts `hero` y `large` sólo en el primer pase; segundo pase downgraded a `medium` (previene duplicados detectados por testing agent en iteration_29).
+- Endpoint `/api/content-sources/mixed-feed` ahora responde con `layout_distribution` y `editorial_template_size` adicionales para observabilidad.
+- Pool `community` incluido en `pools` (bug encontrado por testing agent — slot 10 siempre vacío antes).
+
+### Jerarquía visual en frontend
+- `IntelligentFeed.jsx` — el grid ahora lee `item.layout` del backend. `hero` y `large` → `grid-column: 1 / -1`. `medium`/`small` → 1 columna. En móvil (<720px) todos colapsan a 1 columna.
+- `ContentCard.jsx` pasa `layout` al card específico.
+- `NewsCard.jsx` — cuando `layout='hero'`: imagen 420px de alto, título 1.4rem, badge de categoría flotante sobre el gradient overlay.
+
+### Verificación
+- **testing_agent iteration_30: 57/57 tests verde**, `retest_needed=false`. Bugs de iteration_29 confirmados como fixed. FIX 1 (single hero), FIX 2 (community pool), FIX 3-5 (anti-repetición + downgrade + orden del template) todos validados.
+- Distribución real observada en producción: `{hero: 1, medium: 15, large: 2, small: 2}` con secuencia editorial exacta (blocks 1→20, luego segundo pase downgraded).
+
+### Files changed (Fase 6)
+- Backend: `routes/content_sources_routes.py` (EDITORIAL_TEMPLATE + _compose_editorial + community_pool), `tests/test_wave12_content_sources.py` (aserciones actualizadas), `tests/test_editorial_composer.py` (NUEVO por testing_agent con 13 tests específicos del composer).
+- Frontend: `components/community/IntelligentFeed.jsx` (grid con layout-aware spans), `components/community/cards/ContentCard.jsx` (props.layout), `components/community/cards/NewsCard.jsx` (hero layout XL).
+
+---
+
+
 ## 2026-08-04 — Wave 12 Fase 5: Feed visual + Composer simplificado + Conoce en sidebar
 
 ### Content Sources System — rediseño visual
