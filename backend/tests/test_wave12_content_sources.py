@@ -74,24 +74,21 @@ class TestContentSources:
         data = r.json()
         items = data["items"]
         assert len(items) > 0
-        # Every item must carry a `kind`
+        # Every item must carry a `kind` AND a `layout` (editorial composer).
         for it in items:
             assert "kind" in it and it["kind"], it
-        # Anti-repetition: no more than 3 consecutive items with the same kind.
-        # (We allow occasional pairs when a bucket is too dominant, but never
-        # runs of 4+.)
-        streak = 1
-        max_streak = 1
+            assert it.get("layout") in ("hero", "large", "medium", "small"), it
+        # Anti-repetición estricta (editorial): jamás dos items del mismo kind
+        # consecutivos.
         for i in range(1, len(items)):
-            if items[i]["kind"] == items[i - 1]["kind"]:
-                streak += 1
-                max_streak = max(max_streak, streak)
-            else:
-                streak = 1
-        assert max_streak < 4, (
-            f"Feed has a run of {max_streak} identical kinds — "
-            f"anti-repetition broke. Sequence: {[i['kind'] for i in items]}"
-        )
+            assert items[i]["kind"] != items[i - 1]["kind"], (
+                f"editorial break — consecutive {items[i]['kind']} at #{i}: "
+                f"{[x['kind'] for x in items]}"
+            )
+        # El primer item debe ser hero (según EDITORIAL_TEMPLATE) o al menos
+        # aparecer al menos un hero en las primeras 4 posiciones.
+        assert any(it.get("layout") == "hero" for it in items[:4]), \
+            "no hero in the first 4 slots"
 
     def test_mixed_feed_distribution_report(self):
         r = requests.get(f"{BASE_URL}/api/content-sources/mixed-feed", params={"limit": 12})
@@ -100,5 +97,7 @@ class TestContentSources:
         # The endpoint should return an observability report we can eyeball.
         assert "distribution" in data
         assert "pool_sizes" in data
+        assert "layout_distribution" in data
+        assert "editorial_template_size" in data
         # Sum of distribution items equals len(items)
         assert sum(data["distribution"].values()) == len(data["items"])

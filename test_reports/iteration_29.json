@@ -1,0 +1,51 @@
+{
+  "summary": "Backend regression + focused test for the new deterministic editorial composer on GET /api/content-sources/mixed-feed. Created /app/backend/tests/test_editorial_composer.py with 13 tests. 11/13 pass. 2 failures reveal a real bug: cycling the EDITORIAL_TEMPLATE produces a second `hero` (and duplicates the template order) when slots are skipped. Also 'community' pool is never populated (missing from pools dict) so slot 10 is ALWAYS skipped. Full suite: 42 passed / 2 failed (44 total). Wave12 regression suites (test_wave12_content_sources, test_wave12_final) still 100% green.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/content-sources/mixed-feed?limit=20",
+        "issue": "Editorial composer cycles the template with `cursor % len(EDITORIAL_TEMPLATE)`. When any slot is skipped (empty pool), the cursor keeps advancing past 20 and re-enters slot 0 (news, hero). Result: response contains TWO items with layout='hero' (layout_distribution={hero:2, medium:14, large:3, small:1}) AND user_post appears 3 times even though template has only 2 user_post slots. Violates the spec 'items en el ORDEN EXACTO del template'. Fix: bound the loop to a single pass of EDITORIAL_TEMPLATE (i.e. iterate `for kind, layout in EDITORIAL_TEMPLATE` once) OR, if cycling is desired, force layout='medium' on all subsequent cycles so at most one 'hero' can be emitted.",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "GET /api/content-sources/mixed-feed",
+        "issue": "The `pools` dict built in mixed_feed() does NOT contain a 'community' key. Template slot 10 is ('community','small') but `pools.get('community')` returns None → slot 10 is ALWAYS skipped. That in turn is one of the reasons the composer cycles past position 20 and produces the duplicated hero. Fix: add a community pool (e.g., from db.groups or a curated communities list) to pools before calling _compose_editorial.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "GET /api/content-sources/mixed-feed",
+        "issue": "podcast pool is hard-coded to [] (`podcasts_pool = []  # Reserved for future podcast connectors`), guaranteeing slot 19 is always skipped. Not blocking, but contributes to slots being skipped and thus triggers the cycling bug above."
+      },
+      {
+        "endpoint": "GET /api/content-sources/mixed-feed",
+        "issue": "'dataset' has no slot in EDITORIAL_TEMPLATE, yet a dataset pool is built and passed to the composer. It is silently ignored. Either remove the dataset pool from mixed_feed or add a dataset slot to the template."
+      }
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_editorial_composer.py",
+    "/app/test_reports/pytest/editorial_composer.xml"
+  ],
+  "action_items": [
+    "Fix _compose_editorial to not emit duplicate 'hero' layouts when cycling — either single-pass over EDITORIAL_TEMPLATE, or force layout='medium' after the first pass.",
+    "Populate a 'community' pool inside mixed_feed() so slot 10 is not always empty (currently pools dict has no 'community' key).",
+    "Decide fate of 'podcast' and 'dataset' slots — either wire real pools or remove those slots from the template to keep the template deterministic on limit=20."
+  ],
+  "critical_code_review_comments": [
+    "content_sources_routes.py::_compose_editorial cycles the template unconditionally; the layout 'hero' should never be produced twice.",
+    "mixed_feed builds `pools` without a 'community' key while EDITORIAL_TEMPLATE references community — silent drift between template and pool builder.",
+    "dataset pool is built but never referenced by the template — dead code path.",
+    "Overall composer matches the spec (anti-repetition works, template ORDER is respected for the first 20 non-skipped slots, layout tagging works, first item is news+hero, user_posts get large, small kinds get small). Only the cycling behavior needs correction."
+  ],
+  "updated_files": ["/app/backend/tests/test_editorial_composer.py"],
+  "success_rate": {"backend": "95% (42/44)", "frontend": "N/A (backend-only test)"},
+  "test_credentials": "not required — mixed-feed and related content-sources endpoints are public",
+  "seed_data_creation": "none",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The composer generally works: order, anti-repetition, layout tagging, first-hero, user_post=large, community/podcast/repo=small, distribution.news>=3, distribution.job>=2 all PASS. The two failing assertions are (a) test_template_order_respected — cursor cycles back to slot 0 and re-emits news+hero because 3 pool-empty skips (community, podcast, dataset-not-in-template) cause the cursor to overrun beyond 20, and (b) test_layout_distribution_present — asserts hero<=1 which fails (hero=2). Both failures point to the same root cause: cycling + missing community pool. After main agent fixes, rerun `pytest /app/backend/tests/test_editorial_composer.py -v`.",
+  "rca of the issue": "Root cause: `_compose_editorial` uses `EDITORIAL_TEMPLATE[cursor % len(EDITORIAL_TEMPLATE)]` with a while-loop bounded only by `len(out) < total`. Because (i) `pools` never includes the key 'community' (slot 10 always skipped), (ii) `podcasts_pool = []` (slot 19 always skipped), and (iii) other pool depletions can also cause skips, the cursor advances past index 19 and wraps to index 0 → slot ('news','hero') is emitted a second time, producing two hero cards and breaking the 'ORDEN EXACTO' contract. Reproduction: `curl \"$REACT_APP_BACKEND_URL/api/content-sources/mixed-feed?limit=20\" | jq '.layout_distribution'` → `{hero:2, medium:14, large:3, small:1}`. Mitigation options: (1) change while-loop to `for idx, (kind, layout) in enumerate(EDITORIAL_TEMPLATE):` (single pass, may return <limit items but preserves editorial contract), (2) if cycling is desired to reach exactly `limit`, force layout='medium' on any wrapped slot to never produce a second hero, and (3) populate the missing 'community' pool."
+}

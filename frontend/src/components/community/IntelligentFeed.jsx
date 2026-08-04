@@ -106,20 +106,24 @@ const IntelligentFeed = ({ limit = 30, country }) => {
         <div data-testid="intelligent-feed-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          gap: '0.9rem',
+          gap: '1rem',
           gridAutoFlow: 'dense',
         }}>
           {items.map((it, idx) => {
-            // Ritmo visual: noticias con imagen y user_posts ocupan doble
-            // ancho; el resto queda compacto. También hacemos "hero" al
-            // primer item si tiene imagen.
-            const isWide = idx === 0 && it.image
-              || (it.kind === 'news' && it.image && idx % 6 === 1)
-              || (it.kind === 'user_post');
+            // Layout dictado por el composer editorial en el backend:
+            //   hero   → doble ancho, primera posición del ciclo
+            //   large  → doble ancho, publicaciones sociales
+            //   medium → una columna, estándar
+            //   small  → una columna, comunidades/podcasts/repos
+            const layout = it.layout || 'medium';
+            const wide = layout === 'hero' || layout === 'large';
             return (
               <div key={`${it.kind}-${it.id || idx}`}
-                style={{ gridColumn: isWide ? '1 / -1' : 'auto' }}>
-                <ContentCard item={it} />
+                data-testid={`feed-slot-${layout}-${idx}`}
+                data-layout={layout}
+                data-kind={it.kind}
+                style={{ gridColumn: wide ? '1 / -1' : 'auto' }}>
+                <ContentCard item={it} layout={layout} />
               </div>
             );
           })}

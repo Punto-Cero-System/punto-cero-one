@@ -62,13 +62,13 @@ const shapeAsPost = (item) => {
   };
 };
 
-const ContentCard = ({ item }) => {
+const ContentCard = ({ item, layout = 'medium' }) => {
   if (!item || !item.kind) return null;
   if (item.kind === 'user_post') {
     return <FeedPostCard post={shapeAsPost(item)} />;
   }
   const Component = REGISTRY[item.kind];
-  if (Component) return <Component item={item} />;
+  if (Component) return <Component item={item} layout={layout} />;
   return (
     <BaseCard
       testid={`card-generic-${item.id}`}

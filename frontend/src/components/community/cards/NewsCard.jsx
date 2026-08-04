@@ -4,11 +4,12 @@ import BaseCard, { CardCTA, CardGhostCTA, CardMeta } from './BaseCard';
 
 const ACCENT = '#0369A1';
 
-const NewsCard = ({ item }) => {
+const NewsCard = ({ item, layout = 'medium' }) => {
   const meta = item.metadata || {};
   const category = item.category || meta.vertical;
   const author = meta.author;
   const date = item.created_at || meta.meta?.published_at;
+  const isHero = layout === 'hero';
 
   const fmtDate = (d) => {
     if (!d) return null;
@@ -62,21 +63,39 @@ const NewsCard = ({ item }) => {
       testid={`card-news-${item.id}`}
       media={item.image ? (
         <a href={item.external_url} target="_blank" rel="noopener noreferrer"
-          style={{ display: 'block', position: 'relative', maxHeight: 280, overflow: 'hidden' }}>
+          style={{ display: 'block', position: 'relative',
+                   maxHeight: isHero ? 420 : 240,
+                   overflow: 'hidden' }}>
           <img src={item.image} alt="" referrerPolicy="no-referrer"
-            style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }} />
+            style={{ width: '100%',
+                     maxHeight: isHero ? 420 : 240,
+                     objectFit: 'cover', display: 'block' }} />
           <div aria-hidden style={{
             position: 'absolute', inset: 0,
-            background: 'linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.35) 100%)',
+            background: 'linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.4) 100%)',
           }} />
+          {isHero && (
+            <span style={{
+              position: 'absolute', bottom: 14, left: 16,
+              padding: '0.32rem 0.7rem', borderRadius: 100,
+              background: 'rgba(255,255,255,0.95)', color: ACCENT,
+              fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.16em',
+            }}>{(category || 'NOTICIA').toUpperCase()}</span>
+          )}
         </a>
       ) : (
         <div style={{
-          height: 96,
+          height: isHero ? 160 : 96,
           background: `linear-gradient(135deg, ${ACCENT} 0%, #075985 100%)`,
         }} />
       )}
-      title={item.title}
+      title={
+        isHero ? (
+          <span style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
+            {item.title}
+          </span>
+        ) : item.title
+      }
       description={item.description}
       meta={
         <>

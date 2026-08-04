@@ -21,7 +21,6 @@ request time — everything is either DB-cached or hand-curated.
 from __future__ import annotations
 
 import logging
-import random
 from typing import Optional
 
 from fastapi import APIRouter, Cookie, Header, Query, Request
@@ -141,17 +140,47 @@ MIX_TARGET = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# EDITORIAL COMPOSER (Wave 12 Fase 6)
+# ---------------------------------------------------------------------------
+# Sustituimos el interleave aleatorio por una plantilla EDITORIAL fija de 20
+# slots que respeta la distribución objetivo (news 20% · job 15% · event 10%
+# · user_post 10% · company 10% · marketplace 10% · video 10% · community 5%
+# · podcast 5% · repo 5% · dataset 5%) Y define la jerarquía visual de cada
+# slot (hero / large / medium / small) para que el frontend pueda componer
+# un feed tipo revista sin decidir tamaños por su cuenta.
+EDITORIAL_TEMPLATE: list[tuple[str, str]] = [
+    ("news",        "hero"),    # 01 · noticia principal
+    ("job",         "medium"),  # 02 · empleo
+    ("event",       "medium"),  # 03 · evento
+    ("user_post",   "large"),   # 04 · publicación social
+    ("news",        "medium"),  # 05 · noticia secundaria
+    ("company",     "medium"),  # 06 · empresa recomendada
+    ("marketplace", "medium"),  # 07 · marketplace
+    ("video",       "medium"),  # 08 · video
+    ("job",         "medium"),  # 09 · segundo empleo
+    ("community",   "small"),   # 10 · comunidad sugerida
+    ("news",        "medium"),  # 11 · tercera noticia
+    ("user_post",   "large"),   # 12 · segunda publicación social
+    ("event",       "medium"),  # 13 · segundo evento
+    ("company",     "medium"),  # 14 · segunda empresa
+    ("job",         "medium"),  # 15 · tercer empleo
+    ("news",        "medium"),  # 16 · cuarta noticia (news 4/20 = 20%)
+    ("marketplace", "medium"),  # 17 · segundo marketplace
+    ("video",       "medium"),  # 18 · segundo video
+    ("podcast",     "small"),   # 19 · podcast
+    ("repo",        "small"),   # 20 · repositorio
+]
+
+
 def _clean_html(text: str) -> str:
     """Strip HTML entities/tags from summaries so they render as plain text."""
     if not text:
         return ""
     import html
     import re
-    # Decode entities like &lt; &gt; &amp; &nbsp;
     decoded = html.unescape(text)
-    # Strip tags
     stripped = re.sub(r"<[^>]+>", " ", decoded)
-    # Collapse whitespace
     return re.sub(r"\s+", " ", stripped).strip()
 
 
@@ -283,38 +312,44 @@ def _curated_pool(kind: str, *, country: Optional[str], limit: int) -> list[dict
     return items
 
 
-def _interleave(pools: dict[str, list[dict]], *, total: int) -> list[dict]:
-    """Weighted interleave. Never places two consecutive items of the same kind.
+def _compose_editorial(pools: dict[str, list[dict]], *, total: int) -> list[dict]:
+    """Editorial composer — deterministic, magazine-style.
 
-    We honour MIX_TARGET as a probability distribution and adapt when a
-    bucket empties.
+    Sigue estrictamente `EDITORIAL_TEMPLATE`, ciclando el template tantas
+    veces como sea necesario para producir `total` items. Cada item recibe
+    un campo `layout` (hero / large / medium / small) que el frontend usa
+    para asignar el tamaño de la tarjeta.
+
+    Reglas:
+      1. Nunca dos cards consecutivas del mismo `kind` (se salta el slot).
+      2. Si el pool de un kind se agota, ese slot se omite (no se sustituye
+         por otro kind al azar → mantiene el ritmo editorial y evita
+         degenerar en "3 noticias seguidas").
+      3. Los pools se consumen en orden (asumimos que la query los ordenó
+         por relevancia/recencia).
     """
+    pools = {k: list(v) for k, v in pools.items()}
     out: list[dict] = []
     last_kind: Optional[str] = None
-    # Copy to avoid mutating caller state
-    pools = {k: list(v) for k, v in pools.items()}
-    weights = {k: w for k, w in MIX_TARGET}
+    cursor = 0
+    empty_cycles = 0
 
     while len(out) < total:
-        # Available buckets (non-empty)
-        avail = [(k, weights.get(k, 0.05)) for k, v in pools.items() if v]
-        if not avail:
-            break
-        # Avoid picking the same kind as the previous card if possible.
-        candidates = [(k, w) for (k, w) in avail if k != last_kind] or avail
-        # Weighted random choice
-        total_w = sum(w for _, w in candidates)
-        r = random.random() * total_w
-        acc = 0.0
-        pick = candidates[0][0]
-        for k, w in candidates:
-            acc += w
-            if r <= acc:
-                pick = k
+        kind, layout = EDITORIAL_TEMPLATE[cursor % len(EDITORIAL_TEMPLATE)]
+        cursor += 1
+
+        if pools.get(kind) and kind != last_kind:
+            item = pools[kind].pop(0)
+            item = {**item, "layout": layout, "block": (cursor - 1) % len(EDITORIAL_TEMPLATE) + 1}
+            out.append(item)
+            last_kind = kind
+            empty_cycles = 0
+        else:
+            # Slot vacío → avanzamos. Contamos ciclos "en blanco" para
+            # detectar cuándo todos los pools están agotados y salir.
+            empty_cycles += 1
+            if empty_cycles >= len(EDITORIAL_TEMPLATE) * 2:
                 break
-        item = pools[pick].pop(0)
-        out.append(item)
-        last_kind = pick
     return out
 
 
@@ -397,11 +432,12 @@ async def mixed_feed(
         "dataset": datasets_pool,
     }
 
-    mix = _interleave(pools, total=limit)
+    mix = _compose_editorial(pools, total=limit)
 
     # Signals summary — helps the client understand *why* it got this mix.
-    summary = {k: len(v) + sum(1 for it in mix if it.get("kind") == k)
-               for k, v in pools.items()}
+    layout_counts: dict[str, int] = {}
+    for it in mix:
+        layout_counts[it.get("layout", "medium")] = layout_counts.get(it.get("layout", "medium"), 0) + 1
 
     return {
         "items": mix,
@@ -409,4 +445,6 @@ async def mixed_feed(
         "resolved_country_label": COUNTRY_LABELS.get(resolved) if resolved else None,
         "pool_sizes": {k: len(v) for k, v in pools.items()},
         "distribution": {k: sum(1 for it in mix if it.get("kind") == k) for k in pools.keys()},
+        "layout_distribution": layout_counts,
+        "editorial_template_size": len(EDITORIAL_TEMPLATE),
     }
