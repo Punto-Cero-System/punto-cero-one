@@ -205,15 +205,16 @@ async def _get_current_user(request: Request, cookie_val: Optional[str], auth_he
 # ---------------------------------------------------------------------------
 @router.get("/providers", response_model=ProvidersResponse)
 async def providers():
-    # Providers whose OAuth back-end is wired but need CLIENT_ID/SECRET in
-    # `.env` before they can go live. The frontend lists them as
-    # "Próximamente" until credentials arrive.
-    _wired = {"apple", "microsoft", "linkedin", "facebook", "github", "twitter"}
+    # First release supports Google (active), LinkedIn + Facebook (activatable
+    # via env vars). Microsoft / GitHub / Apple / X remain wired in the
+    # backend but are HIDDEN from the client list until the product team
+    # decides to expose them.
+    _v1_visible = {"linkedin", "facebook"}
     active = {p["key"] for p in registry.enabled_list()}
     coming = [
         {"key": k, "label": _label(k)}
-        for k in ("linkedin", "microsoft", "github", "facebook", "apple", "twitter")
-        if k in _wired and k not in active
+        for k in ("linkedin", "facebook")
+        if k in _v1_visible and k not in active
     ]
     return ProvidersResponse(
         enabled=registry.enabled_list(),

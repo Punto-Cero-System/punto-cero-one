@@ -9,7 +9,15 @@ import { armWelcome } from '../components/community/WelcomeModal';
 
 const NAVY = '#0B1F3A';
 
-const SOCIALS = [
+/**
+ * V1 release surfaces ONLY Google + LinkedIn + Facebook. Microsoft, Apple
+ * and X (Twitter) remain fully wired in the backend + AUTH_PROVIDERS map
+ * so activating them later is a one-line PR — but they are hidden from
+ * the client UI. See _V1_HIDDEN below.
+ */
+const _V1_HIDDEN = new Set(['microsoft', 'apple', 'twitter', 'github']);
+
+const _PROVIDER_SPECS = [
   { key: 'google', label: 'Google', color: '#FFFFFF', text: '#0B1F3A', ring: 'rgba(66,133,244,0.35)',
     icon: (<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.3l6.7-6.7C35.4 2 30 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.9 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.7c-.6 3-2.3 5.6-4.9 7.3l7.6 5.9c4.5-4.1 7.1-10.2 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.9 0 20.4 0 24s1 7.1 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 12-2.1 16-5.8l-7.6-5.9c-2.1 1.4-4.8 2.2-8.4 2.2-6.3 0-11.7-4.1-13.6-9.9l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>),
   },
@@ -29,6 +37,8 @@ const SOCIALS = [
     icon: (<svg width="16" height="16" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>),
   },
 ];
+
+const PROVIDER_META = _PROVIDER_SPECS.filter((p) => !_V1_HIDDEN.has(p.key));
 
 /**
  * JoinPage — social + email/password auth.
@@ -167,7 +177,7 @@ const JoinPage = () => {
         {tab === 'social' ? (
           <motion.div key="social" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-            {SOCIALS.map((s) => {
+            {PROVIDER_META.map((s) => {
               const available = enabledProviders.includes(s.key);
               return (
                 <motion.button key={s.key}
