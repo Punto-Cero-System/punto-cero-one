@@ -309,7 +309,7 @@ async def patch_me_region(
     if code not in _ALLOWED_COUNTRIES:
         raise HTTPException(status_code=422, detail=f"País '{code}' no soportado")
     db = request.app.state.db
-    update = {"country": code, "updated_at": _now_iso()}
+    update = {"country": code, "country_source": "manual", "updated_at": _now_iso()}
     if payload.city is not None:
         update["city"] = payload.city.strip() or None
     await db.users.update_one({"id": user["id"]}, {"$set": update})

@@ -48,21 +48,75 @@ const guessFromNavigator = () => {
   return null;
 };
 
+const guessFromTimezone = () => {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    const TZ_TO_COUNTRY = {
+      'America/Bogota': 'CO', 'America/Lima': 'PE', 'America/Mexico_City': 'MX',
+      'America/Argentina/Buenos_Aires': 'AR', 'America/Buenos_Aires': 'AR',
+      'America/Santiago': 'CL', 'America/Caracas': 'VE',
+      'America/Guayaquil': 'EC', 'America/La_Paz': 'BO',
+      'America/Asuncion': 'PY', 'America/Montevideo': 'UY',
+      'America/Sao_Paulo': 'BR', 'America/Recife': 'BR',
+      'America/Panama': 'PA', 'America/Costa_Rica': 'CR',
+      'America/Managua': 'NI', 'America/El_Salvador': 'SV',
+      'America/Guatemala': 'GT', 'America/Tegucigalpa': 'HN',
+      'America/Havana': 'CU', 'America/Santo_Domingo': 'DO',
+      'Europe/Madrid': 'ES', 'Atlantic/Canary': 'ES',
+      'America/New_York': 'US', 'America/Los_Angeles': 'US',
+      'America/Chicago': 'US', 'America/Denver': 'US',
+    };
+    return TZ_TO_COUNTRY[tz] || null;
+  } catch { return null; }
+};
+
+const detectFromBackend = async () => {
+  try {
+    const r = await fetch(`${BACKEND}/api/community/region/detect`, {
+      credentials: 'include',
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return { country: data.country, city: data.city, method: data.method };
+  } catch { return null; }
+};
+
 export default function useUserRegion() {
   const { user, refresh } = useCommunityAuth();
   const [localCountry, setLocalCountry] = useState(() => {
     try { return localStorage.getItem(STORAGE_KEY) || null; } catch { return null; }
   });
+  const [detectedMethod, setDetectedMethod] = useState(null);
 
+  // Auto-detect on first mount when nothing is stored yet. Chain:
+  //   IP lookup (backend, ipapi.co) → navigator.language → Intl timezone → CO.
   useEffect(() => {
-    if (!localCountry) {
-      const guess = guessFromNavigator();
-      if (guess) {
-        setLocalCountry(guess);
-        try { localStorage.setItem(STORAGE_KEY, guess); } catch { /* ignore */ }
+    if (localCountry) return;
+    if (user && user.country) return;
+    let cancelled = false;
+    (async () => {
+      const back = await detectFromBackend();
+      if (cancelled) return;
+      let code = back?.country || null;
+      let method = back?.method || null;
+      if (!code) {
+        code = guessFromNavigator();
+        method = code ? 'language' : null;
       }
-    }
-  }, [localCountry]);
+      if (!code) {
+        code = guessFromTimezone();
+        method = code ? 'timezone' : null;
+      }
+      if (!code) {
+        code = 'CO';
+        method = 'default';
+      }
+      setLocalCountry(code);
+      setDetectedMethod(method);
+      try { localStorage.setItem(STORAGE_KEY, code); } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [localCountry, user]);
 
   const country = (user && user.country) || localCountry || null;
 
@@ -70,6 +124,7 @@ export default function useUserRegion() {
     if (!code || typeof code !== 'string') return;
     const normalized = code.toUpperCase();
     setLocalCountry(normalized);
+    setDetectedMethod('manual');
     try { localStorage.setItem(STORAGE_KEY, normalized); } catch { /* ignore */ }
     if (user?.id) {
       try {
@@ -88,6 +143,7 @@ export default function useUserRegion() {
     country,
     label: country ? (LATAM_COUNTRIES[country] || country) : null,
     flag: country ? (COUNTRY_FLAGS[country] || '🌎') : '🌎',
+    method: user?.country_source || detectedMethod,
     setRegion,
     supported: LATAM_COUNTRIES,
   };

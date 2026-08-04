@@ -128,8 +128,19 @@ const ProfileCardWidget = () => {
             <span style={{ fontSize: '0.9rem', lineHeight: 1 }}>{region.flag}</span>
             <Globe2 size={10} color="#7C3AED" />
             <span data-testid="workspace-region-label">
-              {region.label ? region.label : 'Elige tu país'}
+              {region.label ? region.label : 'Detectando…'}
             </span>
+            {region.method && region.method !== 'manual' && (
+              <span
+                data-testid="workspace-region-method"
+                title="País detectado automáticamente"
+                style={{
+                  padding: '0.05rem 0.35rem', borderRadius: 6,
+                  background: 'rgba(0,200,150,0.12)', color: '#00825E',
+                  fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.05em',
+                }}
+              >AUTO</span>
+            )}
             <ChevronDown size={10} style={{ opacity: 0.5 }} />
           </button>
           {showRegionPicker && (
