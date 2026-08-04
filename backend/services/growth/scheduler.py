@@ -39,6 +39,26 @@ async def _process_admin_sources(db):
             logger.warning("run_sync failed src=%s err=%s", src.get("id"), e)
 
 
+async def _process_connectors(db):
+    """Wave 11 — Iterate the LATAM Public Data connector registry, running
+    every connector whose TTL is due. Isolated from the RSS path so a
+    connector crash never blocks admin sources or the growth aggregator.
+    """
+    try:
+        from services.growth.connectors import run_all_due
+        from services.growth.connectors.registry import get as get_registry
+    except Exception as e:
+        logger.warning("connectors import failed: %s", e)
+        return
+    try:
+        connectors = get_registry()
+        res = await run_all_due(db, connectors)
+        logger.info("connectors tick ran=%d ingested=%d updated=%d",
+                    res.get("ran", 0), res.get("ingested", 0), res.get("updated", 0))
+    except Exception as e:
+        logger.warning("connectors tick failed: %s", e)
+
+
 class GrowthScheduler:
     def __init__(self):
         self._task: asyncio.Task | None = None
@@ -56,6 +76,7 @@ class GrowthScheduler:
             try:
                 await run_once(db)
                 await _process_admin_sources(db)
+                await _process_connectors(db)
                 # One-shot backfill of items ingested before the inline tagger.
                 try:
                     from services.discovery.autotag import backfill_autotag
@@ -75,6 +96,7 @@ class GrowthScheduler:
                 try:
                     await run_once(db)
                     await _process_admin_sources(db)
+                    await _process_connectors(db)
                 except Exception as e:
                     logger.warning("growth run failed: %s", e)
 

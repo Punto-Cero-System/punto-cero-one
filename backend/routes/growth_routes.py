@@ -247,3 +247,54 @@ async def toggle_source(source_id: str, request: Request,
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return result
+
+
+# ---------------------------------------------------------------------------
+# Wave 11 — LATAM Public Data connectors registry (read-only)
+# ---------------------------------------------------------------------------
+
+@router.get("/connectors")
+async def list_connectors(request: Request):
+    """Public read-only snapshot of every registered country connector.
+
+    Returns 18-country matrix with status:
+      * operational       → configured=True, has synced successfully
+      * requires_credentials → prepared but env vars missing
+      * error             → last sync errored (see last_error)
+      * pending           → configured but never synced yet
+    """
+    from services.growth.connectors.registry import get as get_registry
+    connectors = get_registry()
+    items = [c.health() for c in connectors]
+    by_country: dict[str, dict] = {}
+    for c in items:
+        cc = c["country"]
+        by_country.setdefault(cc, {"country": cc, "operational": 0,
+                                    "requires_credentials": 0, "error": 0,
+                                    "pending": 0, "total": 0})
+        by_country[cc]["total"] += 1
+        if not c["configured"]:
+            by_country[cc]["requires_credentials"] += 1
+        elif c["last_sync_status"] == "ok":
+            by_country[cc]["operational"] += 1
+        elif c["last_sync_status"] == "error":
+            by_country[cc]["error"] += 1
+        else:
+            by_country[cc]["pending"] += 1
+    return {
+        "total": len(items),
+        "connectors": items,
+        "by_country": list(by_country.values()),
+    }
+
+
+@router.post("/connectors/{connector_id}/sync")
+async def force_connector_sync(connector_id: str, request: Request,
+                                admin: dict = Depends(require_admin)):
+    """Force a single connector to run now — admin-only."""
+    from services.growth.connectors.registry import get as get_registry
+    db = request.app.state.db
+    for c in get_registry():
+        if c.id == connector_id:
+            return await c.sync(db)
+    raise HTTPException(status_code=404, detail=f"connector {connector_id} not found")
