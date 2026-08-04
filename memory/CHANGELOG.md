@@ -1,5 +1,54 @@
 # Punto Cero System — Changelog
 
+## 2026-08-04 — Wave 9.2: Hyperlocal Discovery Engine
+
+### Backend
+- **EXTENDED** `services/discovery/regional.py` — nueva función `hyperlocal_tier(item_country, item_city, user_country, user_city)` con tier `'city'` de máxima prioridad; `region_score()` y `regional_sort()` ahora aceptan `user_city` opcional (case-insensitive). Orden: **CITY → COUNTRY → LATAM → GLOBAL**. Estable — preserva orden upstream dentro de cada tier. Cuando `user_city=None`, comportamiento idéntico a Wave 9.
+- **EXTENDED** `services/discovery/resolver.py:gather(db, entity, user_country, user_city)` — aplica sort hiperlocal a news/videos/jobs/events/similar/**people**. `similar_entities()` ahora proyecta `city`. Response añade `user_city`.
+- **EXTENDED** `routes/discovery_routes.py` — `_resolve_user_context()` devuelve `(country, city)` desde cadena de prioridad (query `?city=` → users.city → `X-Region-City` header). `entity_related` acepta `?city=` y header.
+- **EXTENDED** `routes/search_routes.py` — hereda automáticamente el header `X-Region-City` (regional_sort ya lo consume).
+- **NEW** seeds `services/discovery/seeds.py` — 4 instituciones oficiales CO: `sena`, `mintic`, `camara-comercio-bogota`, `u-antioquia`. Todas con `city`.
+- **NEW** `city` field en 6 empresas CO existentes: `bancolombia`, `grupo-sura`, `grupo-nutresa` → Medellín; `ecopetrol`, `avianca` → Bogotá; `alpina` → Sopó.
+- **NEW** 9 RSS oficiales agregadas a `services/growth/sources.py`:
+  - Argentina: `ar-boletinoficial` (Boletín Oficial), `ar-bcra` (BCRA)
+  - Brasil: `br-receita` (Receita Federal)
+  - Chile: `cl-bcentral` (Banco Central)
+  - Colombia: `co-banrep` (Banco de la República), `co-superfinanciera` (Superfinanciera)
+  - México: `mx-banxico` (Banxico)
+  - Perú: `pe-bcrp` (BCRP)
+  - España: `es-bde` (Banco de España)
+
+### Frontend
+- **EXTENDED** `hooks/useUserRegion.js` — persiste `localStorage['pcone_city']` en paralelo a `pcone_country`; expone `region.city`.
+- **EXTENDED** `services/platformService.js` + `services/feedService.js` — cada fetch inyecta `X-Region-City` cuando localStorage tiene el valor.
+- **EXTENDED** `components/community/workspace/ProfileCardWidget.jsx` — chip regional muestra pill con la ciudad detectada (`data-testid="workspace-region-city"`).
+
+### APIs oficiales integradas por país (Wave 9.2 base)
+| País | Fuentes públicas oficiales |
+|---|---|
+| Argentina | Boletín Oficial, BCRA |
+| Brasil | Receita Federal |
+| Chile | Banco Central de Chile |
+| Colombia | Banco de la República, Superfinanciera, MinTIC, SuperSociedades, CCB, El Tiempo, La República, Portafolio, Semana |
+| España | BOE, Banco de España, El País, El Mundo |
+| México | Banxico, El Universal, La Jornada |
+| Perú | BCRP, El Comercio |
+| + 12 más | Prensa nacional + tier internacional (Wave 8A/9) |
+
+### Países soportados hoy
+21 códigos ISO — AR, BO, BR, CL, CO, CR, CU, DO, EC, SV, GT, HN, MX, NI, PA, PY, PE, UY, VE + ES + US. Todos aceptados por `PATCH /me/region`. Los que aún no tienen RSS oficial dedicado usan la prensa nacional Wave 8A.
+
+### Testing
+- `testing_agent_v3_fork` iteración 25 — **0 bugs**.
+- Backend: **26/26 wave 9.2** verde (helper unit, discovery con city Medellín/Bogotá/sin ciudad, seeds nuevas, sources nuevas, PATCH region con city, detect propaga city, e2e cookie session infiere city automática).
+- Regresión: **58/58 pytest** verde (wave6/7/8a/8b/9 sin cambios).
+- Frontend: chip regional con pill ciudad visible; `localStorage['pcone_city']` persistido; Trending y Feed sin errores.
+
+### Confirmación
+El Discovery Engine ahora prioriza **CITY → COUNTRY → LATAM → GLOBAL** de forma automática. El usuario en Medellín ve primero contenido de Medellín, luego Colombia, luego LATAM, luego global. El usuario en Bogotá ve primero Bogotá, luego Colombia, etc. **No se crearon módulos nuevos, no se rompió ninguna funcionalidad existente, no se cambió el layout ni la autenticación.**
+
+---
+
 ## 2026-08-04 — Wave 9.1: Detección Automática de País y Región
 
 ### Backend
