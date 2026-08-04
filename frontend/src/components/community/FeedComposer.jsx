@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Image, Video, Calendar, Briefcase, Sparkles, Send } from 'lucide-react';
+import { Image, Video, Calendar, Briefcase, Sparkles, Send, FileText, BarChart3, ShoppingBag } from 'lucide-react';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 
 const NAVY = '#0B1F3A';
@@ -16,8 +16,16 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState('');
   const { user } = useCommunityAuth();
   const authorInitial = (user?.name || user?.email || '0').charAt(0).toUpperCase();
+
+  const flash = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2200);
+  };
+
+  const chipStub = (label) => () => flash(`${label}: disponible próximamente`);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,11 +88,14 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
         flexWrap: 'wrap', paddingTop: '0.15rem',
         borderTop: '1px solid rgba(11,31,58,0.06)',
       }}>
-        <ComposerChip icon={<Image size={16} />} label="Foto" color="#3B82F6" />
-        <ComposerChip icon={<Video size={16} />} label="Video" color="#8B5CF6" />
-        <ComposerChip icon={<Calendar size={16} />} label="Evento" color="#EC4899" />
-        <ComposerChip icon={<Briefcase size={16} />} label="Empleo" color="#D4AF37" />
-        <ComposerChip icon={<Sparkles size={16} />} label="IA" color="#22D3EE" />
+        <ComposerChip icon={<Image size={16} />} label="Foto" color="#3B82F6" onClick={chipStub('Foto')} testid="composer-chip-photo" />
+        <ComposerChip icon={<Video size={16} />} label="Video" color="#8B5CF6" onClick={chipStub('Video')} testid="composer-chip-video" />
+        <ComposerChip icon={<FileText size={16} />} label="Documento" color="#0EA5E9" onClick={chipStub('Documento')} testid="composer-chip-doc" />
+        <ComposerChip icon={<BarChart3 size={16} />} label="Encuesta" color="#14B8A6" onClick={chipStub('Encuesta')} testid="composer-chip-poll" />
+        <ComposerChip icon={<ShoppingBag size={16} />} label="Marketplace" color="#F97316" onClick={chipStub('Marketplace')} testid="composer-chip-marketplace" />
+        <ComposerChip icon={<Calendar size={16} />} label="Evento" color="#EC4899" onClick={chipStub('Evento')} testid="composer-chip-event" />
+        <ComposerChip icon={<Briefcase size={16} />} label="Empleo" color="#D4AF37" onClick={chipStub('Empleo')} testid="composer-chip-job" />
+        <ComposerChip icon={<Sparkles size={16} />} label="IA" color="#22D3EE" onClick={() => { window.location.href = '/ia'; }} testid="composer-chip-ai" />
 
         <div style={{ marginLeft: 'auto' }}>
           <motion.button
@@ -115,12 +126,20 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
           fontSize: '0.8rem',
         }}>{error}</div>
       )}
+      {toast && (
+        <div data-testid="feed-composer-toast" style={{
+          padding: '0.55rem 0.85rem', borderRadius: 10,
+          background: 'rgba(139,92,246,0.08)', color: '#5B21B6',
+          border: '1px solid rgba(139,92,246,0.2)',
+          fontSize: '0.78rem', fontWeight: 600,
+        }}>{toast}</div>
+      )}
     </form>
   );
 };
 
-const ComposerChip = ({ icon, label, color }) => (
-  <button type="button" className="interactive" style={{
+const ComposerChip = ({ icon, label, color, onClick, testid }) => (
+  <button type="button" onClick={onClick} data-testid={testid} className="interactive" style={{
     display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
     padding: '0.4rem 0.7rem', borderRadius: 100,
     border: 'none', background: 'transparent',

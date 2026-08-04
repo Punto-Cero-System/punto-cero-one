@@ -1,5 +1,50 @@
 # Punto Cero System — Changelog
 
+## 2026-08-04 — Wave 12 Fase 1: Intelligent Mixed Feed + Content Sources System
+
+### Content Sources System (NEW backend module)
+- **NEW** `/app/backend/data/countries_sources.json` — catálogo curado por país de recursos externos: empleos (Computrabajo/Bumeran/Laborum/Catho/OCC), eventos (Eventbrite/Meetup/Sympla), noticias, videos (YouTube channels), comunidades LATAM, herramientas IA. 18+ países LATAM cubiertos, cero scraping, cero API keys.
+- **NEW** `services/content_sources/__init__.py` — registry loader con `@lru_cache`. Normaliza toda entrada al schema universal `ContentSource {id, kind, title, description, image, category, location, country, source, external_url, metadata}`.
+- **NEW** `routes/content_sources_routes.py` con endpoints:
+  - `GET /api/content-sources/types` — tipos y países soportados.
+  - `GET /api/content-sources/ai-tools` — 8 herramientas IA (Gemini, ChatGPT, Claude, Copilot, Perplexity, Canva AI, NotebookLM, Midjourney) con casos de uso.
+  - `GET /api/content-sources/videos` — canales YouTube curados por categoría.
+  - `GET /api/content-sources/by-type/{jobs|events|news|videos|ai_tools}?country=CO` — priorización hiperlocal (Ciudad→País→LATAM→Global).
+  - `GET /api/content-sources/mixed-feed` — **el corazón del Wave 12**: mezcla ponderada de 10 tipos (news/job/event/video/user_post/company/marketplace/podcast/repo/dataset) con anti-repetición (nunca 4+ del mismo kind consecutivos) y distribución 20/15/10/10/10/10/10/5/5/5.
+
+### Intelligent Mixed Feed (frontend)
+- **NEW** `components/community/cards/` — 10 componentes visuales dedicados:
+  - `BaseCard.jsx` — primitiva compartida con accent color, badge, media, meta, CTA principal y ghost CTAs.
+  - `NewsCard`, `JobCard`, `EventCard`, `VideoCard`, `CompanyCard`, `CommunityCard`, `MarketplaceCard`, `RepoCard`, `DatasetCard`, `AiToolCard`.
+  - `ContentCard.jsx` — dispatcher que renderiza el card correcto según `item.kind`. `user_post` delega en `FeedPostCard` existente.
+- **NEW** `components/community/IntelligentFeed.jsx` — consumidor de `/api/content-sources/mixed-feed`. Badge "FEED INTELIGENTE", indicador de región y botón Actualizar.
+- **NEW** `components/community/ExternalSourcesSection.jsx` — sección reusable que surface el catálogo curado en páginas verticales.
+- `LiveFeed.jsx` — nueva pestaña **"Descubrir"** (default) al lado de "Últimos" y "Para Ti". Rutea a `IntelligentFeed` cuando activa.
+- `contentSourcesService` agregado a `services/feedService.js`.
+
+### Composer (caja de publicaciones)
+- `FeedComposer.jsx` — botones ahora todos funcionales: Foto/Video/Documento/Encuesta/Marketplace/Evento/Empleo muestran toast "Disponible próximamente"; IA navega a `/ia`. Ya no hay botones muertos.
+
+### Empty-state elimination
+- `JobsPage`, `EventsPage`, `VideosPage`, `AiPage` — todas incorporan `ExternalSourcesSection` (o rewrite completo en el caso de Videos/IA) → ninguna sección aparece vacía.
+- `AiPage` — rewrite completo: filtros por caso de uso (IA para productividad / profesionales / programación / …), 8 tarjetas iniciales.
+- `VideosPage` — rewrite mínimo: canales YouTube curados.
+
+### Welcome flow (Parte 2)
+- `WelcomeModal.jsx` — agregado botón secundario **"Completar mi perfil"** → navega a `/perfil/personalizar`. El botón primario "Comenzar a explorar" ya existía.
+
+### Backend tests (Wave 11 legacy fix + Wave 12)
+- `tests/test_wave7_growth.py` — 2 tests OAuth desfasados actualizados (LinkedIn ahora acepta 307/302; providers ahora valida contrato "solo Google+LinkedIn+Facebook visible").
+- **NEW** `tests/test_wave12_content_sources.py` — 7 tests: types, ai-tools, videos, by-type paramétrico (jobs/events/news), mixed-feed anti-repetición, distribution report.
+- Suite full green: `test_wave7_growth.py` 16/16 + `test_wave12_content_sources.py` 7/7.
+
+### Files changed
+- Backend: `data/countries_sources.json`, `services/content_sources/__init__.py`, `routes/content_sources_routes.py`, `server.py` (register router), `tests/test_wave7_growth.py`, `tests/test_wave12_content_sources.py`.
+- Frontend: `components/community/cards/*.jsx` (11 archivos), `components/community/IntelligentFeed.jsx`, `components/community/ExternalSourcesSection.jsx`, `components/community/LiveFeed.jsx`, `components/community/FeedComposer.jsx`, `components/community/WelcomeModal.jsx`, `pages/AiPage.jsx`, `pages/VideosPage.jsx`, `pages/JobsPage.jsx`, `pages/EventsPage.jsx`, `services/feedService.js`.
+
+---
+
+
 ## 2026-08-04 — Wave 11.1: Growth Activation (OAuth + Share + Invitations + SEO)
 
 ### OAuth — GitHub + Facebook (backend wired, activables por env)

@@ -269,12 +269,13 @@ class TestSearch:
 # ---------------------------------------------------------------------------
 class TestOAuthStubs:
     def test_linkedin_start_unconfigured_returns_503(self):
-        # follow_redirects=False so we see the actual status
+        # follow_redirects=False so we see the actual status.
+        # Wave 11 OAuth Cleanup: LinkedIn env vars may now be configured
+        # via the deployment envelope. Accept either the unconfigured
+        # (503) or configured (302/307 redirect) outcome. Fail on 500/404.
         r = requests.get(f"{BASE_URL}/api/community/auth/oauth/linkedin/start",
                          allow_redirects=False)
-        # If unconfigured (no LINKEDIN_CLIENT_ID) → 503
-        # If somehow configured → 302 (redirect). Fail this test only if we get 500/404.
-        assert r.status_code in (503, 302), r.text
+        assert r.status_code in (503, 302, 307), r.text
 
     def test_microsoft_start_unconfigured_returns_503(self):
         r = requests.get(f"{BASE_URL}/api/community/auth/oauth/microsoft/start",
@@ -298,14 +299,19 @@ class TestProviders:
 
         enabled_keys = {p.get("key") if isinstance(p, dict) else p
                         for p in data.get("enabled", [])}
-        # google must be present
+        # google must always be present
         assert "google" in enabled_keys, enabled_keys
-        # linkedin/microsoft should NOT be enabled (no envs)
-        assert "linkedin" not in enabled_keys, f"linkedin unexpectedly enabled: {enabled_keys}"
-        assert "microsoft" not in enabled_keys, f"microsoft unexpectedly enabled: {enabled_keys}"
 
+        # Wave 11 OAuth Cleanup: only Google/LinkedIn/Facebook are visible.
+        # `coming_soon` now surfaces ONLY the visible-but-not-yet-configured
+        # providers (linkedin/facebook). Apple/Microsoft/GitHub/X are
+        # hidden entirely from the client.
         coming_keys = {p["key"] for p in data.get("coming_soon", [])}
-        assert {"apple", "microsoft", "linkedin", "facebook", "twitter"}.issubset(coming_keys), coming_keys
+        assert coming_keys.issubset({"linkedin", "facebook"}), coming_keys
+        # Ensure hidden providers do NOT appear anywhere in the response.
+        combined = enabled_keys | coming_keys
+        for hidden in ("apple", "microsoft", "github", "twitter"):
+            assert hidden not in combined, f"{hidden} should be hidden: {combined}"
 
 
 # ---------------------------------------------------------------------------

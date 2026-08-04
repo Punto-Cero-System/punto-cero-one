@@ -4,6 +4,7 @@ import { MapPin, Briefcase, Send, Check, Bookmark } from 'lucide-react';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
 import { jobService } from '../services/platformService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+import ExternalSourcesSection from '../components/community/ExternalSourcesSection';
 
 const JobsPage = () => {
   const { user } = useCommunityAuth();
@@ -114,10 +115,19 @@ const JobsPage = () => {
 
       {loading && items.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(11,31,58,0.5)' }}>Cargando…</div>}
       {!loading && items.length === 0 && (
-        <div data-testid="jobs-empty" style={{ padding: '2rem', textAlign: 'center', borderRadius: 16, background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)', color: 'rgba(11,31,58,0.6)', fontSize: '0.9rem' }}>
-          Aún no hay empleos publicados. Las empresas del ecosistema publicarán oportunidades muy pronto.
+        <div data-testid="jobs-empty" style={{ padding: '1.4rem', textAlign: 'center', borderRadius: 16, background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)', color: 'rgba(11,31,58,0.6)', fontSize: '0.9rem' }}>
+          Aún no hay vacantes del ecosistema. Mientras tanto, explora oportunidades en portales regionales de confianza:
         </div>
       )}
+
+      <ExternalSourcesSection
+        type="jobs"
+        title="Portales de empleo por país"
+        subtitle="Prioridad hiperlocal: Ciudad → País → LATAM → Global."
+        limit={12}
+        testid="jobs-external-sources"
+      />
+
       {hasMore && !loading && (
         <button data-testid="jobs-load-more" onClick={() => load(false)}
           style={{ padding: '0.7rem 1rem', borderRadius: 12, background: '#FFFFFF', border: '1px solid rgba(11,31,58,0.08)', color: NAVY, cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>Cargar más</button>

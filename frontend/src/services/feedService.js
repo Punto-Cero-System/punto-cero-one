@@ -85,6 +85,34 @@ export const growthService = {
   },
 };
 
+/**
+ * Content Sources System — Wave 12.
+ * Backed by /api/content-sources/*. All items expose a `kind` and are
+ * rendered by <ContentCard /> (dispatcher).
+ */
+export const contentSourcesService = {
+  mixedFeed: ({ limit = 30, country } = {}) => {
+    const qs = new URLSearchParams({ limit: String(limit) });
+    if (country) qs.set('country', country);
+    return fj(`/api/content-sources/mixed-feed?${qs.toString()}`).then(throwOnError);
+  },
+  byType: (type, { country, limit = 30 } = {}) => {
+    const qs = new URLSearchParams({ limit: String(limit) });
+    if (country) qs.set('country', country);
+    return fj(`/api/content-sources/by-type/${type}?${qs.toString()}`).then(throwOnError);
+  },
+  aiTools: ({ category } = {}) => {
+    const qs = new URLSearchParams();
+    if (category) qs.set('category', category);
+    return fj(`/api/content-sources/ai-tools?${qs.toString()}`).then(throwOnError);
+  },
+  videos: ({ category, limit = 30 } = {}) => {
+    const qs = new URLSearchParams({ limit: String(limit) });
+    if (category) qs.set('category', category);
+    return fj(`/api/content-sources/videos?${qs.toString()}`).then(throwOnError);
+  },
+};
+
 /** Ephemeral session id for anonymous view dedupe. */
 export const getViewSessionId = () => {
   const KEY = 'pc_view_session';

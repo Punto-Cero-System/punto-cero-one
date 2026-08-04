@@ -1,0 +1,182 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "notes": "Curated external content sources per country. Zero-scraping, zero-API-keys. Every entry links to a public resource with an external URL. Aggregated by the Content Sources System.",
+    "types": ["jobs", "events", "news", "videos", "marketplace", "communities", "companies", "education", "ai_tools"]
+  },
+  "ai_tools": [
+    {"id": "ai-gemini",    "name": "Google Gemini",    "logo": "https://www.gstatic.com/lamda/images/gemini_sparkle_v002_advanced_d1e79dd9d69b8c48b7f4.svg", "description": "IA de Google para productividad, investigación y creación multimodal.", "category": "IA para productividad", "use_cases": ["Investigación", "Análisis de documentos", "Contenido multimodal"], "url": "https://gemini.google.com"},
+    {"id": "ai-chatgpt",   "name": "ChatGPT",          "logo": "https://cdn.oaistatic.com/assets/favicon-eex17e0i.svg", "description": "Asistente de IA para escritura, análisis, aprendizaje y productividad.", "category": "IA para profesionales", "use_cases": ["Escritura", "Análisis", "Aprendizaje", "Automatización"], "url": "https://chat.openai.com"},
+    {"id": "ai-claude",    "name": "Claude",           "logo": "https://claude.ai/favicon.ico", "description": "IA especializada en razonamiento largo, documentos y análisis complejo.", "category": "IA para profesionales", "use_cases": ["Documentos largos", "Análisis técnico", "Razonamiento"], "url": "https://claude.ai"},
+    {"id": "ai-copilot",   "name": "GitHub Copilot",   "logo": "https://github.githubassets.com/favicons/favicon.png", "description": "Copiloto de IA integrado en el editor de código.", "category": "IA para programación", "use_cases": ["Autocompletado", "Refactor", "Explicación de código"], "url": "https://github.com/features/copilot"},
+    {"id": "ai-perplexity","name": "Perplexity",       "logo": "https://www.perplexity.ai/favicon.ico", "description": "Buscador conversacional con citas y respuestas verificables.", "category": "IA para investigación", "use_cases": ["Investigación", "Búsqueda con fuentes", "Datos actualizados"], "url": "https://www.perplexity.ai"},
+    {"id": "ai-canva",     "name": "Canva AI",         "logo": "https://static.canva.com/static/images/favicon-1.ico", "description": "Diseño y contenido visual asistido por IA.", "category": "IA para contenido", "use_cases": ["Diseño gráfico", "Presentaciones", "Redes sociales"], "url": "https://www.canva.com/ai"},
+    {"id": "ai-notebooklm","name": "NotebookLM",       "logo": "https://notebooklm.google/favicon.ico", "description": "Cuadernos con IA para estudio, síntesis y podcasts personalizados.", "category": "IA para estudiantes", "use_cases": ["Resúmenes", "Estudio guiado", "Podcasts personales"], "url": "https://notebooklm.google"},
+    {"id": "ai-midjourney","name": "Midjourney",       "logo": "https://www.midjourney.com/favicon.ico", "description": "Generación de imágenes de alta calidad con IA.", "category": "IA para contenido", "use_cases": ["Arte generativo", "Branding visual", "Ilustración"], "url": "https://www.midjourney.com"}
+  ],
+  "videos": [
+    {"id": "vid-google-ai",       "name": "Google AI",          "channel": "Google",           "url": "https://www.youtube.com/@Google",         "cover": "https://i.ytimg.com/vi/UwsrzCVZAb8/maxresdefault.jpg", "description": "Novedades y aplicaciones prácticas de IA aplicada.", "category": "IA", "language": "es"},
+    {"id": "vid-ted-espanol",     "name": "TED en Español",     "channel": "TED",              "url": "https://www.youtube.com/@TEDx",           "cover": "https://i.ytimg.com/vi/8jPQjjsBbIc/maxresdefault.jpg", "description": "Charlas cortas sobre negocios, ciencia y emprendimiento.", "category": "Negocios", "language": "es"},
+    {"id": "vid-platzi",          "name": "Platzi",             "channel": "Platzi",           "url": "https://www.youtube.com/@Platzi",         "cover": "https://i.ytimg.com/vi/aqm4Jz6xf3M/maxresdefault.jpg", "description": "Educación en tecnología, marketing y emprendimiento.", "category": "Educación", "language": "es"},
+    {"id": "vid-y-combinator",    "name": "Y Combinator",       "channel": "Y Combinator",     "url": "https://www.youtube.com/@ycombinator",    "cover": "https://i.ytimg.com/vi/CVfnkM44Urs/maxresdefault.jpg", "description": "Emprendimiento, startups y advice desde YC.", "category": "Emprendimiento", "language": "en"},
+    {"id": "vid-neil-patel",      "name": "Neil Patel Español", "channel": "Neil Patel",       "url": "https://www.youtube.com/@NeilPatelenEspanol", "cover": "https://i.ytimg.com/vi/hZg9khxlG4E/maxresdefault.jpg", "description": "Marketing digital, SEO y crecimiento en español.", "category": "Marketing", "language": "es"},
+    {"id": "vid-fireship",        "name": "Fireship",           "channel": "Fireship",         "url": "https://www.youtube.com/@Fireship",       "cover": "https://i.ytimg.com/vi/tVzUXW6siu0/maxresdefault.jpg", "description": "Explicaciones cortas de tecnología para desarrolladores.", "category": "Tecnología", "language": "en"},
+    {"id": "vid-marques",         "name": "MKBHD",              "channel": "Marques Brownlee", "url": "https://www.youtube.com/@mkbhd",          "cover": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg", "description": "Reviews de tecnología, productos y tendencias.", "category": "Tecnología", "language": "en"},
+    {"id": "vid-daniel-bonifaz",  "name": "Daniel Bonifaz",     "channel": "Daniel Bonifaz",   "url": "https://www.youtube.com/@DanielBonifaz",  "cover": "https://i.ytimg.com/vi/qMFvL0e5s2Q/maxresdefault.jpg", "description": "Emprendimiento e inversión en LATAM.", "category": "Emprendimiento", "language": "es"},
+    {"id": "vid-lex-fridman",     "name": "Lex Fridman",        "channel": "Lex Fridman",      "url": "https://www.youtube.com/@lexfridman",     "cover": "https://i.ytimg.com/vi/9wKZH6m9HXM/maxresdefault.jpg", "description": "Entrevistas largas sobre IA, ciencia y filosofía.", "category": "Tecnología", "language": "en"}
+  ],
+  "communities": [
+    {"id": "com-latam-startups", "name": "LATAM Startups", "description": "Red profesional de fundadores y talento startup en LATAM.", "category": "Empresas", "country": "LATAM", "url": "https://latamlist.com/", "logo": null},
+    {"id": "com-mujeres-tech",   "name": "Mujeres en Tech LATAM", "description": "Comunidad regional de mujeres en tecnología.", "category": "Tecnología", "country": "LATAM", "url": "https://mujeresentech.net/", "logo": null},
+    {"id": "com-cletc",          "name": "CLETC — Legaltech LATAM", "description": "Comunidad de innovación legal en Iberoamérica.", "category": "Legal", "country": "LATAM", "url": "https://cletc.org/", "logo": null},
+    {"id": "com-marketers-latam","name": "LATAM Marketers", "description": "Red de marketers digitales y growth en LATAM.", "category": "Marketing", "country": "LATAM", "url": "https://latammarketers.com/", "logo": null},
+    {"id": "com-education-latam","name": "EdTech LATAM", "description": "Educación e innovación pedagógica en Iberoamérica.", "category": "Educación", "country": "LATAM", "url": "https://reimaginaredu.mx/", "logo": null}
+  ],
+  "by_country": {
+    "AR": {
+      "jobs":   [{"id":"jobs-ar-computrabajo","name":"Computrabajo Argentina","url":"https://ar.computrabajo.com/","description":"Miles de ofertas en Argentina.","logo":"https://ar.computrabajo.com/favicon.ico"},
+                 {"id":"jobs-ar-bumeran","name":"Bumeran Argentina","url":"https://www.bumeran.com.ar/","description":"Portal laboral regional.","logo":"https://www.bumeran.com.ar/favicon.ico"},
+                 {"id":"jobs-ar-zonajobs","name":"ZonaJobs","url":"https://www.zonajobs.com.ar/","description":"Empleos por localidad y sector.","logo":null}],
+      "events": [{"id":"ev-ar-eventbrite","name":"Eventbrite Argentina","url":"https://www.eventbrite.com.ar/","description":"Conferencias, meetups y networking en Argentina.","logo":"https://www.eventbrite.com/favicon.ico"},
+                 {"id":"ev-ar-meetup","name":"Meetup Buenos Aires","url":"https://www.meetup.com/es-ES/find/?location=ar--Buenos+Aires","description":"Encuentros profesionales presenciales.","logo":null}],
+      "news":   [{"id":"news-ar-lanacion","name":"La Nación","url":"https://www.lanacion.com.ar/","description":"Noticias empresariales y política.","logo":"https://www.lanacion.com.ar/favicon.ico"},
+                 {"id":"news-ar-cronista","name":"El Cronista","url":"https://www.cronista.com/","description":"Diario económico y financiero.","logo":null}]
+    },
+    "CO": {
+      "jobs":   [{"id":"jobs-co-computrabajo","name":"Computrabajo Colombia","url":"https://co.computrabajo.com/","description":"Empleos en Colombia por ciudad y sector.","logo":"https://co.computrabajo.com/favicon.ico"},
+                 {"id":"jobs-co-elempleo","name":"elempleo.com","url":"https://www.elempleo.com/co","description":"Portal laboral líder en Colombia.","logo":null},
+                 {"id":"jobs-co-magneto","name":"Magneto Empleos","url":"https://www.magneto365.com/co","description":"Vacantes y desarrollo profesional.","logo":null}],
+      "events": [{"id":"ev-co-eventbrite","name":"Eventbrite Colombia","url":"https://www.eventbrite.com.co/","description":"Eventos profesionales en Colombia.","logo":null},
+                 {"id":"ev-co-meetup","name":"Meetup Bogotá","url":"https://www.meetup.com/es-ES/find/?location=co--Bogot%C3%A1","description":"Networking y comunidades tech en Bogotá.","logo":null}],
+      "news":   [{"id":"news-co-eltiempo","name":"El Tiempo","url":"https://www.eltiempo.com/","description":"Actualidad y economía nacional.","logo":"https://www.eltiempo.com/favicon.ico"},
+                 {"id":"news-co-larepublica","name":"La República","url":"https://www.larepublica.co/","description":"Diario económico colombiano.","logo":null}]
+    },
+    "MX": {
+      "jobs":   [{"id":"jobs-mx-computrabajo","name":"Computrabajo México","url":"https://mx.computrabajo.com/","description":"Vacantes en toda la República.","logo":"https://mx.computrabajo.com/favicon.ico"},
+                 {"id":"jobs-mx-occ","name":"OCC Mundial","url":"https://www.occ.com.mx/","description":"Portal laboral líder en México.","logo":null},
+                 {"id":"jobs-mx-indeed","name":"Indeed México","url":"https://mx.indeed.com/","description":"Buscador de empleos global.","logo":null}],
+      "events": [{"id":"ev-mx-eventbrite","name":"Eventbrite México","url":"https://www.eventbrite.com.mx/","description":"Eventos profesionales por ciudad.","logo":null},
+                 {"id":"ev-mx-meetup","name":"Meetup CDMX","url":"https://www.meetup.com/es/find/?location=mx--DF--Mexico+City","description":"Encuentros y comunidades tech en CDMX.","logo":null}],
+      "news":   [{"id":"news-mx-eleconomista","name":"El Economista","url":"https://www.eleconomista.com.mx/","description":"Noticias económicas de México.","logo":null},
+                 {"id":"news-mx-expansion","name":"Expansión","url":"https://expansion.mx/","description":"Negocios, tecnología y liderazgo.","logo":null}]
+    },
+    "CL": {
+      "jobs":   [{"id":"jobs-cl-computrabajo","name":"Computrabajo Chile","url":"https://www.computrabajo.cl/","description":"Ofertas en Chile.","logo":null},
+                 {"id":"jobs-cl-laborum","name":"Laborum Chile","url":"https://www.laborum.cl/","description":"Portal laboral chileno.","logo":null},
+                 {"id":"jobs-cl-trabajando","name":"Trabajando.com","url":"https://www.trabajando.cl/","description":"Vacantes profesionales.","logo":null}],
+      "events": [{"id":"ev-cl-eventbrite","name":"Eventbrite Chile","url":"https://www.eventbrite.cl/","description":"Eventos en Chile.","logo":null},
+                 {"id":"ev-cl-meetup","name":"Meetup Santiago","url":"https://www.meetup.com/es-ES/find/?location=cl--RM--Santiago","description":"Comunidades tech en Santiago.","logo":null}],
+      "news":   [{"id":"news-cl-df","name":"Diario Financiero","url":"https://www.df.cl/","description":"Diario económico chileno.","logo":null},
+                 {"id":"news-cl-emol","name":"Emol","url":"https://www.emol.com/","description":"Actualidad general.","logo":null}]
+    },
+    "PE": {
+      "jobs":   [{"id":"jobs-pe-computrabajo","name":"Computrabajo Perú","url":"https://www.computrabajo.com.pe/","description":"Ofertas laborales en Perú.","logo":null},
+                 {"id":"jobs-pe-bumeran","name":"Bumeran Perú","url":"https://www.bumeran.com.pe/","description":"Portal laboral peruano.","logo":null},
+                 {"id":"jobs-pe-laborum","name":"Laborum Perú","url":"https://www.laborum.pe/","description":"Trabajos profesionales.","logo":null}],
+      "events": [{"id":"ev-pe-eventbrite","name":"Eventbrite Perú","url":"https://www.eventbrite.com.pe/","description":"Conferencias y networking.","logo":null},
+                 {"id":"ev-pe-meetup","name":"Meetup Lima","url":"https://www.meetup.com/es-ES/find/?location=pe--Lima","description":"Comunidades profesionales en Lima.","logo":null}],
+      "news":   [{"id":"news-pe-gestion","name":"Gestión","url":"https://gestion.pe/","description":"Diario de negocios.","logo":null},
+                 {"id":"news-pe-comercio","name":"El Comercio","url":"https://elcomercio.pe/","description":"Actualidad y economía.","logo":null}]
+    },
+    "VE": {
+      "jobs":   [{"id":"jobs-ve-computrabajo","name":"Computrabajo Venezuela","url":"https://ve.computrabajo.com/","description":"Ofertas en Venezuela.","logo":null},
+                 {"id":"jobs-ve-bumeran","name":"Bumeran Venezuela","url":"https://www.bumeran.com.ve/","description":"Portal laboral venezolano.","logo":null},
+                 {"id":"jobs-ve-empleaya","name":"Empleaya","url":"https://www.empleaya.com.ve/","description":"Empleos profesionales.","logo":null}],
+      "events": [{"id":"ev-ve-eventbrite","name":"Eventbrite Venezuela","url":"https://www.eventbrite.com/d/venezuela/all-events/","description":"Eventos y conferencias.","logo":null},
+                 {"id":"ev-ve-meetup","name":"Meetup Caracas","url":"https://www.meetup.com/es-ES/find/?location=ve--Caracas","description":"Comunidades en Caracas.","logo":null}],
+      "news":   [{"id":"news-ve-eluniversal","name":"El Universal","url":"https://www.eluniversal.com/","description":"Noticias generales.","logo":null},
+                 {"id":"news-ve-elnacional","name":"El Nacional","url":"https://www.elnacional.com/","description":"Diario nacional.","logo":null}]
+    },
+    "BR": {
+      "jobs":   [{"id":"jobs-br-catho","name":"Catho","url":"https://www.catho.com.br/","description":"Portal laboral brasileño.","logo":null},
+                 {"id":"jobs-br-vagas","name":"Vagas.com.br","url":"https://www.vagas.com.br/","description":"Empleos en Brasil.","logo":null},
+                 {"id":"jobs-br-infojobs","name":"InfoJobs Brasil","url":"https://www.infojobs.com.br/","description":"Vacantes en portugués.","logo":null}],
+      "events": [{"id":"ev-br-sympla","name":"Sympla","url":"https://www.sympla.com.br/","description":"Eventos en Brasil.","logo":null},
+                 {"id":"ev-br-meetup","name":"Meetup São Paulo","url":"https://www.meetup.com/pt-BR/find/?location=br--S%C3%A3o+Paulo","description":"Encuentros profesionales.","logo":null}],
+      "news":   [{"id":"news-br-valor","name":"Valor Econômico","url":"https://valor.globo.com/","description":"Economía y finanzas.","logo":null},
+                 {"id":"news-br-exame","name":"Exame","url":"https://exame.com/","description":"Negocios y liderazgo.","logo":null}]
+    },
+    "UY": {
+      "jobs":   [{"id":"jobs-uy-computrabajo","name":"Computrabajo Uruguay","url":"https://uy.computrabajo.com/","description":"Empleos en Uruguay.","logo":null},
+                 {"id":"jobs-uy-bumeran","name":"Bumeran Uruguay","url":"https://www.bumeran.com.uy/","description":"Portal laboral uruguayo.","logo":null}],
+      "events": [{"id":"ev-uy-eventbrite","name":"Eventbrite Uruguay","url":"https://www.eventbrite.com/d/uruguay/all-events/","description":"Eventos profesionales.","logo":null}],
+      "news":   [{"id":"news-uy-elpais","name":"El País Uruguay","url":"https://www.elpais.com.uy/","description":"Noticias nacionales.","logo":null}]
+    },
+    "EC": {
+      "jobs":   [{"id":"jobs-ec-computrabajo","name":"Computrabajo Ecuador","url":"https://www.computrabajo.com.ec/","description":"Vacantes en Ecuador.","logo":null},
+                 {"id":"jobs-ec-multitrabajos","name":"Multitrabajos","url":"https://www.multitrabajos.com/","description":"Portal laboral ecuatoriano.","logo":null}],
+      "events": [{"id":"ev-ec-eventbrite","name":"Eventbrite Ecuador","url":"https://www.eventbrite.com/d/ecuador/all-events/","description":"Eventos profesionales.","logo":null}],
+      "news":   [{"id":"news-ec-comercio","name":"El Comercio Ecuador","url":"https://www.elcomercio.com/","description":"Actualidad nacional.","logo":null}]
+    },
+    "PA": {
+      "jobs":   [{"id":"jobs-pa-computrabajo","name":"Computrabajo Panamá","url":"https://pa.computrabajo.com/","description":"Empleos en Panamá.","logo":null},
+                 {"id":"jobs-pa-konzerta","name":"Konzerta Panamá","url":"https://www.konzerta.com/","description":"Portal laboral panameño.","logo":null}],
+      "events": [{"id":"ev-pa-eventbrite","name":"Eventbrite Panamá","url":"https://www.eventbrite.com/d/panama/all-events/","description":"Eventos y conferencias.","logo":null}],
+      "news":   [{"id":"news-pa-prensa","name":"La Prensa Panamá","url":"https://www.prensa.com/","description":"Noticias nacionales.","logo":null}]
+    },
+    "CR": {
+      "jobs":   [{"id":"jobs-cr-computrabajo","name":"Computrabajo Costa Rica","url":"https://www.computrabajo.co.cr/","description":"Empleos en Costa Rica.","logo":null},
+                 {"id":"jobs-cr-elempleo","name":"elempleo CR","url":"https://www.elempleo.com/cr","description":"Vacantes profesionales.","logo":null}],
+      "events": [{"id":"ev-cr-eventbrite","name":"Eventbrite Costa Rica","url":"https://www.eventbrite.com/d/costa-rica/all-events/","description":"Eventos profesionales.","logo":null}],
+      "news":   [{"id":"news-cr-nacion","name":"La Nación Costa Rica","url":"https://www.nacion.com/","description":"Actualidad nacional.","logo":null}]
+    },
+    "GT": {
+      "jobs":   [{"id":"jobs-gt-computrabajo","name":"Computrabajo Guatemala","url":"https://www.computrabajo.com.gt/","description":"Empleos en Guatemala.","logo":null}],
+      "events": [{"id":"ev-gt-eventbrite","name":"Eventbrite Guatemala","url":"https://www.eventbrite.com/d/guatemala/all-events/","description":"Eventos profesionales.","logo":null}],
+      "news":   [{"id":"news-gt-prensa","name":"Prensa Libre","url":"https://www.prensalibre.com/","description":"Noticias nacionales.","logo":null}]
+    },
+    "HN": {
+      "jobs":   [{"id":"jobs-hn-computrabajo","name":"Computrabajo Honduras","url":"https://www.computrabajo.com.hn/","description":"Empleos en Honduras.","logo":null}],
+      "events": [{"id":"ev-hn-eventbrite","name":"Eventbrite Honduras","url":"https://www.eventbrite.com/d/honduras/all-events/","description":"Eventos profesionales.","logo":null}],
+      "news":   [{"id":"news-hn-heraldo","name":"El Heraldo","url":"https://www.elheraldo.hn/","description":"Actualidad nacional.","logo":null}]
+    },
+    "SV": {
+      "jobs":   [{"id":"jobs-sv-computrabajo","name":"Computrabajo El Salvador","url":"https://www.computrabajo.com.sv/","description":"Empleos en El Salvador.","logo":null}],
+      "events": [{"id":"ev-sv-eventbrite","name":"Eventbrite El Salvador","url":"https://www.eventbrite.com/d/el-salvador/all-events/","description":"Eventos profesionales.","logo":null}],
+      "news":   [{"id":"news-sv-prensagrafica","name":"La Prensa Gráfica","url":"https://www.laprensagrafica.com/","description":"Diario nacional.","logo":null}]
+    },
+    "NI": {
+      "jobs":   [{"id":"jobs-ni-encuentra24","name":"Encuentra24 Nicaragua","url":"https://www.encuentra24.com/nicaragua-es/empleos","description":"Empleos en Nicaragua.","logo":null}],
+      "events": [{"id":"ev-ni-eventbrite","name":"Eventbrite Nicaragua","url":"https://www.eventbrite.com/d/nicaragua/all-events/","description":"Eventos profesionales.","logo":null}],
+      "news":   [{"id":"news-ni-prensa","name":"La Prensa Nicaragua","url":"https://www.laprensani.com/","description":"Actualidad nacional.","logo":null}]
+    },
+    "PY": {
+      "jobs":   [{"id":"jobs-py-computrabajo","name":"Computrabajo Paraguay","url":"https://www.computrabajo.com.py/","description":"Empleos en Paraguay.","logo":null}],
+      "events": [{"id":"ev-py-eventbrite","name":"Eventbrite Paraguay","url":"https://www.eventbrite.com/d/paraguay/all-events/","description":"Eventos profesionales.","logo":null}],
+      "news":   [{"id":"news-py-abc","name":"ABC Color","url":"https://www.abc.com.py/","description":"Diario nacional.","logo":null}]
+    },
+    "BO": {
+      "jobs":   [{"id":"jobs-bo-computrabajo","name":"Computrabajo Bolivia","url":"https://bo.computrabajo.com/","description":"Empleos en Bolivia.","logo":null}],
+      "events": [{"id":"ev-bo-eventbrite","name":"Eventbrite Bolivia","url":"https://www.eventbrite.com/d/bolivia/all-events/","description":"Eventos profesionales.","logo":null}],
+      "news":   [{"id":"news-bo-eldeber","name":"El Deber","url":"https://eldeber.com.bo/","description":"Diario nacional.","logo":null}]
+    },
+    "DO": {
+      "jobs":   [{"id":"jobs-do-computrabajo","name":"Computrabajo Rep. Dominicana","url":"https://www.computrabajo.com.do/","description":"Empleos en Rep. Dominicana.","logo":null}],
+      "events": [{"id":"ev-do-eventbrite","name":"Eventbrite Rep. Dominicana","url":"https://www.eventbrite.com/d/dominican-republic/all-events/","description":"Eventos profesionales.","logo":null}],
+      "news":   [{"id":"news-do-listin","name":"Listín Diario","url":"https://listindiario.com/","description":"Actualidad nacional.","logo":null}]
+    },
+    "CU": {
+      "jobs":   [],
+      "events": [{"id":"ev-cu-eventbrite","name":"Eventbrite Cuba","url":"https://www.eventbrite.com/d/cuba/all-events/","description":"Eventos profesionales.","logo":null}],
+      "news":   [{"id":"news-cu-granma","name":"Granma","url":"https://www.granma.cu/","description":"Noticias nacionales.","logo":null}]
+    },
+    "ES": {
+      "jobs":   [{"id":"jobs-es-infojobs","name":"InfoJobs España","url":"https://www.infojobs.net/","description":"Portal laboral líder en España.","logo":null},
+                 {"id":"jobs-es-linkedin","name":"LinkedIn Jobs España","url":"https://www.linkedin.com/jobs/","description":"Ofertas profesionales.","logo":null}],
+      "events": [{"id":"ev-es-eventbrite","name":"Eventbrite España","url":"https://www.eventbrite.es/","description":"Eventos por ciudad.","logo":null},
+                 {"id":"ev-es-meetup","name":"Meetup Madrid","url":"https://www.meetup.com/es-ES/find/?location=es--Madrid","description":"Comunidades en Madrid.","logo":null}],
+      "news":   [{"id":"news-es-cinco","name":"Cinco Días","url":"https://cincodias.elpais.com/","description":"Diario económico español.","logo":null},
+                 {"id":"news-es-expansion","name":"Expansión","url":"https://www.expansion.com/","description":"Negocios y finanzas.","logo":null}]
+    }
+  },
+  "fallback": {
+    "jobs":   [{"id":"jobs-linkedin","name":"LinkedIn Jobs","url":"https://www.linkedin.com/jobs/","description":"Portal profesional global.","logo":null},
+               {"id":"jobs-remotive","name":"Remotive","url":"https://remotive.com/","description":"Trabajos remotos de todo el mundo.","logo":null},
+               {"id":"jobs-remoteok","name":"RemoteOK","url":"https://remoteok.com/","description":"Ofertas 100% remotas.","logo":null}],
+    "events": [{"id":"ev-eventbrite","name":"Eventbrite Global","url":"https://www.eventbrite.com/","description":"Eventos en todo el mundo.","logo":null},
+               {"id":"ev-meetup","name":"Meetup","url":"https://www.meetup.com/","description":"Encuentros profesionales globales.","logo":null},
+               {"id":"ev-luma","name":"Lu.ma","url":"https://lu.ma/","description":"Eventos y meetups modernos.","logo":null}],
+    "news":   [{"id":"news-bbc","name":"BBC Mundo","url":"https://www.bbc.com/mundo","description":"Actualidad global en español.","logo":null},
+               {"id":"news-reuters","name":"Reuters","url":"https://www.reuters.com/","description":"Agencia internacional.","logo":null}]
+  }
+}

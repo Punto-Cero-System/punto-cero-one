@@ -242,6 +242,24 @@ const WelcomeModal = () => {
             >
               Comenzar a explorar <ArrowRight size={16} />
             </button>
+            <button
+              onClick={() => { setOpen(false); setTimeout(() => navigate('/perfil/personalizar'), 220); }}
+              data-testid="welcome-modal-profile-cta"
+              style={{
+                marginTop: '0.5rem',
+                width: '100%',
+                padding: '0.75rem 1rem',
+                background: 'transparent', color: NAVY,
+                borderRadius: 100, border: '1px solid rgba(11,31,58,0.16)',
+                fontFamily: '"Space Grotesk", sans-serif',
+                fontSize: 'clamp(0.8rem, 3vw, 0.9rem)',
+                fontWeight: 700, letterSpacing: '0.02em',
+                cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              Completar mi perfil
+            </button>
           </div>
         </motion.div>
       </motion.div>

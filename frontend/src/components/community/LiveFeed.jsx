@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader, Filter } from 'lucide-react';
+import { Loader, Filter, Sparkles } from 'lucide-react';
 import { feedService, categoryService, growthService } from '../../services/feedService';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 import FeedPostCard from './FeedPostCard';
 import FeedComposer from './FeedComposer';
+import IntelligentFeed from './IntelligentFeed';
 
 const NAVY = '#0B1F3A';
 
@@ -50,7 +51,7 @@ const LiveFeed = ({ initialCategory = null }) => {
   const [category, setCategory] = useState(initialCategory);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState('latest');  // 'latest' | 'for-you'
+  const [tab, setTab] = useState('discover');  // 'discover' | 'latest' | 'for-you'
   const [forYouMode, setForYouMode] = useState(null);
   const [growth, setGrowth] = useState([]);
   const [resolvedCountry, setResolvedCountry] = useState(null);
@@ -129,6 +130,7 @@ const LiveFeed = ({ initialCategory = null }) => {
     nextCursorRef.current = null;
     hasMoreRef.current = true;
     setCursor(null); setHasMore(true); setItems([]);
+    if (tab === 'discover') return;  // Descubrir uses its own fetcher
     loadMore();
   }, [category, tab, loadMore]);
 
@@ -190,13 +192,17 @@ const LiveFeed = ({ initialCategory = null }) => {
         <ComposerLoggedOut />
       )}
 
-      {/* Tabs: Últimos / Para Ti (Para Ti solo si está autenticado) */}
+      {/* Tabs: Descubrir / Últimos / Para Ti */}
       <div data-testid="feed-tabs" style={{
         display: 'flex', gap: '0.35rem', padding: '0.4rem',
         background: '#FFFFFF', borderRadius: 100,
         border: '1px solid rgba(11,31,58,0.06)',
-        alignSelf: 'flex-start',
+        alignSelf: 'flex-start', flexWrap: 'wrap',
       }}>
+        <TabButton active={tab === 'discover'} onClick={() => setTab('discover')}
+          testid="feed-tab-discover">
+          <Sparkles size={12} style={{ marginRight: 3 }} /> Descubrir
+        </TabButton>
         <TabButton active={tab === 'latest'} onClick={() => setTab('latest')}
           testid="feed-tab-latest">Últimos</TabButton>
         <TabButton active={tab === 'for-you'} onClick={() => isAuthed && setTab('for-you')}
@@ -205,7 +211,12 @@ const LiveFeed = ({ initialCategory = null }) => {
         </TabButton>
       </div>
 
-      {resolvedCountry && (
+      {/* DESCUBRIR — Intelligent Mixed Feed (Wave 12) */}
+      {tab === 'discover' && (
+        <IntelligentFeed limit={30} />
+      )}
+
+      {tab !== 'discover' && resolvedCountry && (
         <div data-testid="feed-region-hint" style={{
           fontSize: '0.68rem', letterSpacing: '0.14em', fontWeight: 700,
           color: 'rgba(11,31,58,0.55)', display: 'inline-flex',
@@ -247,12 +258,12 @@ const LiveFeed = ({ initialCategory = null }) => {
       )}
 
       {/* Feed list — interleaves community posts with growth items every 3 slots */}
-      {mergeFeedAndGrowth(items, growth).map((p) => (
+      {tab !== 'discover' && mergeFeedAndGrowth(items, growth).map((p) => (
         <FeedPostCard key={p.id} post={p} onDelete={onDelete} />
       ))}
 
       {/* Initial-load skeletons */}
-      {loading && items.length === 0 && growth.length === 0 && (
+      {tab !== 'discover' && loading && items.length === 0 && growth.length === 0 && (
         <>
           <FeedSkeleton />
           <FeedSkeleton />
@@ -260,7 +271,7 @@ const LiveFeed = ({ initialCategory = null }) => {
         </>
       )}
 
-      {!loading && items.length === 0 && growth.length === 0 && !error && (
+      {tab !== 'discover' && !loading && items.length === 0 && growth.length === 0 && !error && (
         <div data-testid="feed-empty" style={{
           padding: '2rem 1.5rem', textAlign: 'center', borderRadius: 16,
           background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)',
@@ -271,7 +282,7 @@ const LiveFeed = ({ initialCategory = null }) => {
       )}
 
       {/* Infinite-scroll sentinel + subtle loader */}
-      {hasMore && (
+      {tab !== 'discover' && hasMore && (
         <div ref={sentinelRef} data-testid="feed-scroll-sentinel"
           style={{
             padding: '1rem', textAlign: 'center',

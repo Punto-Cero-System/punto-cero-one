@@ -4,6 +4,7 @@ import { MapPin, Calendar, Check } from 'lucide-react';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
 import { eventService } from '../services/platformService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+import ExternalSourcesSection from '../components/community/ExternalSourcesSection';
 
 const EventsPage = () => {
   const { user } = useCommunityAuth();
@@ -111,10 +112,19 @@ const EventsPage = () => {
 
       {loading && items.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(11,31,58,0.5)' }}>Cargando…</div>}
       {!loading && items.length === 0 && (
-        <div data-testid="events-empty" style={{ padding: '2rem', textAlign: 'center', borderRadius: 16, background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)', color: 'rgba(11,31,58,0.6)', fontSize: '0.9rem' }}>
-          Aún no hay eventos próximos. Las empresas y organizadores publicarán encuentros muy pronto.
+        <div data-testid="events-empty" style={{ padding: '1.4rem', textAlign: 'center', borderRadius: 16, background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)', color: 'rgba(11,31,58,0.6)', fontSize: '0.9rem' }}>
+          Aún no hay encuentros propios. Estos son eventos profesionales regionales para tu país:
         </div>
       )}
+
+      <ExternalSourcesSection
+        type="events"
+        title="Eventos regionales y meetups"
+        subtitle="Conferencias, webinars, networking y cursos por país."
+        limit={12}
+        testid="events-external-sources"
+      />
+
       {hasMore && !loading && (
         <button data-testid="events-load-more" onClick={() => load(false)}
           style={{ padding: '0.7rem 1rem', borderRadius: 12, background: '#FFFFFF', border: '1px solid rgba(11,31,58,0.08)', color: NAVY, cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>Cargar más</button>
