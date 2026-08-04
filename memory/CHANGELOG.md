@@ -1,5 +1,42 @@
 # Punto Cero System — Changelog
 
+## 2026-08-04 — Wave 12 Fase 4: Group Notifications + Group Covers + Final Validation
+
+### Group notifications (services/notifications)
+- `NotificationKind` ampliado con `group_post`, `group_join`, `group_activity`.
+- `groups_routes.join_group` → dispatch `group_join` al admin del grupo con actor + subject_url.
+- `groups_routes.create_group_post` → fan-out `group_post` a todos los miembros (cap 500) menos el autor. Título con nombre del grupo, body con excerpt (120 chars) del post.
+
+### Group covers (portada de grupos)
+- Modelo `groups` — nuevo campo `cover_url` (nullable).
+- **NEW** `PUT /api/groups/{id}/cover` (admin-only, 8 MB max, image/* validado) — sube al object storage, `groups/{group_id}/cover_<uuid>.<ext>`, persiste en `cover_url`.
+- **NEW** `DELETE /api/groups/{id}/cover` (admin-only) — limpia.
+- Frontend `CommunityPage.jsx`:
+  - Tarjetas de grupo en la grilla ahora muestran una franja de portada de 96px + avatar overlap (misma estética que perfiles).
+  - `GroupCoverStrip` en el modal Detalle con botones "Subir/Cambiar portada" + "Quitar" (solo visibles si `is_admin=true`).
+
+### Validación final con testing agent (usuario real)
+- **testing_agent iteration 28**: ejecutó 55 tests pytest + 13 endpoints live smoke contra URL público. **100% verde**. Sin backend issues, sin frontend issues reportados.
+- Confirmaciones:
+  - Registro básico funciona.
+  - OAuth providers = solo Google/LinkedIn/Facebook (Apple/Microsoft/GitHub/X ausentes).
+  - Mixed feed variedad OK (7 kinds distintos en muestra de 20, max streak = 1).
+  - Perfil media (foto + portada) OK.
+  - Composer upload real OK.
+  - Grupos CRUD + notificaciones + portadas OK.
+  - Buscador con meta enriquecido OK.
+
+### Tests
+- **NEW** `tests/test_wave12_groups_ext.py` — 4 tests: join notifica admin, post notifica miembros (no autor), cover admin-only + delete + non-image reject, cover auth required.
+- Suite verde: **55/55** en Wave 12 completa (16 growth + 7 content-sources + 6 UX + 21 final + 4 groups-ext + 1 shared).
+
+### Files changed (Fase 4)
+- Backend: `services/notifications.py`, `routes/groups_routes.py`, `tests/test_wave12_groups_ext.py` (NEW).
+- Frontend: `pages/CommunityPage.jsx` (tarjetas de grupo con portada + GroupCoverStrip en detalle).
+
+---
+
+
 ## 2026-08-04 — Wave 12 Fase 3: Composer Upload Real + Grupos + Production Readiness
 
 ### P1 — Composer Upload Real
