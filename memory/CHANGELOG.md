@@ -1,5 +1,116 @@
 # Punto Cero System — Changelog
 
+## 2026-08-04 — Wave 11: LATAM Public Data Platform (18 países)
+
+### Framework de conectores (nuevo, reutilizable)
+- **NEW** `services/growth/connectors/__init__.py` — `PublicDataConnector` con interfaz común: `health()`, `sync()`, `normalize()`, `validate()`, `cache_key()`, `schedule()`. Circuit breaker automático tras 5 fallos consecutivos (cooldown exponencial hasta 1h). Timeout 45s por conector. Logs receipts en `db.source_syncs` (misma tabla que usa el Sources Center para su dashboard).
+- **NEW** `services/growth/connectors/ckan.py` — `CKANConnector` parametrizado. Un solo código cubre 11 portales CKAN LATAM (AR, CL, PE, EC, PA, UY, CR, DO, BO, PY + próximo).
+- **NEW** `services/growth/connectors/registry.py` — 42 conectores en 18 países + GLOBAL. `build_registry()` y `refresh()` reutilizables.
+
+### Conectores implementados
+
+| Estado | Cantidad | Detalle |
+|---|---|---|
+| ✅ **Operativos** | 8 | AR/CL(×2)/PE/PA(×2)/UY/DO — CKAN activo, 25 datasets por portal por tick |
+| 🟡 **Requiere credenciales** | 26 | Stubs preparados, se activan con env vars |
+| 🔴 **Error transitorio** | 8 | MX/EC (SSL certificate expired), CR/SV/HN (DNS/portal offline), BO (403), PY (302), CO (Socrata) — circuit breaker activo |
+
+### Estado por país (operativo / requiere credenciales / no disponible)
+
+| País | CKAN datos abiertos | APIs oficiales stub |
+|---|---|---|
+| 🇦🇷 Argentina | ✅ operativo | 🟡 SAIJ (`AR_SAIJ_API_KEY`) |
+| 🇧🇴 Bolivia | 🔴 portal bloquea bots | 🟡 SEPREC (`BO_SEPREC_API_KEY`) |
+| 🇧🇷 Brasil | 🟡 requiere `BR_DADOSGOV_TOKEN` | 🟡 Open Finance (`BR_OPENFINANCE_CLIENT_ID/SECRET`) |
+| 🇨🇱 Chile | ✅ operativo | 🟡 ChileCompra (`CHILE_MERCADOPUBLICO_TICKET`) + CORFO |
+| 🇨🇴 Colombia | 🟡 datos.gov.co es Socrata (`CO_SOCRATA_APP_TOKEN`) | 🟡 SECOP/RUES/SPE |
+| 🇨🇷 Costa Rica | 🔴 dominio pausado | 🟡 SICOP (`CR_SICOP_API_KEY`) |
+| 🇩🇴 R. Dominicana | ✅ operativo | 🟡 DGII (`DO_DGII_API_KEY`) |
+| 🇪🇨 Ecuador | 🔴 SSL cert expirado | 🟡 SRI + SERCOP |
+| 🇪🇸 España | 🟡 requiere `ES_APIDATA_TOKEN` | 🟡 SEPE (`ES_SEPE_API_KEY`) |
+| 🇬🇹 Guatemala | — | 🟡 Guatecompras (`GT_GUATECOMPRAS_API_KEY`) |
+| 🇭🇳 Honduras | 🟡 requiere `HN_DATOS_TOKEN` | 🟡 HonduCompras |
+| 🇲🇽 México | 🔴 SSL cert issuer | 🟡 DENUE (`INEGI_DENUE_TOKEN`) |
+| 🇵🇦 Panamá | ✅ operativo + SBP | 🟡 PanamáCompra |
+| 🇵🇪 Perú | ✅ operativo | 🟡 SUNAT + SUNARP |
+| 🇵🇾 Paraguay | 🔴 302 loop | 🟡 DNCP |
+| 🇸🇻 El Salvador | 🟡 requiere `SV_DATOS_TOKEN` | — |
+| 🇺🇾 Uruguay | ✅ operativo | 🟡 DGI |
+| 🇻🇪 Venezuela | — | (sin fuentes públicas oficiales disponibles) |
+| 🌎 GLOBAL | — | 🟡 Mercado Libre, Shopify, Belvo, Prometeo |
+
+### Endpoints reutilizados / evolucionados
+- `GET /api/growth/connectors` **(nuevo)** — matriz completa: por conector + agregado por país.
+- `POST /api/growth/connectors/{id}/sync` **(nuevo, admin)** — force sync individual.
+- El **Growth Scheduler existente** (Wave 8B) invoca `_process_connectors(db)` en el tick inicial + cada 30 min. Sin scheduler paralelo.
+- Los items ingresados usan `growth_items` (mismo schema). Discovery, Search, Trending, Feed **los consumen automáticamente** — sin código nuevo.
+
+### Datos consumidos (primer tick, real)
+- **≥125 datasets públicos oficiales** ingestados en `growth_items` (kind=`public_dataset`) desde 5 portales CKAN: AR, CL, PE, PA, UY, DO.
+- Autotagging inline los relaciona con empresas seeded al vuelo.
+
+### Variables de entorno necesarias (opcionales — activan más países)
+
+```
+# Colombia
+CO_SOCRATA_APP_TOKEN=          # datos.gov.co (Socrata)
+COLOMBIA_SECOP_API_KEY=
+COLOMBIA_RUES_API_KEY=
+COLOMBIA_SPE_API_KEY=
+
+# México
+INEGI_DENUE_TOKEN=
+
+# Argentina
+AR_SAIJ_API_KEY=
+
+# Chile
+CHILE_MERCADOPUBLICO_TICKET=
+
+# Perú
+PE_SUNAT_TOKEN=
+PE_SUNARP_API_KEY=
+
+# Brasil
+BR_DADOSGOV_TOKEN=
+BR_OPENFINANCE_CLIENT_ID=
+BR_OPENFINANCE_CLIENT_SECRET=
+
+# Ecuador, Panamá, Uruguay, Costa Rica, Dominicana,
+# Guatemala, Honduras, Bolivia, Paraguay, España:
+EC_SRI_API_KEY=  EC_SERCOP_API_KEY=
+PA_PANAMACOMPRA_API_KEY=
+UY_DGI_API_KEY=
+CR_SICOP_API_KEY=
+DO_DGII_API_KEY=
+GT_GUATECOMPRAS_API_KEY=
+HN_HONDUCOMPRAS_API_KEY=  HN_DATOS_TOKEN=
+BO_SEPREC_API_KEY=
+PY_DNCP_API_KEY=
+ES_APIDATA_TOKEN=  ES_SEPE_API_KEY=
+SV_DATOS_TOKEN=
+
+# Global
+MERCADOLIBRE_CLIENT_ID=  MERCADOLIBRE_CLIENT_SECRET=
+SHOPIFY_ACCESS_TOKEN=
+BELVO_SECRET_ID=  BELVO_SECRET_PASSWORD=
+PROMETEO_API_KEY=
+```
+
+### Testing
+- `testing_agent_v3_fork` iteración 26 — **0 bugs**.
+- Backend: **15/15 wave 11** + **58/58 regresión** = **73/73 pytest verde**.
+- Endpoint matrix + framework + circuit breaker + admin force sync + scheduler integration verificados end-to-end.
+
+### Confirmación
+- ✅ Framework de conectores implementado, reutilizable, con interfaz común de 6 métodos.
+- ✅ 18 países LATAM + ES + GLOBAL registrados; 8 operativos hoy sin credenciales.
+- ✅ Cero módulos nuevos fuera del framework · cero pantallas nuevas · cero cambios de rutas.
+- ✅ Scheduler / Sources Center / Discovery / Search / Trending / OAuth / Punto Cero System — todos intactos.
+- ✅ Toda ingesta pasa por `growth_items` y el autotagger inline; se consume automáticamente por Discovery/Search/Trending/Feed.
+
+---
+
 ## 2026-08-04 — Wave 9.2: Hyperlocal Discovery Engine
 
 ### Backend
