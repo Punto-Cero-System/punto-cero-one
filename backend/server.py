@@ -56,6 +56,7 @@ from routes.growth_routes import router as growth_router
 from routes.discovery_routes import router as discovery_router
 from routes.sources_admin_routes import router as sources_admin_router
 from routes.content_sources_routes import router as content_sources_router
+from routes.groups_routes import router as groups_router
 from services.growth.scheduler import scheduler as growth_scheduler
 from services.discovery.seeder import seed_public_entities
 from models_category import DEFAULT_CATEGORIES
@@ -139,6 +140,7 @@ app.include_router(growth_router)
 app.include_router(discovery_router)
 app.include_router(sources_admin_router)
 app.include_router(content_sources_router)
+app.include_router(groups_router)
 
 
 # -------------------- CORS --------------------

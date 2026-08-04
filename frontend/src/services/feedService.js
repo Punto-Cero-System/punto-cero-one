@@ -113,6 +113,25 @@ export const contentSourcesService = {
   },
 };
 
+/** Grupos profesionales (Wave 12 Fase 3). */
+export const groupsService = {
+  categories: () => fj('/api/groups/categories').then(throwOnError),
+  list: ({ category, limit = 50 } = {}) => {
+    const qs = new URLSearchParams({ limit: String(limit) });
+    if (category) qs.set('category', category);
+    return fj(`/api/groups?${qs.toString()}`).then(throwOnError);
+  },
+  get: (id) => fj(`/api/groups/${id}`).then(throwOnError),
+  create: (payload) =>
+    fj('/api/groups', { method: 'POST', body: JSON.stringify(payload) }).then(throwOnError),
+  join: (id) => fj(`/api/groups/${id}/join`, { method: 'POST' }).then(throwOnError),
+  leave: (id) => fj(`/api/groups/${id}/leave`, { method: 'POST' }).then(throwOnError),
+  members: (id) => fj(`/api/groups/${id}/members`).then(throwOnError),
+  posts: (id) => fj(`/api/groups/${id}/posts`).then(throwOnError),
+  createPost: (id, body) =>
+    fj(`/api/groups/${id}/posts`, { method: 'POST', body: JSON.stringify({ body }) }).then(throwOnError),
+};
+
 /** Ephemeral session id for anonymous view dedupe. */
 export const getViewSessionId = () => {
   const KEY = 'pc_view_session';

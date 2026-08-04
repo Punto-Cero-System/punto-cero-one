@@ -20,12 +20,13 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request, Response, Cookie, Header, Query, Depends
+from fastapi import APIRouter, HTTPException, Request, Response, Cookie, Header, Query, Depends, UploadFile, File
 from pydantic import BaseModel
 
 from auth import require_admin
 from services.notifications import dispatch as dispatch_notif
 from services.feed_engine import build_for_you_feed
+from services.object_storage import get_storage, app_prefix, ObjectStorageError
 from models_feed import (
     PostCreate, PostPublic, PostAuthorMini, PostListResponse,
     CommentCreate, CommentPublic, CommentListResponse,
@@ -183,6 +184,7 @@ async def _serialize_post(db, post: dict, viewer: Optional[dict]) -> PostPublic:
         category_key=post.get("category_key"),
         visibility=post.get("visibility", "public"),
         link_url=post.get("link_url"),
+        image_url=post.get("image_url"),
         counts={
             "reactions": int(counts.get("reactions", 0)),
             "comments": int(counts.get("comments", 0)),
@@ -274,6 +276,7 @@ async def create_post(
         "category_key": payload.category_key,
         "visibility": payload.visibility,
         "link_url": payload.link_url,
+        "image_url": payload.image_url,
         "counts": {"reactions": 0, "comments": 0, "shares": 0, "saves": 0, "views": 0},
         "reactions_by_kind": {},
         "status": "published",
@@ -295,6 +298,61 @@ async def create_post(
         subject_id=doc["id"], subject_type="post",
     )
     return await _serialize_post(db, doc, user)
+
+
+# ---------------------------------------------------------------------------
+# MEDIA — post image upload (Wave 12: Composer Upload Real)
+# ---------------------------------------------------------------------------
+_ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
+_MAX_POST_IMAGE_BYTES = 8 * 1024 * 1024  # 8 MB
+
+
+def _image_ext(filename: str, content_type: str) -> str:
+    if filename and "." in filename:
+        candidate = filename.rsplit(".", 1)[-1].lower()
+        if 0 < len(candidate) <= 8 and candidate.isalnum():
+            return candidate
+    return {
+        "image/png": "png", "image/jpeg": "jpg",
+        "image/webp": "webp", "image/gif": "gif",
+    }.get(content_type, "bin")
+
+
+@router.post("/media/upload")
+async def upload_post_image(
+    request: Request,
+    file: UploadFile = File(...),
+    session_token: Optional[str] = Cookie(default=None),
+    authorization: Optional[str] = Header(default=None),
+):
+    """Upload an image to attach to a subsequent post. Returns `{url}` — the
+    caller then sends the URL as `image_url` on `POST /api/feed/posts`.
+
+    Auth: requires an active community session. Storage: same object store
+    as profile/company media (`{app_prefix}/posts/{user_id}/<uuid>.<ext>`).
+    """
+    import uuid
+    user = await _require_current_user(request, session_token, authorization)
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Archivo sin nombre")
+    content_type = (file.content_type or "").lower()
+    if content_type not in _ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=415, detail=f"Formato no permitido: {content_type or 'desconocido'}")
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Archivo vacío")
+    if len(data) > _MAX_POST_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail=f"Archivo supera {_MAX_POST_IMAGE_BYTES} bytes")
+
+    ext = _image_ext(file.filename, content_type)
+    obj_id = uuid.uuid4().hex[:16]
+    storage_path = f"{app_prefix()}/posts/{user['id']}/{obj_id}.{ext}"
+    try:
+        get_storage().put(storage_path, data, content_type)
+    except ObjectStorageError as e:
+        raise HTTPException(status_code=502, detail=f"Fallo del almacenamiento: {e}")
+    url = f"/api/community/users/media/{storage_path}"
+    return {"ok": True, "url": url}
 
 
 @router.get("/posts", response_model=PostListResponse)

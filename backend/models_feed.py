@@ -32,6 +32,7 @@ class PostCreate(BaseModel):
     category_key: Optional[str] = Field(default=None, max_length=60)
     visibility: PostVisibility = "public"
     link_url: Optional[str] = Field(default=None, max_length=500)
+    image_url: Optional[str] = Field(default=None, max_length=500)
 
 
 class PostAuthorMini(BaseModel):
@@ -50,6 +51,7 @@ class PostPublic(BaseModel):
     category_key: Optional[str] = None
     visibility: PostVisibility
     link_url: Optional[str] = None
+    image_url: Optional[str] = None
     counts: dict = Field(default_factory=lambda: {
         "reactions": 0, "comments": 0, "shares": 0, "saves": 0, "views": 0,
     })

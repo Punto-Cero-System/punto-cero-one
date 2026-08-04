@@ -1,5 +1,46 @@
 # Punto Cero System — Changelog
 
+## 2026-08-04 — Wave 12 Fase 3: Composer Upload Real + Grupos + Production Readiness
+
+### P1 — Composer Upload Real
+- **NEW** `POST /api/feed/media/upload` (auth) — recibe imagen, la persiste vía `object_storage` en `{app_prefix}/posts/{user_id}/<uuid>.<ext>` y devuelve `{ok, url}`. Rechaza no-imágenes (415) y archivos > 8 MB (413).
+- Modelo `PostCreate` + `PostPublic` amplíados con campo `image_url` opcional.
+- `feed_routes.create_post` persiste `image_url`; `_serialize_post` lo emite.
+- `FeedComposer.jsx` — upload real (no más nombre falso): al seleccionar imagen sube al backend, muestra preview con botón "X" para descartar, badge "Subiendo…" mientras avanza. El submit acepta texto y/o imagen, y adjunta la URL persistida en la publicación.
+- `FeedPostCard.jsx` — renderiza `image_url` con link a versión completa, `data-testid=feed-post-image-{id}`.
+- `LiveFeed.jsx` — `onNewPost` propaga `imageUrl` al backend.
+
+### P2 — Comunidades básicas (Grupos)
+- **NEW** módulo `/api/groups`:
+  - `GET  /api/groups/categories`     — 10 categorías (Marketing, Empleo, Empresas, Tecnología, Legal, Salud, Educación, Marketplace, Contabilidad, Emprendimiento).
+  - `POST /api/groups`                — crear (auth). Admin se auto-une.
+  - `GET  /api/groups?category=…`     — listar con filtro.
+  - `GET  /api/groups/{id}`           — detalle (marca `is_member`, `is_admin`).
+  - `POST /api/groups/{id}/join`      — unirse (idempotente).
+  - `POST /api/groups/{id}/leave`     — salir.
+  - `GET  /api/groups/{id}/members`   — listar miembros con foto/headline.
+  - `POST /api/groups/{id}/posts`     — publicar (solo miembros → 403 si no).
+  - `GET  /api/groups/{id}/posts`     — timeline del grupo (público).
+- Colecciones nuevas: `groups`, `group_members`, `group_posts` (nombres flat, sin ObjectId).
+- **Rewrite `/comunidad`**: `CommunityPage.jsx` ahora consume el backend real. Filtros de categoría en pills, botón "+ Crear grupo" abre `GroupCreator` (nombre/descripción/categoría/privacidad/normas), tarjetas de grupo abren `GroupDetail` con lista de miembros, publicaciones y composer inline.
+
+### P3 — Responsive & UX
+- La rejilla `CommunityLayout` ya usa breakpoints en 1400 / 1200 / 900 / 480 (verified). Community page adopta el layout de 3 columnas de la app.
+
+### P4 — Production readiness
+- **NEW** `tests/test_wave12_final.py` — 21 tests:
+  - 4 tests P1 (upload, auth-guard, formato inválido, flujo end-to-end post con imagen)
+  - 3 tests P2 (categorías, ciclo completo create→join→post→leave con permisos, filtro por categoría)
+  - 14 smoke tests P4 (health, auth providers, community stats, feed posts, feed trending, content-sources types/mixed-feed/ai-tools, growth feed/connectors, groups, seo sitemap, search).
+- **Full suite verde: 51/51** (16 growth + 7 content-sources + 6 UX + 21 final + 1 shared).
+
+### Files changed (Fase 3)
+- Backend: `models_feed.py`, `routes/feed_routes.py`, `routes/groups_routes.py` (NEW), `server.py`, `tests/test_wave12_final.py` (NEW).
+- Frontend: `components/community/FeedComposer.jsx`, `components/community/FeedPostCard.jsx`, `components/community/LiveFeed.jsx`, `pages/CommunityPage.jsx` (rewrite), `services/feedService.js` (+groupsService).
+
+---
+
+
 ## 2026-08-04 — Wave 12 Fase 2: Perfil Profesional + UX Consolidation
 
 ### Perfil profesional estilo LinkedIn (Parte 1)

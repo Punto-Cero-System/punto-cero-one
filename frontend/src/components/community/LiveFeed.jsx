@@ -172,10 +172,11 @@ const LiveFeed = ({ initialCategory = null }) => {
     };
   }, [loadMore]);
 
-  const onNewPost = async ({ text, categoryKey }) => {
+  const onNewPost = async ({ text, categoryKey, imageUrl }) => {
     const post = await feedService.createPost({
       body: text,
       category_key: categoryKey || category || null,
+      image_url: imageUrl || null,
     });
     setItems((prev) => [post, ...prev]);
     return post;

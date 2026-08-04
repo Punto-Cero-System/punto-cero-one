@@ -274,6 +274,17 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
           fontSize: '0.94rem', lineHeight: 1.55, color: 'rgba(11,31,58,0.9)',
           margin: 0, whiteSpace: 'pre-wrap',
         }}>{renderBody(post.body)}</p>
+        {post.image_url && (
+          <a href={post.image_url.startsWith('http') ? post.image_url : `${process.env.REACT_APP_BACKEND_URL}${post.image_url}`}
+             target="_blank" rel="noopener noreferrer"
+             data-testid={`feed-post-image-${post.id}`}
+             style={{ display: 'block', marginTop: '0.65rem', borderRadius: 12, overflow: 'hidden' }}>
+            <img
+              src={post.image_url.startsWith('http') ? post.image_url : `${process.env.REACT_APP_BACKEND_URL}${post.image_url}`}
+              alt="Publicación" referrerPolicy="no-referrer"
+              style={{ width: '100%', maxHeight: 480, objectFit: 'cover', display: 'block' }} />
+          </a>
+        )}
         {post.hashtags?.length > 0 && (
           <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.55rem' }}>
             {post.hashtags.map((t) => (

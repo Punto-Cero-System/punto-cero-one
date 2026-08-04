@@ -1,22 +1,25 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Image, Video, Calendar, Briefcase, Sparkles, Send, FileText, BarChart3, ShoppingBag } from 'lucide-react';
+import { Image, Video, Calendar, Briefcase, Sparkles, Send, FileText, BarChart3, ShoppingBag, X } from 'lucide-react';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 
 const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
+const API = process.env.REACT_APP_BACKEND_URL;
 
 /**
  * FeedComposer — real publisher wired to the backend feed.
- * When `onSubmit` is provided the composer will call it with `{ text, categoryKey }`
- * and reset on success. If it's not provided the composer stays inert (used for
- * dev previews).
+ * When `onSubmit` is provided the composer will call it with
+ * `{ text, categoryKey, imageUrl }` and reset on success. If it's not
+ * provided the composer stays inert (used for dev previews).
  */
 const FeedComposer = ({ onSubmit, categoryKey = null }) => {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
+  const [image, setImage] = useState(null);  // { url, previewUrl }
   const { user } = useCommunityAuth();
   const authorInitial = (user?.name || user?.email || '0').charAt(0).toUpperCase();
   const photoInputRef = React.useRef(null);
@@ -28,22 +31,58 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
 
   const chipStub = (label) => () => flash(`${label}: disponible próximamente`);
 
-  const onPhotoPick = (e) => {
+  const onPhotoPick = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    // TODO: upload endpoint pendiente — por ahora incrustamos el nombre en el body.
-    setText((t) => (t ? `${t}\n📎 ${file.name}` : `📎 ${file.name}`));
-    flash(`Adjuntado: ${file.name}`);
+    if (!file.type.startsWith('image/')) {
+      flash('Solo se permiten imágenes');
+      return;
+    }
+    // Optimistic preview
+    const previewUrl = URL.createObjectURL(file);
+    setImage({ url: null, previewUrl });
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API}/api/feed/media/upload`, {
+        method: 'POST', body: form, credentials: 'include',
+      });
+      if (!res.ok) {
+        const detail = (await res.json().catch(() => ({}))).detail || 'upload_failed';
+        throw new Error(detail);
+      }
+      const data = await res.json();
+      setImage({ url: data.url, previewUrl });
+    } catch (err) {
+      setImage(null);
+      URL.revokeObjectURL(previewUrl);
+      flash(err.message === 'Debes iniciar sesión'
+        ? 'Inicia sesión para subir fotos'
+        : `No se pudo subir la imagen`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const clearImage = () => {
+    if (image?.previewUrl) URL.revokeObjectURL(image.previewUrl);
+    setImage(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!text.trim() || busy) return;
+    if ((!text.trim() && !image?.url) || busy || uploading) return;
     setBusy(true); setError('');
     try {
-      if (onSubmit) await onSubmit({ text: text.trim(), categoryKey });
+      if (onSubmit) await onSubmit({
+        text: text.trim() || (image ? '📷' : ''),
+        categoryKey,
+        imageUrl: image?.url || null,
+      });
       setText('');
+      clearImage();
     } catch (err) {
       setError(err?.message === 'Debes iniciar sesión' ? 'Inicia sesión para publicar.' : 'No se pudo publicar. Intenta de nuevo.');
     } finally {
@@ -93,6 +132,34 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
         />
       </div>
 
+      {image && (
+        <div data-testid="feed-composer-image-preview" style={{
+          position: 'relative', borderRadius: 14, overflow: 'hidden',
+          border: '1px solid rgba(11,31,58,0.08)',
+        }}>
+          <img src={image.previewUrl} alt="preview"
+            style={{ width: '100%', maxHeight: 320, objectFit: 'cover', display: 'block' }} />
+          <button type="button" onClick={clearImage} data-testid="feed-composer-image-remove"
+            style={{
+              position: 'absolute', top: 8, right: 8,
+              width: 30, height: 30, borderRadius: '50%',
+              background: 'rgba(11,31,58,0.75)', border: 'none',
+              color: '#FFFFFF', cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+            <X size={14} />
+          </button>
+          {uploading && (
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(11,31,58,0.4)', color: '#FFFFFF',
+              fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.05em',
+            }}>Subiendo…</div>
+          )}
+        </div>
+      )}
+
       <div style={{
         display: 'flex', alignItems: 'center', gap: '0.4rem',
         flexWrap: 'wrap', paddingTop: '0.15rem',
@@ -113,16 +180,16 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
           <motion.button
             type="submit"
             whileTap={{ scale: 0.96 }}
-            disabled={!text.trim() || busy}
+            disabled={(!text.trim() && !image?.url) || busy || uploading}
             data-testid="feed-composer-submit"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
               padding: '0.5rem 1rem', borderRadius: 100,
-              border: 'none', cursor: text.trim() ? 'pointer' : 'not-allowed',
-              background: text.trim()
+              border: 'none', cursor: (text.trim() || image?.url) ? 'pointer' : 'not-allowed',
+              background: (text.trim() || image?.url)
                 ? `linear-gradient(135deg, ${NAVY} 0%, #1E3A8A 100%)`
                 : 'rgba(11,31,58,0.08)',
-              color: text.trim() ? '#FFFFFF' : 'rgba(11,31,58,0.4)',
+              color: (text.trim() || image?.url) ? '#FFFFFF' : 'rgba(11,31,58,0.4)',
               fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.02em',
               transition: 'background 0.2s',
             }}
