@@ -79,14 +79,23 @@ async def search(
                 {"headline": _regex(q)}, {"current_company": _regex(q)},
                 {"skills": _regex(q)}, {"specialties": _regex(q)},
             ]},
-            {"_id": 0, "id": 1, "name": 1, "email": 1, "headline": 1, "picture": 1, "role": 1},
+            {"_id": 0, "id": 1, "name": 1, "email": 1, "headline": 1, "picture": 1,
+             "role": 1, "current_company": 1, "current_title": 1,
+             "country": 1, "city": 1, "interests": 1, "specialties": 1, "skills": 1},
         ).limit(limit)
         results["people"] = [{
             "type": "people", "id": u["id"],
             "title": u.get("name") or u.get("email", ""),
-            "subtitle": u.get("headline") or "Miembro de la comunidad",
+            "subtitle": u.get("headline") or u.get("current_title") or "Miembro de la comunidad",
             "image": u.get("picture"),
             "url": f"/u/{u['id']}",
+            "meta": {
+                "headline": u.get("current_title") or u.get("headline"),
+                "company": u.get("current_company"),
+                "location": ", ".join([x for x in [u.get("city"), u.get("country")] if x]) or None,
+                "tags": ((u.get("specialties") or []) + (u.get("interests") or []) + (u.get("skills") or []))[:6],
+                "profile_type": u.get("role") or "member",
+            },
         } async for u in cur]
 
     if "companies" in results:

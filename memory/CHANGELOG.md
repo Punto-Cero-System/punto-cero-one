@@ -1,5 +1,47 @@
 # Punto Cero System — Changelog
 
+## 2026-08-04 — Wave 12 Fase 2: Perfil Profesional + UX Consolidation
+
+### Perfil profesional estilo LinkedIn (Parte 1)
+- `pages/ProfilePage.jsx` — nueva `CoverBand` con imagen de portada editable + botones "Subir/Cambiar" y "Eliminar portada" (usa `PUT /api/community/users/me/media/cover` y `DELETE`).
+- `AvatarWithUpload` — foto circular con FAB de cámara + botón rojo de borrado; endpoint `/media/picture`.
+- `ProfessionalStructureRow` — 4 chips visuales para estructura futura (Verificación, Insignias, Nivel, Ranking) sin activar monetización. Badge "VERIFICADO" cuando `email_verified=true`.
+- Backend `profile_media_routes.py` reutilizado sin cambios (ya existía).
+
+### "Personaliza Mi Espacio" retirado del landing (Parte 2)
+- `ProfileCardWidget.jsx` — CTA "Personalizar Mi Espacio" reemplazado por "Completar mi perfil" (más alineado con la prioridad de identidad).
+- `WelcomeBandWidget.jsx` — copia actualizada: "Descubre, conecta y publica. La comunidad LATAM en un solo lugar."
+- La opción "Configuración · Mi Espacio" sigue disponible desde el menú de Perfil del header.
+
+### Caja de publicación funcional (Parte 3)
+- `FeedComposer.jsx` — botón "Foto" ahora abre file picker real (input hidden, `accept="image/*"`); adjunta nombre al body como referencia (upload endpoint pendiente).
+
+### Buscador enriquecido (Parte 4)
+- `HeaderSearchBar.jsx` — resultados ampliados:
+  - Ancho 40px avatar (circular para personas, redondeado para el resto).
+  - Badge TYPE (EMPRESA/EMPLEO/VIDEO/REPOSITORIO/…) verde en cada resultado.
+  - Subtitle + meta línea (headline, empresa, ubicación).
+  - Tags/intereses en píldoras pequeñas.
+- Backend `search_routes.py` — endpoint `/api/search` para `people` ahora devuelve `meta: {headline, company, location, tags, profile_type}` (ampliado desde `title/subtitle/image/url` básicos).
+
+### Iconos duplicados eliminados (Parte 5)
+- `Header.jsx` — eliminado `IconAction Bell` duplicado (quedaba junto a `NotificationsBell`). Ahora hay una sola campana funcional.
+- `IconAction MessageCircle` reemplazado por `<Link to="/mensajes">` para que el ícono lleve a la página de mensajes en lugar de ser cosmético.
+
+### Mega-menú "Conoce" (Parte 6)
+- `Header.jsx` — nuevo componente `ConoceMenu` con dropdown grid 2×4 unificando: Nuestra Historia, Fundadores, Capital, Inversionistas, Investor Center, Punto Cero Legal, Comunidad, Simulador. Un solo punto de entrada; elimina tarjetas repetidas por la home.
+
+### Tests (Fase 2)
+- **NEW** `tests/test_wave12_ux.py` — 6 tests: avatar upload/delete, cover upload, auth-guarded media endpoints, non-image rejection, people-search rich meta, OAuth cleanup regression.
+- Suite full green: 30/30 (`test_wave7_growth.py` 16 + `test_wave12_content_sources.py` 7 + `test_wave12_ux.py` 6 + 1 shared).
+
+### Files changed (Fase 2)
+- Backend: `routes/search_routes.py`, `tests/test_wave12_ux.py`.
+- Frontend: `components/Header.jsx`, `components/community/HeaderSearchBar.jsx`, `components/community/FeedComposer.jsx`, `components/community/workspace/ProfileCardWidget.jsx`, `components/community/workspace/WelcomeBandWidget.jsx`, `pages/ProfilePage.jsx`.
+
+---
+
+
 ## 2026-08-04 — Wave 12 Fase 1: Intelligent Mixed Feed + Content Sources System
 
 ### Content Sources System (NEW backend module)

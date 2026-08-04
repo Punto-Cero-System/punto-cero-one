@@ -95,19 +95,47 @@ const HeaderSearchBar = () => {
             {flat.map((r) => (
               <button key={`${r.type}-${r.id}`} onClick={() => goto(r)}
                 data-testid={`header-search-result-${r.type}-${r.id}`}
-                style={{ width: '100%', padding: '0.6rem 0.9rem', display: 'flex', gap: '0.6rem',
+                style={{ width: '100%', padding: '0.7rem 0.9rem', display: 'flex', gap: '0.7rem',
                          background: 'transparent', border: 'none', color: '#FFFFFF', textAlign: 'left', cursor: 'pointer',
-                         borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                         borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'flex-start' }}>
                 {r.image ? (
-                  <img src={r.image} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                  <img src={r.image} alt="" referrerPolicy="no-referrer"
+                    style={{ width: 40, height: 40, borderRadius: r.type === 'people' ? '50%' : 10, objectFit: 'cover', flexShrink: 0 }} />
                 ) : (
-                  <div style={{ width: 32, height: 32, borderRadius: 8, background: NAVY, color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', flexShrink: 0 }}>{(r.title || '·').charAt(0).toUpperCase()}</div>
+                  <div style={{ width: 40, height: 40, borderRadius: r.type === 'people' ? '50%' : 10, background: 'linear-gradient(135deg, #1E1B4B, #4C1D95)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>{(r.title || '·').charAt(0).toUpperCase()}</div>
                 )}
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <span style={{ color: '#00C896', fontWeight: 700 }}>{TYPE_LABEL[r.type] || r.type}</span> · {r.subtitle || ''}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>{r.title}</div>
+                    <span style={{
+                      padding: '0.1rem 0.45rem', borderRadius: 100,
+                      background: 'rgba(0,200,150,0.18)', color: '#00C896',
+                      fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.1em',
+                    }}>{(TYPE_LABEL[r.type] || r.type).toUpperCase()}</span>
                   </div>
+                  {r.subtitle && (
+                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.72)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {r.subtitle}
+                    </div>
+                  )}
+                  {(r.meta?.company || r.meta?.location || r.meta?.headline) && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 2, fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', flexWrap: 'wrap' }}>
+                      {r.meta?.headline && <span>{r.meta.headline}</span>}
+                      {r.meta?.company && <span>· {r.meta.company}</span>}
+                      {r.meta?.location && <span>· {r.meta.location}</span>}
+                    </div>
+                  )}
+                  {r.meta?.tags?.length > 0 && (
+                    <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                      {r.meta.tags.slice(0, 3).map((t) => (
+                        <span key={t} style={{
+                          padding: '1px 6px', borderRadius: 6,
+                          background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.65)',
+                          fontSize: '0.58rem', fontWeight: 700,
+                        }}>{t}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </button>
             ))}

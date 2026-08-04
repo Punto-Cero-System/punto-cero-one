@@ -25,7 +25,7 @@ const WelcomeBandWidget = () => (
         Mi Espacio · Punto Cero One
       </div>
       <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.62)' }}>
-        Este es tu escritorio inteligente. Personaliza los widgets desde Configuración.
+        Descubre, conecta y publica. La comunidad LATAM en un solo lugar.
       </div>
     </div>
     <style>{`@keyframes pcBeat { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: 0.55; } }`}</style>

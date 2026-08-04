@@ -1,10 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Globe2, Award, Edit3, Save, X, Plus, Trash2 } from 'lucide-react';
+import { Mail, Globe2, Award, Edit3, Save, X, Camera, ImageIcon, Trash2, ShieldCheck, TrendingUp, Star, BadgeCheck } from 'lucide-react';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 import { profileService } from '../services/platformService';
+
+const API = process.env.REACT_APP_BACKEND_URL;
 
 /**
  * ProfilePage — expanded professional profile with inline edit.
@@ -47,7 +49,11 @@ const ProfilePage = () => {
           setFull(fresh); setEditing(false); await refresh();
         }} />
       ) : (
-        <ProfileView profile={full} onEdit={() => setEditing(true)} />
+        <ProfileView profile={full} onEdit={() => setEditing(true)}
+          onMediaUpdate={async (patch) => {
+            setFull((f) => ({ ...f, ...patch }));
+            await refresh();
+          }} />
       )}
     </CategoryPage>
   );
@@ -56,24 +62,28 @@ const ProfilePage = () => {
 // ---------------------------------------------------------------------------
 // View
 // ---------------------------------------------------------------------------
-const ProfileView = ({ profile, onEdit }) => (
+const ProfileView = ({ profile, onEdit, onMediaUpdate }) => (
   <>
     <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
       data-testid="profile-view"
       style={{ background: '#FFFFFF', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(11,31,58,0.06)', boxShadow: '0 4px 20px rgba(11,31,58,0.04)' }}>
-      <div style={{ height: 120, background: 'linear-gradient(120deg, #0B1F3A 0%, #1E3A8A 40%, #7C3AED 80%, #EC4899 100%)' }} />
+      <CoverBand cover={profile.cover_url} onUpdate={onMediaUpdate} />
       <div style={{ padding: '0 1.5rem 1.5rem', marginTop: -60 }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
-          {profile.picture ? (
-            <img src={profile.picture} alt={profile.name} referrerPolicy="no-referrer" data-testid="profile-avatar"
-              style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', border: '4px solid #FFFFFF', boxShadow: '0 8px 24px rgba(11,31,58,0.15)' }} />
-          ) : (
-            <div style={{ width: 120, height: 120, borderRadius: '50%', background: '#0A0F1C', border: '4px solid #FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: '3rem', color: '#FFFFFF' }}>
-              {(profile.name || profile.email || '0').charAt(0).toUpperCase()}
-            </div>
-          )}
+          <AvatarWithUpload profile={profile} onUpdate={onMediaUpdate} />
           <div style={{ flex: 1, minWidth: 0, paddingBottom: '0.35rem' }}>
-            <h2 data-testid="profile-name" style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.55rem', fontWeight: 700, letterSpacing: '-0.02em', color: NAVY, margin: 0 }}>{profile.name}</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h2 data-testid="profile-name" style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.55rem', fontWeight: 700, letterSpacing: '-0.02em', color: NAVY, margin: 0 }}>{profile.name}</h2>
+              {profile.email_verified && (
+                <span data-testid="profile-verified-badge" title="Email verificado"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 3,
+                    padding: '0.2rem 0.55rem', borderRadius: 100,
+                    background: 'rgba(0,200,150,0.13)', color: '#00825E',
+                    fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.12em',
+                  }}><BadgeCheck size={11} /> VERIFICADO</span>
+              )}
+            </div>
             <div data-testid="profile-headline" style={{ fontSize: '0.9rem', color: 'rgba(11,31,58,0.75)', marginTop: '0.15rem' }}>{profile.headline || 'Miembro de Punto Cero One'}</div>
             <div data-testid="profile-email" style={{ fontSize: '0.8rem', color: 'rgba(11,31,58,0.55)', marginTop: '0.1rem' }}>
               <Mail size={11} style={{ verticalAlign: -1, marginRight: 4 }} />{profile.email}
@@ -91,6 +101,10 @@ const ProfileView = ({ profile, onEdit }) => (
             <Edit3 size={13} /> Editar perfil
           </button>
         </div>
+
+        {/* Estructura para el futuro perfil profesional: insignias / ranking / nivel */}
+        <ProfessionalStructureRow profile={profile} />
+
         {profile.bio && (
           <div style={{ marginTop: '1.35rem', padding: '1rem 1.15rem', borderRadius: 12, background: '#F4F6FB', border: '1px solid rgba(11,31,58,0.06)' }}>
             <div style={{ fontSize: '0.62rem', letterSpacing: '0.22em', fontWeight: 700, color: 'rgba(11,31,58,0.5)', marginBottom: '0.5rem' }}>ACERCA DE</div>
@@ -107,6 +121,198 @@ const ProfileView = ({ profile, onEdit }) => (
     <TagBlock title="Intereses"    tags={profile.interests}    testid="profile-interests" />
   </>
 );
+
+/**
+ * CoverBand — banner superior editable. Muestra la imagen de portada + botón
+ * de edición flotante que abre un file picker. Delete opcional.
+ */
+const CoverBand = ({ cover, onUpdate }) => {
+  const inputRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+
+  const pick = () => inputRef.current?.click();
+
+  const upload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setBusy(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API}/api/community/users/me/media/cover`, {
+        method: 'PUT', body: form, credentials: 'include',
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || 'upload_failed');
+      const data = await res.json();
+      onUpdate?.({ cover_url: data.url });
+    } catch { /* toast? */ } finally { setBusy(false); }
+  };
+
+  const clear = async () => {
+    setBusy(true);
+    try {
+      await fetch(`${API}/api/community/users/me/media/cover`, {
+        method: 'DELETE', credentials: 'include',
+      });
+      onUpdate?.({ cover_url: null });
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div style={{
+      position: 'relative', height: 160,
+      background: cover
+        ? `#0B1F3A center / cover no-repeat url(${cover})`
+        : 'linear-gradient(120deg, #0B1F3A 0%, #1E3A8A 40%, #7C3AED 80%, #EC4899 100%)',
+    }}>
+      <input ref={inputRef} type="file" accept="image/*" onChange={upload}
+        data-testid="profile-cover-input" style={{ display: 'none' }} />
+      <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 6 }}>
+        <button onClick={pick} disabled={busy} data-testid="profile-cover-upload"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '0.4rem 0.7rem', borderRadius: 100,
+            background: 'rgba(255,255,255,0.9)', border: 'none',
+            color: '#0B1F3A', fontSize: '0.7rem', fontWeight: 700,
+            cursor: busy ? 'wait' : 'pointer',
+          }}>
+          <ImageIcon size={12} /> {cover ? 'Cambiar portada' : 'Subir portada'}
+        </button>
+        {cover && (
+          <button onClick={clear} disabled={busy} data-testid="profile-cover-delete"
+            style={{
+              display: 'inline-flex', alignItems: 'center',
+              padding: '0.4rem 0.55rem', borderRadius: 100,
+              background: 'rgba(11,31,58,0.75)', border: 'none',
+              color: '#FFFFFF', fontSize: '0.7rem', fontWeight: 700,
+              cursor: busy ? 'wait' : 'pointer',
+            }}>
+            <Trash2 size={12} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * AvatarWithUpload — foto circular + botón flotante para cambiar/borrar.
+ */
+const AvatarWithUpload = ({ profile, onUpdate }) => {
+  const inputRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+
+  const pick = () => inputRef.current?.click();
+
+  const upload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setBusy(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API}/api/community/users/me/media/picture`, {
+        method: 'PUT', body: form, credentials: 'include',
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || 'upload_failed');
+      const data = await res.json();
+      onUpdate?.({ picture: data.url });
+    } finally { setBusy(false); }
+  };
+
+  const clear = async () => {
+    setBusy(true);
+    try {
+      await fetch(`${API}/api/community/users/me/media/picture`, {
+        method: 'DELETE', credentials: 'include',
+      });
+      onUpdate?.({ picture: null });
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <input ref={inputRef} type="file" accept="image/*" onChange={upload}
+        data-testid="profile-picture-input" style={{ display: 'none' }} />
+      {profile.picture ? (
+        <img src={profile.picture} alt={profile.name} referrerPolicy="no-referrer" data-testid="profile-avatar"
+          style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', border: '4px solid #FFFFFF', boxShadow: '0 8px 24px rgba(11,31,58,0.15)' }} />
+      ) : (
+        <div data-testid="profile-avatar-fallback"
+          style={{ width: 120, height: 120, borderRadius: '50%', background: '#0A0F1C', border: '4px solid #FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: '3rem', color: '#FFFFFF' }}>
+          {(profile.name || profile.email || '0').charAt(0).toUpperCase()}
+        </div>
+      )}
+      <button onClick={pick} disabled={busy} data-testid="profile-picture-upload"
+        style={{
+          position: 'absolute', bottom: 4, right: 4,
+          width: 34, height: 34, borderRadius: '50%',
+          background: NAVY, border: '3px solid #FFFFFF',
+          color: '#FFFFFF', cursor: busy ? 'wait' : 'pointer',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+        <Camera size={14} />
+      </button>
+      {profile.picture && (
+        <button onClick={clear} disabled={busy} data-testid="profile-picture-delete"
+          title="Quitar foto"
+          style={{
+            position: 'absolute', top: -6, right: -6,
+            width: 26, height: 26, borderRadius: '50%',
+            background: '#B91C1C', border: '2px solid #FFFFFF',
+            color: '#FFFFFF', cursor: busy ? 'wait' : 'pointer',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+          <Trash2 size={11} />
+        </button>
+      )}
+    </div>
+  );
+};
+
+/**
+ * ProfessionalStructureRow — placeholders visuales para las próximas capas
+ * (insignias, ranking, nivel, verificación profesional). NO activa
+ * monetización. Solo comunica que el perfil está listo para evolucionar.
+ */
+const ProfessionalStructureRow = ({ profile }) => (
+  <div data-testid="profile-professional-row" style={{
+    marginTop: '1.15rem', display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    gap: '0.55rem',
+  }}>
+    <StatChip icon={ShieldCheck} label="Verificación" value="Próximamente" color="#0EA5E9"
+      testid="profile-stat-verification" />
+    <StatChip icon={Star} label="Insignias" value={profile.badges_count || 0} color="#F59E0B"
+      testid="profile-stat-badges" />
+    <StatChip icon={TrendingUp} label="Nivel" value={profile.level || 'Miembro'} color="#8B5CF6"
+      testid="profile-stat-level" />
+    <StatChip icon={Award} label="Ranking" value={profile.ranking || '—'} color="#00C896"
+      testid="profile-stat-ranking" />
+  </div>
+);
+
+const StatChip = ({ icon: Icon, label, value, color, testid }) => (
+  <div data-testid={testid} style={{
+    display: 'flex', alignItems: 'center', gap: '0.55rem',
+    padding: '0.55rem 0.75rem', borderRadius: 12,
+    background: '#F4F6FB', border: '1px solid rgba(11,31,58,0.05)',
+  }}>
+    <div style={{
+      width: 30, height: 30, borderRadius: 8,
+      background: `${color}18`, color, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <Icon size={14} />
+    </div>
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: '0.6rem', letterSpacing: '0.14em', fontWeight: 800, color: 'rgba(11,31,58,0.5)' }}>{label.toUpperCase()}</div>
+      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: NAVY }}>{value}</div>
+    </div>
+  </div>
+);
+
 
 const TagBlock = ({ title, tags, testid }) => {
   if (!tags || tags.length === 0) return null;

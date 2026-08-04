@@ -83,10 +83,10 @@ const ProfileCardWidget = () => {
           >{memberLabel}</div>
         )}
         <div style={{ marginTop: '0.6rem', fontWeight: 700, fontSize: '0.95rem', color: NAVY }}>
-          {isAuthed ? user.name : 'Bienvenido a Mi Espacio'}
+          {isAuthed ? user.name : 'Bienvenido a Punto Cero One'}
         </div>
         <div style={{ fontSize: '0.75rem', color: 'rgba(11,31,58,0.55)', marginTop: '0.15rem' }}>
-          {isAuthed ? (user.headline || user.email) : 'Personaliza tu escritorio profesional'}
+          {isAuthed ? (user.headline || user.email) : 'Todo empieza aquí'}
         </div>
         {/* Live community pulse — always visible so the widget feels alive */}
         <div
@@ -205,15 +205,15 @@ const ProfileCardWidget = () => {
             textDecoration: 'none', textAlign: 'center',
           }}>Unirse a la comunidad</Link>
         ) : (
-          <Link to="/mi-espacio/configuracion" data-testid="workspace-personalize-cta" style={{
+          <Link to="/perfil" data-testid="workspace-profile-cta" style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
             marginTop: '0.75rem',
             padding: '0.4rem 0.85rem',
-            background: 'rgba(124,58,237,0.08)', color: '#5B21B6',
+            background: 'rgba(0,200,150,0.10)', color: '#00825E',
             borderRadius: 100, fontSize: '0.7rem', fontWeight: 700,
             textDecoration: 'none',
           }}>
-            <Sparkles size={11} /> Personalizar Mi Espacio
+            <Sparkles size={11} /> Completar mi perfil
           </Link>
         )}
         {isAuthed && <InviteBlock />}

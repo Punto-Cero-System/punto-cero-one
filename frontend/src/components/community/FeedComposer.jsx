@@ -19,6 +19,7 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
   const [toast, setToast] = useState('');
   const { user } = useCommunityAuth();
   const authorInitial = (user?.name || user?.email || '0').charAt(0).toUpperCase();
+  const photoInputRef = React.useRef(null);
 
   const flash = (msg) => {
     setToast(msg);
@@ -26,6 +27,15 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
   };
 
   const chipStub = (label) => () => flash(`${label}: disponible próximamente`);
+
+  const onPhotoPick = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    // TODO: upload endpoint pendiente — por ahora incrustamos el nombre en el body.
+    setText((t) => (t ? `${t}\n📎 ${file.name}` : `📎 ${file.name}`));
+    flash(`Adjuntado: ${file.name}`);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -88,7 +98,9 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
         flexWrap: 'wrap', paddingTop: '0.15rem',
         borderTop: '1px solid rgba(11,31,58,0.06)',
       }}>
-        <ComposerChip icon={<Image size={16} />} label="Foto" color="#3B82F6" onClick={chipStub('Foto')} testid="composer-chip-photo" />
+        <ComposerChip icon={<Image size={16} />} label="Foto" color="#3B82F6" onClick={() => photoInputRef.current?.click()} testid="composer-chip-photo" />
+        <input ref={photoInputRef} type="file" accept="image/*" onChange={onPhotoPick}
+          data-testid="composer-photo-input" style={{ display: 'none' }} />
         <ComposerChip icon={<Video size={16} />} label="Video" color="#8B5CF6" onClick={chipStub('Video')} testid="composer-chip-video" />
         <ComposerChip icon={<FileText size={16} />} label="Documento" color="#0EA5E9" onClick={chipStub('Documento')} testid="composer-chip-doc" />
         <ComposerChip icon={<BarChart3 size={16} />} label="Encuesta" color="#14B8A6" onClick={chipStub('Encuesta')} testid="composer-chip-poll" />
