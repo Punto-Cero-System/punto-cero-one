@@ -20,10 +20,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, Literal
 
-from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Query, Request
+from fastapi import APIRouter, Cookie, Depends, File, Header, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 
 from services.community_deps import require_current_user
+from services.notifications import dispatch as dispatch_notif
+from services.object_storage import get_storage, app_prefix, ObjectStorageError
 
 
 router = APIRouter(prefix="/api/groups", tags=["groups"])
@@ -63,6 +65,7 @@ def _serialize_group(doc: dict, viewer_id: Optional[str] = None) -> dict:
         "privacy": doc.get("privacy", "public"),
         "rules": doc.get("rules"),
         "admin_id": doc.get("admin_id"),
+        "cover_url": doc.get("cover_url"),
         "members_count": doc.get("members_count", 0),
         "posts_count": doc.get("posts_count", 0),
         "created_at": doc.get("created_at"),
@@ -177,6 +180,20 @@ async def join_group(group_id: str, request: Request,
         "role": "member", "joined_at": _now(),
     })
     await db.groups.update_one({"id": group_id}, {"$inc": {"members_count": 1}})
+
+    # Notify the group admin of the new member.
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0, "admin_id": 1, "name": 1})
+    if group and group.get("admin_id"):
+        await dispatch_notif(
+            db,
+            recipient_id=group["admin_id"],
+            kind="group_join",
+            title=f"{user.get('name') or 'Alguien'} se unió a {group['name']}",
+            actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
+            subject_type="group",
+            subject_id=group_id,
+            subject_url=f"/comunidad?group={group_id}",
+        )
     return {"ok": True, "joined": True}
 
 
@@ -232,6 +249,30 @@ async def create_group_post(group_id: str, payload: GroupPostCreate,
     }
     await db.group_posts.insert_one(post)
     await db.groups.update_one({"id": group_id}, {"$inc": {"posts_count": 1}})
+
+    # Fan-out: notify every other member of the group. We cap the fan-out
+    # at 500 to keep the request bounded; larger groups should use realtime.
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0, "name": 1})
+    group_name = (group or {}).get("name") or "el grupo"
+    excerpt = (payload.body or "").strip()
+    excerpt = (excerpt[:120] + "…") if len(excerpt) > 120 else excerpt
+    cursor = db.group_members.find(
+        {"group_id": group_id, "user_id": {"$ne": user["id"]}},
+        {"_id": 0, "user_id": 1},
+    ).limit(500)
+    async for m in cursor:
+        await dispatch_notif(
+            db,
+            recipient_id=m["user_id"],
+            kind="group_post",
+            title=f"{user.get('name') or 'Alguien'} publicó en {group_name}",
+            body=excerpt,
+            actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
+            subject_type="group_post",
+            subject_id=post["id"],
+            subject_url=f"/comunidad?group={group_id}",
+        )
+
     return {
         "id": post["id"], "group_id": group_id,
         "author_id": user["id"], "body": post["body"],
@@ -262,3 +303,66 @@ async def list_group_posts(group_id: str, request: Request,
             "created_at": r["created_at"], "author": u,
         })
     return {"items": items, "total": len(items)}
+
+
+# ---------------------------------------------------------------------------
+# Group cover upload — reutiliza el mismo object storage que perfiles/posts.
+# ---------------------------------------------------------------------------
+_ALLOWED_COVER_TYPES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
+_MAX_COVER_BYTES = 8 * 1024 * 1024
+
+
+def _cover_ext(filename: str, content_type: str) -> str:
+    if filename and "." in filename:
+        cand = filename.rsplit(".", 1)[-1].lower()
+        if 0 < len(cand) <= 8 and cand.isalnum():
+            return cand
+    return {"image/png": "png", "image/jpeg": "jpg",
+            "image/webp": "webp", "image/gif": "gif"}.get(content_type, "bin")
+
+
+@router.put("/{group_id}/cover")
+async def upload_group_cover(group_id: str, request: Request,
+                             file: UploadFile = File(...),
+                             user: dict = Depends(require_current_user)):
+    """Sube o reemplaza la imagen de portada de un grupo.
+    Solo el admin puede modificarla."""
+    db = request.app.state.db
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0, "id": 1, "admin_id": 1})
+    if not group:
+        raise HTTPException(status_code=404, detail="Grupo no encontrado")
+    if group.get("admin_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Solo el admin puede cambiar la portada")
+
+    content_type = (file.content_type or "").lower()
+    if content_type not in _ALLOWED_COVER_TYPES:
+        raise HTTPException(status_code=415, detail=f"Formato no permitido: {content_type or 'desconocido'}")
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Archivo vacío")
+    if len(data) > _MAX_COVER_BYTES:
+        raise HTTPException(status_code=413, detail=f"Archivo supera {_MAX_COVER_BYTES} bytes")
+
+    ext = _cover_ext(file.filename or "cover.png", content_type)
+    storage_path = f"{app_prefix()}/groups/{group_id}/cover_{uuid.uuid4().hex[:8]}.{ext}"
+    try:
+        get_storage().put(storage_path, data, content_type)
+    except ObjectStorageError as e:
+        raise HTTPException(status_code=502, detail=f"Fallo del almacenamiento: {e}")
+    url = f"/api/community/users/media/{storage_path}"
+    await db.groups.update_one({"id": group_id}, {"$set": {"cover_url": url, "updated_at": _now()}})
+    return {"ok": True, "url": url}
+
+
+@router.delete("/{group_id}/cover")
+async def delete_group_cover(group_id: str, request: Request,
+                             user: dict = Depends(require_current_user)):
+    db = request.app.state.db
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0, "id": 1, "admin_id": 1})
+    if not group:
+        raise HTTPException(status_code=404, detail="Grupo no encontrado")
+    if group.get("admin_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Solo el admin puede cambiar la portada")
+    await db.groups.update_one({"id": group_id}, {"$set": {"cover_url": None, "updated_at": _now()}})
+    return {"ok": True, "cleared": True}
+

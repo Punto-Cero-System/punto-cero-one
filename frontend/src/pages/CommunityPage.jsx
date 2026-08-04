@@ -75,57 +75,66 @@ const CommunityPage = () => {
             data-testid={`group-item-${g.id}`}
             onClick={() => setDetailOpen(g.id)}
             style={{
-              background: '#FFFFFF', borderRadius: 16, padding: '1.1rem 1.2rem',
+              background: '#FFFFFF', borderRadius: 16,
               border: '1px solid rgba(11,31,58,0.06)',
               boxShadow: '0 4px 20px rgba(11,31,58,0.04)',
-              display: 'flex', flexDirection: 'column', gap: '0.6rem',
-              cursor: 'pointer',
+              display: 'flex', flexDirection: 'column',
+              cursor: 'pointer', overflow: 'hidden',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <div style={{
-                width: 42, height: 42, borderRadius: 12,
-                background: 'linear-gradient(135deg, #0B1F3A, #7C3AED)',
-                color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Users size={18} />
-              </div>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <h2 style={{
-                  fontFamily: '"Space Grotesk", sans-serif',
-                  fontSize: '1rem', fontWeight: 700, color: NAVY, margin: 0, letterSpacing: '-0.01em',
-                }}>{g.name}</h2>
-                <div style={{ fontSize: '0.7rem', color: 'rgba(11,31,58,0.55)' }}>
-                  {g.category} · {g.members_count} miembros
+            <div style={{
+              height: 96,
+              background: g.cover_url
+                ? `center / cover no-repeat url(${g.cover_url.startsWith('http') ? g.cover_url : `${process.env.REACT_APP_BACKEND_URL}${g.cover_url}`})`
+                : 'linear-gradient(135deg, #0B1F3A, #4C1D95, #7C3AED)',
+            }} />
+            <div style={{ padding: '0.9rem 1.15rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  background: 'linear-gradient(135deg, #0B1F3A, #7C3AED)',
+                  color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginTop: -30, border: '3px solid #FFFFFF',
+                }}>
+                  <Users size={16} />
                 </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h2 style={{
+                    fontFamily: '"Space Grotesk", sans-serif',
+                    fontSize: '1rem', fontWeight: 700, color: NAVY, margin: 0, letterSpacing: '-0.01em',
+                  }}>{g.name}</h2>
+                  <div style={{ fontSize: '0.7rem', color: 'rgba(11,31,58,0.55)' }}>
+                    {g.category} · {g.members_count} {g.members_count === 1 ? 'miembro' : 'miembros'}
+                  </div>
+                </div>
+                {g.privacy === 'private' && <Shield size={13} color="#5B21B6" />}
               </div>
-              {g.privacy === 'private' && <Shield size={13} color="#5B21B6" />}
-            </div>
-            {g.description && (
-              <p style={{
-                fontSize: '0.82rem', color: 'rgba(11,31,58,0.72)', margin: 0, lineHeight: 1.45,
-                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-              }}>{g.description}</p>
-            )}
-            <div style={{ display: 'flex', gap: 6 }}>
-              {g.is_member ? (
-                <span data-testid={`group-joined-${g.id}`} style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '0.4rem 0.75rem', borderRadius: 100,
-                  background: 'rgba(0,200,150,0.13)', color: '#00825E',
-                  fontSize: '0.75rem', fontWeight: 700,
-                }}><Check size={12} /> Miembro</span>
-              ) : (
-                <button data-testid={`group-join-${g.id}`}
-                  onClick={(e) => { e.stopPropagation(); join(g); }}
-                  style={{
-                    padding: '0.4rem 0.85rem', borderRadius: 100,
-                    background: NAVY, color: '#FFFFFF', border: 'none',
-                    fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
-                  }}>
-                  Unirme al grupo
-                </button>
+              {g.description && (
+                <p style={{
+                  fontSize: '0.82rem', color: 'rgba(11,31,58,0.72)', margin: 0, lineHeight: 1.45,
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                }}>{g.description}</p>
               )}
+              <div style={{ display: 'flex', gap: 6 }}>
+                {g.is_member ? (
+                  <span data-testid={`group-joined-${g.id}`} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '0.4rem 0.75rem', borderRadius: 100,
+                    background: 'rgba(0,200,150,0.13)', color: '#00825E',
+                    fontSize: '0.75rem', fontWeight: 700,
+                  }}><Check size={12} /> Miembro</span>
+                ) : (
+                  <button data-testid={`group-join-${g.id}`}
+                    onClick={(e) => { e.stopPropagation(); join(g); }}
+                    style={{
+                      padding: '0.4rem 0.85rem', borderRadius: 100,
+                      background: NAVY, color: '#FFFFFF', border: 'none',
+                      fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+                    }}>
+                    Unirme al grupo
+                  </button>
+                )}
+              </div>
             </div>
           </motion.article>
         ))}
@@ -252,8 +261,10 @@ const GroupDetail = ({ groupId, onClose, onChanged }) => {
     }}>
       <div onClick={(e) => e.stopPropagation()} data-testid="group-detail" style={{
         width: 'min(640px, 100%)', maxHeight: '90vh', overflow: 'auto',
-        background: '#FFFFFF', borderRadius: 16, padding: '1.5rem 1.65rem',
+        background: '#FFFFFF', borderRadius: 16,
       }}>
+        <GroupCoverStrip group={group} onChanged={reload} />
+        <div style={{ padding: '1.25rem 1.65rem 1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <div>
             <div style={{ fontSize: '0.65rem', letterSpacing: '0.2em', color: '#00A277', fontWeight: 700 }}>{group.category?.toUpperCase()}</div>
@@ -311,7 +322,67 @@ const GroupDetail = ({ groupId, onClose, onChanged }) => {
             ))}
           </div>
         </div>
+        </div>
       </div>
+    </div>
+  );
+};
+
+const GroupCoverStrip = ({ group, onChanged }) => {
+  const inputRef = React.useRef(null);
+  const [busy, setBusy] = useState(false);
+  const cover = group.cover_url
+    ? (group.cover_url.startsWith('http') ? group.cover_url : `${process.env.REACT_APP_BACKEND_URL}${group.cover_url}`)
+    : null;
+
+  const upload = async (e) => {
+    const file = e.target.files?.[0]; e.target.value = '';
+    if (!file) return;
+    setBusy(true);
+    try {
+      const form = new FormData(); form.append('file', file);
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/groups/${group.id}/cover`, {
+        method: 'PUT', body: form, credentials: 'include',
+      });
+      if (!res.ok) throw new Error();
+      await onChanged?.();
+    } catch { /* ignore */ } finally { setBusy(false); }
+  };
+
+  const clear = async () => {
+    setBusy(true);
+    try {
+      await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/groups/${group.id}/cover`, {
+        method: 'DELETE', credentials: 'include',
+      });
+      await onChanged?.();
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div style={{
+      position: 'relative', height: 130, borderRadius: '16px 16px 0 0', overflow: 'hidden',
+      background: cover
+        ? `center / cover no-repeat url(${cover})`
+        : 'linear-gradient(135deg, #0B1F3A, #4C1D95, #7C3AED)',
+    }}>
+      {group.is_admin && (
+        <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 6 }}>
+          <input ref={inputRef} type="file" accept="image/*" onChange={upload}
+            data-testid="group-cover-input" style={{ display: 'none' }} />
+          <button onClick={() => inputRef.current?.click()} disabled={busy}
+            data-testid="group-cover-upload"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0.35rem 0.7rem', borderRadius: 100, background: 'rgba(255,255,255,0.9)', border: 'none', color: NAVY, fontSize: '0.68rem', fontWeight: 700, cursor: busy ? 'wait' : 'pointer' }}>
+            {cover ? 'Cambiar portada' : 'Subir portada'}
+          </button>
+          {cover && (
+            <button onClick={clear} disabled={busy} data-testid="group-cover-delete"
+              style={{ padding: '0.35rem 0.55rem', borderRadius: 100, background: 'rgba(11,31,58,0.8)', border: 'none', color: '#FFFFFF', fontSize: '0.68rem', fontWeight: 700, cursor: busy ? 'wait' : 'pointer' }}>
+              Quitar
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

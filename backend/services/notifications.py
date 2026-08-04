@@ -34,6 +34,9 @@ NotificationKind = Literal[
     "admin",          # system / admin notice
     "application",    # someone applied to your job
     "rsvp",           # someone RSVP'd to your event
+    "group_post",     # someone posted in a group you belong to
+    "group_join",     # someone joined a group you admin
+    "group_activity", # generic relevant activity in a group
 ]
 
 
