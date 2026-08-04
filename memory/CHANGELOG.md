@@ -1,5 +1,57 @@
 # Punto Cero System — Changelog
 
+## 2026-08-04 — Wave 9.1: Detección Automática de País y Región
+
+### Backend
+- **NEW** `GET /api/community/region/detect` (dentro del router `community_stats`, sin nuevos módulos):
+  - Extrae IP real del visitante via `CF-Connecting-IP` → `X-Real-IP` → `X-Forwarded-For` → `request.client.host`.
+  - Consulta **ipapi.co** (free tier, sin API key, ~1 000 req/día/IP).
+  - Devuelve `{ip, method, country, country_name, region, city, timezone, latitude, longitude, persisted, default_country}` con `method ∈ {ip|language|timezone|default}`.
+  - **Caché in-memory 6 h por IP** para no quemar la cuota gratis.
+  - Fallback: `Accept-Language` → env `REGION_DEFAULT_COUNTRY` (default `CO`).
+  - **Persistencia inteligente**: si el visitante tiene sesión activa y `users.country_source` **no es `manual`**, guarda `country`, `country_source=<método>`, `city`, `timezone` en el perfil. NUNCA sobrescribe una selección manual previa.
+- **MODIFIED** `PATCH /api/community/auth/me/region` — marca `country_source="manual"` en el update, bloqueando futuras auto-detecciones para ese usuario.
+
+### Frontend
+- **MODIFIED** `hooks/useUserRegion.js` — cadena de auto-detección al primer mount:
+  1. `GET /api/community/region/detect` (IP + ipapi.co)
+  2. `navigator.language` map a ISO
+  3. `Intl.DateTimeFormat().resolvedOptions().timeZone` map (24 zonas horarias LATAM)
+  4. Default `'CO'`
+  - Expone `method` (`'ip'|'language'|'timezone'|'default'|'manual'`) para que la UI muestre badge AUTO/manual.
+  - `setRegion()` marca `method='manual'` y hace PATCH al backend (bloqueo permanente).
+- **MODIFIED** `components/community/workspace/ProfileCardWidget.jsx` — el chip ya no muestra "Elige tu país":
+  - Muestra directamente el país detectado con bandera + label.
+  - Añade badge `data-testid="workspace-region-method"` con texto **`AUTO`** cuando la detección fue automática.
+  - El picker sigue accesible tras el chevron para cambiar manualmente.
+- **NO** modal ni wizard de selección al ingreso — cumple estrictamente el requisito.
+
+### Servicios / proveedor reutilizados
+- Proveedor: **ipapi.co** (público, gratuito, sin API key, endpoint sobreescribible por `REGION_LOOKUP_URL`).
+- HTTP client: `httpx.AsyncClient` (ya en `requirements.txt` para Wave 8A).
+- Sin nuevos módulos, sin nuevas pantallas, sin nuevos widgets.
+
+### Prioridad de detección aplicada (spec del usuario)
+| Orden | Método | Estado |
+|---|---|---|
+| 1 | IP → ipapi.co (país + región + ciudad + timezone) | ✅ activo |
+| 2 | Browser Geolocation API (opt-in) | 🟡 disponible via botón manual (Wave 9 chip) — no bloquea |
+| 3 | OAuth provider info | 🟡 heredado de Google/Microsoft cuando entregan `locale` (existente) |
+| 4 | `navigator.language` + `Intl.DateTimeFormat.timeZone` | ✅ fallback client-side |
+| 5 | Default `CO` | ✅ configurable via `REGION_DEFAULT_COUNTRY` |
+
+### Testing
+- `testing_agent_v3_fork` iteración 24 — **0 bugs**.
+- Backend 8/8 wave 9.1 verde (endpoint, X-Forwarded-For CO/MX, caché, persistencia autenticado, manual lock, anon, integración con Discovery).
+- Regresión 58/58 pytest (wave6/7/8a/8b/9) verde.
+- Frontend en estado limpio: no aparece modal/wizard, chip se resuelve en < 1 s, badge AUTO visible, manual override respetado tras reload.
+- Responsive: 360/414/768/1440 sin scroll horizontal.
+
+### Confirmación
+El usuario **ya NO necesita seleccionar manualmente el país**. Punto Cero One detecta desde el primer ingreso: país, región/departamento, ciudad, zona horaria e idioma — y activa el ranking regional 60/25/15 automáticamente sobre Discovery, Trending, Search y Recommendations. Si el usuario elige país manualmente después, la elección se respeta para siempre.
+
+---
+
 ## 2026-08-03 — Wave 9: Regional Discovery Engine LATAM
 
 ### Backend
