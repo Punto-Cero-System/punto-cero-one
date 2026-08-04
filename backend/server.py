@@ -32,6 +32,7 @@ from routes.pitch_deck_routes import public_router as pitch_public_router
 from routes.pitch_deck_routes import admin_router as pitch_admin_router
 from routes.community_auth_routes import router as community_auth_router
 from routes.community_stats_routes import router as community_stats_router
+from routes.seo_routes import router as seo_router
 from routes.document_routes import router as document_router
 from routes.feed_routes import router as feed_router
 from routes.category_routes import router as category_router
@@ -113,6 +114,7 @@ app.include_router(pitch_public_router)
 app.include_router(pitch_admin_router)
 app.include_router(community_auth_router)
 app.include_router(community_stats_router)
+app.include_router(seo_router)
 app.include_router(document_router)
 app.include_router(feed_router)
 app.include_router(category_router)

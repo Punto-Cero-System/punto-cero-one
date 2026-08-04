@@ -255,6 +255,52 @@ class MicrosoftAuthProvider(OAuth2AuthorizationCodeProvider):
         )
 
 
+class GitHubAuthProvider(OAuth2AuthorizationCodeProvider):
+    key = "github"
+    label = "GitHub"
+    authorize_url = "https://github.com/login/oauth/authorize"
+    token_url = "https://github.com/login/oauth/access_token"
+    userinfo_url = "https://api.github.com/user"
+    scope = "read:user user:email"
+    client_id_env = "GITHUB_CLIENT_ID"
+    client_secret_env = "GITHUB_CLIENT_SECRET"
+
+    def _identity_from_userinfo(self, info: dict) -> ProviderIdentity:
+        # GitHub may return email as null when the user hides it → we fall
+        # back to the noreply address, callers can prompt to update it later.
+        raw_email = (info.get("email") or "").lower().strip()
+        if not raw_email and info.get("login"):
+            raw_email = f"{info['login']}@users.noreply.github.com"
+        return ProviderIdentity(
+            provider=self.key,
+            provider_user_id=str(info.get("id") or info.get("login") or ""),
+            email=raw_email,
+            name=info.get("name") or info.get("login") or "GitHub user",
+            picture=info.get("avatar_url"),
+        )
+
+
+class FacebookAuthProvider(OAuth2AuthorizationCodeProvider):
+    key = "facebook"
+    label = "Facebook"
+    authorize_url = "https://www.facebook.com/v18.0/dialog/oauth"
+    token_url = "https://graph.facebook.com/v18.0/oauth/access_token"
+    userinfo_url = "https://graph.facebook.com/me?fields=id,name,email,picture.type(large)"
+    scope = "email public_profile"
+    client_id_env = "FACEBOOK_APP_ID"
+    client_secret_env = "FACEBOOK_APP_SECRET"
+
+    def _identity_from_userinfo(self, info: dict) -> ProviderIdentity:
+        pic = ((info.get("picture") or {}).get("data") or {}).get("url")
+        return ProviderIdentity(
+            provider=self.key,
+            provider_user_id=str(info.get("id") or ""),
+            email=(info.get("email") or "").lower().strip(),
+            name=info.get("name") or "Facebook member",
+            picture=pic,
+        )
+
+
 # ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
@@ -280,9 +326,11 @@ class ProviderRegistry:
 
 registry = ProviderRegistry()
 registry.register(EmergentAuthProvider())
-# LinkedIn + Microsoft — auto-enabled when their CLIENT_ID/SECRET env vars are set.
+# LinkedIn + Microsoft + GitHub + Facebook — auto-enabled when their env vars are set.
 registry.register(LinkedInAuthProvider())
 registry.register(MicrosoftAuthProvider())
+registry.register(GitHubAuthProvider())
+registry.register(FacebookAuthProvider())
 
 
 # ---------------------------------------------------------------------------

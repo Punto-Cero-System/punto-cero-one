@@ -205,14 +205,15 @@ async def _get_current_user(request: Request, cookie_val: Optional[str], auth_he
 # ---------------------------------------------------------------------------
 @router.get("/providers", response_model=ProvidersResponse)
 async def providers():
-    # Providers whose OAuth back-end is not wired yet — the frontend can list
-    # them as "Próximamente" so users know they're coming without breaking auth.
+    # Providers whose OAuth back-end is wired but need CLIENT_ID/SECRET in
+    # `.env` before they can go live. The frontend lists them as
+    # "Próximamente" until credentials arrive.
+    _wired = {"apple", "microsoft", "linkedin", "facebook", "github", "twitter"}
+    active = {p["key"] for p in registry.enabled_list()}
     coming = [
-        {"key": "apple", "label": "Apple"},
-        {"key": "microsoft", "label": "Microsoft"},
-        {"key": "linkedin", "label": "LinkedIn"},
-        {"key": "facebook", "label": "Facebook"},
-        {"key": "twitter", "label": "X"},
+        {"key": k, "label": _label(k)}
+        for k in ("linkedin", "microsoft", "github", "facebook", "apple", "twitter")
+        if k in _wired and k not in active
     ]
     return ProvidersResponse(
         enabled=registry.enabled_list(),
@@ -220,6 +221,13 @@ async def providers():
         email_password=True,
         session_ttl_days=int(os.environ.get("COMMUNITY_SESSION_TTL_DAYS", "7")),
     )
+
+
+def _label(key: str) -> str:
+    return {
+        "apple": "Apple", "microsoft": "Microsoft", "linkedin": "LinkedIn",
+        "facebook": "Facebook", "github": "GitHub", "twitter": "X",
+    }.get(key, key.title())
 
 
 @router.post("/session", response_model=CommunityUserPublic)
@@ -331,6 +339,8 @@ class EmailRegisterInput(BaseModel):
     email: EmailStr
     password: str = Field(min_length=PASSWORD_MIN_LEN, max_length=200)
     name: Optional[str] = Field(default=None, max_length=120)
+    invite_code: Optional[str] = Field(default=None, max_length=32,
+                                        description="Growth invite code to credit the referrer.")
 
 
 class EmailLoginInput(BaseModel):
@@ -429,6 +439,12 @@ async def register_email(
             "last_login_at": now,
         }
         await db.users.insert_one(user_doc)
+        # Growth — credit the referrer if a valid invite code came in.
+        if payload.invite_code:
+            try:
+                await _credit_invite(db, payload.invite_code.strip(), user_doc)
+            except Exception as e:  # pragma: no cover
+                logger.info("invite credit skipped: %s", e)
         # Fire-and-forget welcome + verification email
         try:
             from services.email import send_welcome
@@ -821,4 +837,65 @@ async def oauth_callback(
     resp = RedirectResponse("/", status_code=302)
     _set_session_cookie(resp, token)
     return resp
+
+
+# ---------------------------------------------------------------------------
+# Wave 11.1 — Growth invitations & viral share
+# ---------------------------------------------------------------------------
+
+def _make_invite_code(user: dict) -> str:
+    """Deterministic per-user invite code (8 chars, alphanum). No new DB writes
+    the first time — it's derived from user.id + a stable salt.
+    """
+    import hashlib
+    raw = f"pcone::{user.get('id') or user.get('email') or ''}::v1"
+    return hashlib.sha256(raw.encode()).hexdigest()[:8].upper()
+
+
+async def _credit_invite(db, invite_code: str, invited_user: dict) -> None:
+    """Credit the referrer for one new registered invite. Idempotent per
+    invited user: we key on `invited_user_id` so replays never double-count.
+    """
+    code = invite_code.strip().upper()
+    if not code or len(code) < 6:
+        return
+    # Find the referrer whose code matches. We iterate `users` sparingly —
+    # invite codes are derived from the user id so a hash-and-match on
+    # server startup would be another option, but this is fine at community
+    # scale.
+    async for u in db.users.find({"role": {"$ne": "admin"}, "is_deleted": {"$ne": True}},
+                                   {"_id": 0, "id": 1, "email": 1}):
+        if _make_invite_code(u) == code:
+            await db.invite_redemptions.update_one(
+                {"invited_user_id": invited_user["id"]},
+                {"$setOnInsert": {
+                    "invited_user_id": invited_user["id"],
+                    "invited_email": invited_user.get("email"),
+                    "referrer_id": u["id"],
+                    "code": code,
+                    "created_at": _now_iso(),
+                }},
+                upsert=True,
+            )
+            return
+
+
+@router.get("/me/invite")
+async def get_me_invite(
+    request: Request,
+    session_token: Optional[str] = Cookie(default=None),
+    authorization: Optional[str] = Header(default=None),
+):
+    user = await _get_current_user(request, session_token, authorization)
+    db = request.app.state.db
+    code = _make_invite_code(user)
+    public_url = (os.environ.get("PUBLIC_APP_URL") or "").rstrip("/")
+    url = f"{public_url}/join?invite={code}" if public_url else f"/join?invite={code}"
+    invited_registered = await db.invite_redemptions.count_documents({"referrer_id": user["id"]})
+    return {
+        "code": code,
+        "url": url,
+        "invited_registered": invited_registered,
+        "share_message": f"Únete a Punto Cero One con mi invitación: {url}",
+    }
 

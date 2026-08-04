@@ -83,7 +83,11 @@ const JoinPage = () => {
     try {
       if (mode === 'register') {
         if (password.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres.');
-        const created = await authService.registerEmail({ email: email.trim(), password, name: name.trim() || undefined });
+        const inviteCode = new URLSearchParams(window.location.search).get('invite') || undefined;
+        const created = await authService.registerEmail({
+          email: email.trim(), password, name: name.trim() || undefined,
+          invite_code: inviteCode,
+        });
         const refreshed = await refresh();
         const uid = created?.id || refreshed?.id;
         if (uid) armWelcome(uid);

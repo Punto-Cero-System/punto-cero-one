@@ -61,10 +61,10 @@ export const authService = {
   },
 
   // Native email / password
-  async registerEmail({ email, password, name }) {
+  async registerEmail({ email, password, name, invite_code }) {
     return asJsonOrThrow(await authFetch('/api/community/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password, name, invite_code }),
     }));
   },
 
@@ -135,6 +135,17 @@ export const AUTH_PROVIDERS = {
     },
   },
   apple: { key: 'apple', label: 'Apple', available: false },
-  facebook: { key: 'facebook', label: 'Facebook', available: false },
+  facebook: {
+    key: 'facebook', label: 'Facebook', available: false,
+    startLogin: () => {
+      window.location.href = `${process.env.REACT_APP_BACKEND_URL}/api/community/auth/oauth/facebook/start`;
+    },
+  },
+  github: {
+    key: 'github', label: 'GitHub', available: false,
+    startLogin: () => {
+      window.location.href = `${process.env.REACT_APP_BACKEND_URL}/api/community/auth/oauth/github/start`;
+    },
+  },
   twitter: { key: 'twitter', label: 'X', available: false },
 };

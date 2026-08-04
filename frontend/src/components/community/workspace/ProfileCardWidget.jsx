@@ -7,13 +7,16 @@
  * are simply making the current UI addressable by ID.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, Users, Globe2, ChevronDown } from 'lucide-react';
+import { Sparkles, ArrowRight, Users, Globe2, ChevronDown, Copy, Check, Gift } from 'lucide-react';
 import { useCommunityAuth } from '../../../contexts/CommunityAuthContext';
 import useCommunityStats, { formatCount } from '../../../hooks/useCommunityStats';
 import useUserRegion, { LATAM_COUNTRIES } from '../../../hooks/useUserRegion';
+import ShareButton from '../ShareButton';
+
+const BACKEND = process.env.REACT_APP_BACKEND_URL;
 
 const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
@@ -213,6 +216,71 @@ const ProfileCardWidget = () => {
             <Sparkles size={11} /> Personalizar Mi Espacio
           </Link>
         )}
+        {isAuthed && <InviteBlock />}
+      </div>
+    </div>
+  );
+};
+
+
+const InviteBlock = () => {
+  const [invite, setInvite] = useState(null);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    let ok = true;
+    fetch(`${BACKEND}/api/community/auth/me/invite`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (ok && d) setInvite(d); })
+      .catch(() => {});
+    return () => { ok = false; };
+  }, []);
+  if (!invite) return null;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(invite.url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* ignore */ }
+  };
+  return (
+    <div data-testid="workspace-invite-block" style={{
+      marginTop: '0.85rem',
+      padding: '0.65rem 0.75rem',
+      background: 'linear-gradient(120deg, rgba(212,175,55,0.08), rgba(0,200,150,0.08))',
+      border: '1px solid rgba(212,175,55,0.25)',
+      borderRadius: 12,
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '0.35rem',
+        fontSize: '0.65rem', fontWeight: 800, color: '#7A5A00',
+        letterSpacing: '0.05em',
+      }}>
+        <Gift size={12} /> INVITA A TU RED
+      </div>
+      <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: '#0B1F3A' }}>
+        Tu código: <span data-testid="workspace-invite-code" style={{ fontWeight: 800, fontFamily: 'monospace' }}>{invite.code}</span>
+        {invite.invited_registered > 0 && (
+          <span data-testid="workspace-invite-count" style={{
+            marginLeft: 6, padding: '0.05rem 0.4rem', borderRadius: 6,
+            background: 'rgba(0,200,150,0.15)', color: '#00825E',
+            fontSize: '0.6rem', fontWeight: 700,
+          }}>{invite.invited_registered} inscritos</span>
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.5rem' }}>
+        <button type="button" data-testid="workspace-invite-copy" onClick={copy}
+          style={{
+            flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            gap: '0.3rem', padding: '0.35rem 0.55rem',
+            background: '#FFFFFF', border: '1px solid rgba(11,31,58,0.08)',
+            borderRadius: 100, fontSize: '0.68rem', fontWeight: 700,
+            color: '#0B1F3A', cursor: 'pointer',
+          }}>
+          {copied ? <Check size={11} color="#00825E" /> : <Copy size={11} />}
+          {copied ? 'Copiado' : 'Copiar link'}
+        </button>
+        <ShareButton url={invite.url} title={invite.share_message}
+                     targetId="invite" compact />
       </div>
     </div>
   );
