@@ -315,41 +315,54 @@ def _curated_pool(kind: str, *, country: Optional[str], limit: int) -> list[dict
 def _compose_editorial(pools: dict[str, list[dict]], *, total: int) -> list[dict]:
     """Editorial composer — deterministic, magazine-style.
 
-    Sigue estrictamente `EDITORIAL_TEMPLATE`, ciclando el template tantas
-    veces como sea necesario para producir `total` items. Cada item recibe
-    un campo `layout` (hero / large / medium / small) que el frontend usa
-    para asignar el tamaño de la tarjeta.
+    Recorre `EDITORIAL_TEMPLATE` en pases. Cada pase que empieza produce
+    como máximo un item por slot, en el orden del template. Slots cuyo
+    pool esté vacío se OMITEN (no se sustituyen para no romper el ritmo
+    editorial). Cuando el template se acabó pero aún faltan items para
+    llegar a `total`, damos otro pase — pero **forzando** el layout a
+    'medium' para NO duplicar el `hero` inicial ni los `large` (evita el
+    bug reportado por el testing agent en iteration 29).
 
-    Reglas:
-      1. Nunca dos cards consecutivas del mismo `kind` (se salta el slot).
-      2. Si el pool de un kind se agota, ese slot se omite (no se sustituye
-         por otro kind al azar → mantiene el ritmo editorial y evita
-         degenerar en "3 noticias seguidas").
-      3. Los pools se consumen en orden (asumimos que la query los ordenó
-         por relevancia/recencia).
+    Reglas invariantes:
+      1. Nunca dos cards consecutivas con el mismo `kind`.
+      2. Solo un item con `layout='hero'` en todo el output.
+      3. Los `layout='large'` solo aparecen en el primer pase.
     """
     pools = {k: list(v) for k, v in pools.items()}
     out: list[dict] = []
     last_kind: Optional[str] = None
-    cursor = 0
-    empty_cycles = 0
+    pass_index = 0
+    empty_passes = 0
 
     while len(out) < total:
-        kind, layout = EDITORIAL_TEMPLATE[cursor % len(EDITORIAL_TEMPLATE)]
-        cursor += 1
-
-        if pools.get(kind) and kind != last_kind:
-            item = pools[kind].pop(0)
-            item = {**item, "layout": layout, "block": (cursor - 1) % len(EDITORIAL_TEMPLATE) + 1}
-            out.append(item)
-            last_kind = kind
-            empty_cycles = 0
-        else:
-            # Slot vacío → avanzamos. Contamos ciclos "en blanco" para
-            # detectar cuándo todos los pools están agotados y salir.
-            empty_cycles += 1
-            if empty_cycles >= len(EDITORIAL_TEMPLATE) * 2:
+        made_progress = False
+        for slot_idx, (kind, layout) in enumerate(EDITORIAL_TEMPLATE):
+            if len(out) >= total:
                 break
+            if not pools.get(kind):
+                continue
+            if kind == last_kind:
+                # Skip para no repetir kind consecutivo.
+                continue
+            # Downgrade hero/large en pases subsiguientes.
+            effective_layout = layout if pass_index == 0 else "medium"
+            item = pools[kind].pop(0)
+            out.append({
+                **item,
+                "layout": effective_layout,
+                "block": slot_idx + 1,
+            })
+            last_kind = kind
+            made_progress = True
+
+        pass_index += 1
+        if not made_progress:
+            empty_passes += 1
+            if empty_passes >= 2:
+                # Ningún pool tiene items nuevos que respeten anti-repetición.
+                break
+        else:
+            empty_passes = 0
     return out
 
 
@@ -397,6 +410,7 @@ async def mixed_feed(
     if len(videos_dyn) < 3:
         videos_dyn += _curated_pool("video", country=resolved, limit=per_pool - len(videos_dyn))
     marketplace_pool = _curated_pool("marketplace", country=resolved, limit=per_pool)
+    community_pool = _curated_pool("community", country=resolved, limit=per_pool)
     podcasts_pool = []  # Reserved for future podcast connectors
     repos_pool: list[dict] = []
     async for r in db.github_repos.find({}, {"_id": 0}).sort("updated_at", -1).limit(per_pool):
@@ -427,6 +441,7 @@ async def mixed_feed(
         "user_post": user_posts,
         "company": companies,
         "marketplace": marketplace_pool,
+        "community": community_pool,
         "podcast": podcasts_pool,
         "repo": repos_pool,
         "dataset": datasets_pool,

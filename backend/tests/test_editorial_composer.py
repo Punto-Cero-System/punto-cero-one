@@ -97,24 +97,69 @@ class TestEditorialComposer:
                 f"consecutive same-kind at {i-1},{i}: {items[i]['kind']}"
             )
 
-    def test_template_order_respected(self, mixed_feed_20):
-        """Items must appear in the subsequence of EXPECTED_TEMPLATE (with skips allowed)."""
+    def test_template_order_respected_with_cycling(self, mixed_feed_20):
+        """Items must appear as a subsequence of EXPECTED_TEMPLATE, possibly across
+        multiple cycles. On any cycle beyond the first, the layout of the emitted
+        item MUST be 'medium' (never 'hero' or 'large') per FIX 4.
+        """
         items = mixed_feed_20["items"]
         t_idx = 0
+        cycle = 0
         for i, it in enumerate(items):
             found = False
-            while t_idx < len(EXPECTED_TEMPLATE):
-                exp_kind, exp_layout = EXPECTED_TEMPLATE[t_idx]
+            # Try up to a few cycles
+            for _ in range(len(EXPECTED_TEMPLATE) * 3):
+                if t_idx >= len(EXPECTED_TEMPLATE):
+                    t_idx = 0
+                    cycle += 1
+                exp_kind, _exp_layout = EXPECTED_TEMPLATE[t_idx]
                 t_idx += 1
                 if exp_kind == it["kind"]:
-                    # layout must match template (hero preserved only on first news slot)
-                    # For repeated news slots, layout is 'medium'; user_post always 'large' etc.
                     found = True
+                    if cycle >= 1:
+                        assert it["layout"] == "medium", (
+                            f"item[{i}] kind={it['kind']} from recycled pass "
+                            f"must be medium, got {it['layout']}"
+                        )
                     break
             assert found, (
-                f"item[{i}] kind={it['kind']} does not match remaining template. "
-                f"cursor_after={t_idx}"
+                f"item[{i}] kind={it['kind']} not found in template subsequence"
             )
+
+    def test_first_four_items_follow_template(self, mixed_feed_20):
+        """FIX 5: primeros items siguen orden del template (con skips permitidos)."""
+        items = mixed_feed_20["items"]
+        # first item must be news+hero
+        assert items[0]["kind"] == "news" and items[0]["layout"] == "hero"
+        # walk template and verify subsequence for first 4 items
+        expected_kinds_prefix = ["news", "job", "event", "user_post"]
+        seen = [items[i]["kind"] for i in range(min(4, len(items)))]
+        # each of the first 4 items must be one of the first 4 template kinds
+        # AND appear in the same relative order
+        t_pos = 0
+        for k in seen:
+            while t_pos < len(expected_kinds_prefix) and expected_kinds_prefix[t_pos] != k:
+                t_pos += 1
+            assert t_pos < len(expected_kinds_prefix), (
+                f"first-4 kind {k} out of expected order {expected_kinds_prefix}"
+            )
+            t_pos += 1
+
+    def test_community_pool_present(self, mixed_feed_20):
+        """FIX 2: community pool must contribute at least 1 item (5 LATAM curated)."""
+        kinds = [it["kind"] for it in mixed_feed_20["items"]]
+        assert "community" in kinds, f"no community item in feed: kinds={kinds}"
+
+    def test_recycled_slots_never_hero_or_large(self, mixed_feed_20):
+        """FIX 4: hero appears exactly once, large only on user_post slots."""
+        items = mixed_feed_20["items"]
+        hero_count = sum(1 for it in items if it["layout"] == "hero")
+        assert hero_count == 1, f"hero must be exactly 1, got {hero_count}"
+        for it in items:
+            if it["layout"] == "large":
+                assert it["kind"] == "user_post", (
+                    f"large layout must only be user_post, got {it['kind']}"
+                )
 
     def test_news_distribution(self, mixed_feed_20):
         dist = mixed_feed_20.get("distribution", {})
