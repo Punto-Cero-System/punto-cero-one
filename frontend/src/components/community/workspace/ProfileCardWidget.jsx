@@ -130,6 +130,16 @@ const ProfileCardWidget = () => {
             <span data-testid="workspace-region-label">
               {region.label ? region.label : 'Detectando…'}
             </span>
+            {region.city && (
+              <span
+                data-testid="workspace-region-city"
+                style={{
+                  padding: '0.02rem 0.3rem', borderRadius: 6,
+                  background: 'rgba(124,58,237,0.10)', color: '#5B21B6',
+                  fontSize: '0.58rem', fontWeight: 700,
+                }}
+              >{region.city}</span>
+            )}
             {region.method && region.method !== 'manual' && (
               <span
                 data-testid="workspace-region-method"

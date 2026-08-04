@@ -58,6 +58,7 @@ class CommunityUserPublic(BaseModel):
     picture: Optional[str] = None
     role: str = "member"
     country: Optional[str] = None
+    city: Optional[str] = None
     language: Optional[str] = None
     headline: Optional[str] = None
     providers: list[str] = []
@@ -170,6 +171,7 @@ def _user_to_public(user: dict) -> CommunityUserPublic:
         picture=user.get("picture"),
         role=user.get("role", "member"),
         country=user.get("country"),
+        city=user.get("city"),
         language=user.get("language"),
         headline=user.get("headline"),
         providers=providers,

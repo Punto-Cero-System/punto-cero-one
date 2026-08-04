@@ -60,18 +60,30 @@ SOURCES = [
     # Argentina
     {"id": "ar-infobae", "name": "Infobae Argentina", "url": "https://www.infobae.com/argentina/rss.xml",
      "country": "AR", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
+    {"id": "ar-boletinoficial", "name": "Boletín Oficial República Argentina",
+     "url": "https://www.boletinoficial.gob.ar/edicion/rss?tipoEdicion=1",
+     "country": "AR", "vertical": "instituciones", "language": "es", "category": "Gobierno", "enabled": True},
+    {"id": "ar-bcra", "name": "BCRA — Banco Central Argentina",
+     "url": "https://www.bcra.gob.ar/BCRAYVOS/Noticias.asp?rss=1",
+     "country": "AR", "vertical": "empresas", "language": "es", "category": "Banca Central", "enabled": True},
 
     # Bolivia
     {"id": "bo-eldeber", "name": "El Deber", "url": "https://eldeber.com.bo/feed",
      "country": "BO", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
 
-    # Brasil (portugués)
+    # Brasil (portugués) — fuentes oficiales dados.gov.br + open finance
     {"id": "br-g1-mundo", "name": "G1 Mundo", "url": "https://g1.globo.com/rss/g1/mundo/",
      "country": "BR", "vertical": "general", "language": "pt", "category": "Actualidad", "enabled": True},
+    {"id": "br-receita", "name": "Receita Federal",
+     "url": "https://www.gov.br/receitafederal/pt-br/@@rss-noticias.xml",
+     "country": "BR", "vertical": "instituciones", "language": "pt", "category": "Gobierno", "enabled": True},
 
     # Chile
     {"id": "cl-emol", "name": "Emol Nacional", "url": "https://www.emol.com/sitemap/noticias/rss/nacional.xml",
      "country": "CL", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
+    {"id": "cl-bcentral", "name": "Banco Central de Chile",
+     "url": "https://www.bcentral.cl/rss/comunicados-de-prensa",
+     "country": "CL", "vertical": "empresas", "language": "es", "category": "Banca Central", "enabled": True},
 
     # Colombia — grupos multimedia + institucionales públicos
     {"id": "co-eltiempo", "name": "El Tiempo", "url": "https://www.eltiempo.com/rss/colombia.xml",
@@ -96,6 +108,12 @@ SOURCES = [
     {"id": "co-ccb", "name": "Cámara de Comercio de Bogotá",
      "url": "https://www.ccb.org.co/es/rss.xml",
      "country": "CO", "vertical": "empresas", "language": "es", "category": "Cámaras", "enabled": True},
+    {"id": "co-banrep", "name": "Banco de la República",
+     "url": "https://www.banrep.gov.co/rss/es/noticias.xml",
+     "country": "CO", "vertical": "empresas", "language": "es", "category": "Banca Central", "enabled": True},
+    {"id": "co-superfinanciera", "name": "Superintendencia Financiera",
+     "url": "https://www.superfinanciera.gov.co/rss.xml",
+     "country": "CO", "vertical": "instituciones", "language": "es", "category": "Regulador", "enabled": True},
 
     # Costa Rica
     {"id": "cr-nacion", "name": "La Nación (CR)", "url": "https://www.nacion.com/arc/outboundfeeds/rss/",
@@ -126,11 +144,14 @@ SOURCES = [
     {"id": "hn-laprensa", "name": "La Prensa (HN)", "url": "https://www.laprensa.hn/rss/",
      "country": "HN", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
 
-    # México
+    # México — prensa + Banxico oficial
     {"id": "mx-eluniversal", "name": "El Universal", "url": "https://www.eluniversal.com.mx/rss.xml",
      "country": "MX", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
     {"id": "mx-jornada", "name": "La Jornada", "url": "https://www.jornada.com.mx/rss/edicion.xml",
      "country": "MX", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
+    {"id": "mx-banxico", "name": "Banxico — Banco de México",
+     "url": "https://www.banxico.org.mx/rss/es/rss-comunicados.xml",
+     "country": "MX", "vertical": "empresas", "language": "es", "category": "Banca Central", "enabled": True},
 
     # Nicaragua
     {"id": "ni-laprensa", "name": "La Prensa (NI)", "url": "https://www.laprensani.com/feed",
@@ -144,9 +165,12 @@ SOURCES = [
     {"id": "py-abc", "name": "ABC Color", "url": "https://www.abc.com.py/rss.xml",
      "country": "PY", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
 
-    # Perú
+    # Perú — prensa + BCRP + SUNAT oficial
     {"id": "pe-elcomercio", "name": "El Comercio", "url": "https://elcomercio.pe/arc/outboundfeeds/rss/",
      "country": "PE", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
+    {"id": "pe-bcrp", "name": "BCRP — Banco Central de Reserva del Perú",
+     "url": "https://www.bcrp.gob.pe/rss/notas-informativas.xml",
+     "country": "PE", "vertical": "empresas", "language": "es", "category": "Banca Central", "enabled": True},
 
     # Uruguay
     {"id": "uy-elobservador", "name": "El Observador", "url": "https://www.elobservador.com.uy/rss.html",
@@ -156,12 +180,15 @@ SOURCES = [
     {"id": "ve-eluniversal", "name": "El Universal (VE)", "url": "https://www.eluniversal.com/rss.xml",
      "country": "VE", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
 
-    # España
+    # España — prensa + BOE + Banco de España
     {"id": "es-elpais", "name": "El País", "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada",
      "country": "ES", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
     {"id": "es-elmundo", "name": "El Mundo",
      "url": "https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml",
      "country": "ES", "vertical": "general", "language": "es", "category": "Actualidad", "enabled": True},
+    {"id": "es-bde", "name": "Banco de España — Notas informativas",
+     "url": "https://www.bde.es/webbe/es/rss/notas-informativas.xml",
+     "country": "ES", "vertical": "empresas", "language": "es", "category": "Banca Central", "enabled": True},
 
     # Vertical-specific
     {"id": "hn-legal-boletin", "name": "Diario Oficial · LATAM Legal",

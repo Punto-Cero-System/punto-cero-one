@@ -318,7 +318,7 @@ async def similar_entities(db, entity: dict, limit: int = 8) -> list[dict]:
         cursor = db.companies.find(
             {"slug": {"$in": related_slugs}, "is_public_seed": True, "is_deleted": {"$ne": True}},
             {"_id": 0, "id": 1, "slug": 1, "name": 1, "tagline": 1, "vertical": 1,
-             "country": 1, "logo_url": 1}
+             "country": 1, "city": 1, "logo_url": 1}
         ).limit(limit)
         result = [c async for c in cursor]
     if len(result) < limit and entity.get("vertical"):
@@ -328,7 +328,7 @@ async def similar_entities(db, entity: dict, limit: int = 8) -> list[dict]:
             {"vertical": entity["vertical"], "is_public_seed": True,
              "slug": {"$nin": list(already)}, "is_deleted": {"$ne": True}},
             {"_id": 0, "id": 1, "slug": 1, "name": 1, "tagline": 1, "vertical": 1,
-             "country": 1, "logo_url": 1}
+             "country": 1, "city": 1, "logo_url": 1}
         ).limit(need)
         result.extend([c async for c in cursor2])
     return result
@@ -338,7 +338,8 @@ async def similar_entities(db, entity: dict, limit: int = 8) -> list[dict]:
 # One-shot bundle
 # ---------------------------------------------------------------------------
 
-async def gather(db, entity: dict, user_country: Optional[str] = None) -> dict:
+async def gather(db, entity: dict, user_country: Optional[str] = None,
+                 user_city: Optional[str] = None) -> dict:
     (news, repos_stored, videos_stored, jobs_stored,
      repos_live, videos_live, jobs_local, events,
      similar, people, hashtags) = await asyncio.gather(
@@ -366,13 +367,16 @@ async def gather(db, entity: dict, user_country: Optional[str] = None) -> dict:
     videos = _merge(list(videos_stored), videos_live)
     jobs = _merge(list(jobs_stored), list(jobs_local))
 
-    # Apply regional weighting (country → LATAM → global) so users see
-    # local content first on any Discovery ficha.
-    news = regional_sort(news, user_country)
-    videos = regional_sort(videos, user_country)
-    jobs = regional_sort(jobs, user_country)
-    events = regional_sort(events, user_country)
-    similar = regional_sort(similar, user_country)
+    # Hyperlocal weighting — city → country → LATAM → global. When user_city
+    # is known, matching-city items land on top, then same-country, then
+    # LATAM, then global. When user_city is None, behavior falls back to the
+    # Wave-9 country/LATAM/global sort.
+    news = regional_sort(news, user_country, user_city=user_city)
+    videos = regional_sort(videos, user_country, user_city=user_city)
+    jobs = regional_sort(jobs, user_country, user_city=user_city)
+    events = regional_sort(events, user_country, user_city=user_city)
+    similar = regional_sort(similar, user_country, user_city=user_city)
+    people = regional_sort(people, user_country, user_city=user_city)
 
     return {
         "entity": {
@@ -381,6 +385,7 @@ async def gather(db, entity: dict, user_country: Optional[str] = None) -> dict:
             "vertical": entity.get("vertical"), "country": entity.get("country"),
         },
         "user_country": user_country or None,
+        "user_city": user_city or None,
         "news": news, "repos": repos, "videos": videos,
         "jobs": jobs, "events": events, "similar": similar,
         "people": people, "hashtags": hashtags,

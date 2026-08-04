@@ -16,6 +16,7 @@ import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
 const STORAGE_KEY = 'pcone_country';
+const CITY_STORAGE_KEY = 'pcone_city';
 
 export const LATAM_COUNTRIES = {
   AR: 'Argentina', BO: 'Bolivia', BR: 'Brasil', CL: 'Chile', CO: 'Colombia',
@@ -86,6 +87,9 @@ export default function useUserRegion() {
   const [localCountry, setLocalCountry] = useState(() => {
     try { return localStorage.getItem(STORAGE_KEY) || null; } catch { return null; }
   });
+  const [localCity, setLocalCity] = useState(() => {
+    try { return localStorage.getItem(CITY_STORAGE_KEY) || null; } catch { return null; }
+  });
   const [detectedMethod, setDetectedMethod] = useState(null);
 
   // Auto-detect on first mount when nothing is stored yet. Chain:
@@ -98,6 +102,7 @@ export default function useUserRegion() {
       const back = await detectFromBackend();
       if (cancelled) return;
       let code = back?.country || null;
+      let city = back?.city || null;
       let method = back?.method || null;
       if (!code) {
         code = guessFromNavigator();
@@ -112,13 +117,18 @@ export default function useUserRegion() {
         method = 'default';
       }
       setLocalCountry(code);
+      setLocalCity(city);
       setDetectedMethod(method);
-      try { localStorage.setItem(STORAGE_KEY, code); } catch { /* ignore */ }
+      try {
+        localStorage.setItem(STORAGE_KEY, code);
+        if (city) localStorage.setItem(CITY_STORAGE_KEY, city);
+      } catch { /* ignore */ }
     })();
     return () => { cancelled = true; };
   }, [localCountry, user]);
 
   const country = (user && user.country) || localCountry || null;
+  const city = (user && user.city) || localCity || null;
 
   const setRegion = useCallback(async (code) => {
     if (!code || typeof code !== 'string') return;
@@ -143,6 +153,7 @@ export default function useUserRegion() {
     country,
     label: country ? (LATAM_COUNTRIES[country] || country) : null,
     flag: country ? (COUNTRY_FLAGS[country] || '🌎') : '🌎',
+    city,
     method: user?.country_source || detectedMethod,
     setRegion,
     supported: LATAM_COUNTRIES,

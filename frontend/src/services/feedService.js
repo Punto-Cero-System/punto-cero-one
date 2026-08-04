@@ -8,7 +8,11 @@ const API = process.env.REACT_APP_BACKEND_URL;
 const _regionHeader = () => {
   try {
     const c = localStorage.getItem('pcone_country');
-    return c ? { 'X-Region-Country': c } : {};
+    const city = localStorage.getItem('pcone_city');
+    const h = {};
+    if (c) h['X-Region-Country'] = c;
+    if (city) h['X-Region-City'] = city;
+    return h;
   } catch { return {}; }
 };
 

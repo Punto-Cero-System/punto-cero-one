@@ -24,47 +24,64 @@ from services.discovery.regional import (
 )
 
 
-async def _resolve_user_country(request: Request,
+async def _resolve_user_context(request: Request,
                                  session_token: Optional[str] = None,
                                  authorization: Optional[str] = None,
-                                 override: Optional[str] = None) -> Optional[str]:
-    """Best-effort user country resolution.
-
-    Priority:
-      1. explicit `?country=` override in the request
-      2. authenticated user's stored `country` field
-      3. `X-Region-Country` header (client-side geolocation hint)
-      4. `Accept-Language` first tag mapped to a LATAM country (es-CO → CO, etc.)
+                                 override: Optional[str] = None,
+                                 city_override: Optional[str] = None) -> tuple[Optional[str], Optional[str]]:
+    """Resolve (user_country, user_city). Same priority chain as before:
+      1. explicit override
+      2. authenticated user's stored country/city
+      3. `X-Region-Country` / `X-Region-City` headers
+      4. `Accept-Language` (country only)
     """
-    if override:
-        return normalize_country(override)
-    # Try the community session cookie first.
+    country: Optional[str] = normalize_country(override) if override else None
+    city: Optional[str] = (city_override or "").strip() or None
     db = request.app.state.db
-    try:
-        token = None
-        if session_token:
-            token = session_token
-        elif authorization and authorization.lower().startswith("bearer "):
-            token = authorization.split(" ", 1)[1].strip()
-        if token:
-            sess = await db.user_sessions.find_one({"session_token": token}, {"_id": 0, "user_id": 1})
-            if sess:
-                u = await db.users.find_one({"id": sess["user_id"]}, {"_id": 0, "country": 1})
-                if u and u.get("country"):
-                    return normalize_country(u["country"])
-    except Exception:  # pragma: no cover — degrade silently
-        pass
-    hdr = request.headers.get("x-region-country")
-    if hdr:
-        return normalize_country(hdr)
-    al = request.headers.get("accept-language", "")
-    if al:
-        first = al.split(",", 1)[0].strip()
-        if "-" in first:
-            tail = first.split("-", 1)[1].split(";", 1)[0].strip().upper()
-            if len(tail) == 2 and tail in LATAM_PLUS_ES:
-                return tail
-    return None
+    if not country or not city:
+        try:
+            token = None
+            if session_token:
+                token = session_token
+            elif authorization and authorization.lower().startswith("bearer "):
+                token = authorization.split(" ", 1)[1].strip()
+            if token:
+                sess = await db.user_sessions.find_one({"session_token": token}, {"_id": 0, "user_id": 1})
+                if sess:
+                    u = await db.users.find_one(
+                        {"id": sess["user_id"]},
+                        {"_id": 0, "country": 1, "city": 1},
+                    )
+                    if u:
+                        if not country and u.get("country"):
+                            country = normalize_country(u["country"])
+                        if not city and u.get("city"):
+                            city = u["city"]
+        except Exception:
+            pass
+    if not country:
+        hdr = request.headers.get("x-region-country")
+        if hdr:
+            country = normalize_country(hdr)
+    if not city:
+        hdr = request.headers.get("x-region-city")
+        if hdr:
+            city = hdr.strip() or None
+    if not country:
+        al = request.headers.get("accept-language", "")
+        if al:
+            first = al.split(",", 1)[0].strip()
+            if "-" in first:
+                tail = first.split("-", 1)[1].split(";", 1)[0].strip().upper()
+                if len(tail) == 2 and tail in LATAM_PLUS_ES:
+                    country = tail
+    return country, city
+
+
+# Back-compat wrapper — some routes still call the older signature.
+async def _resolve_user_country(request: Request, **kw) -> Optional[str]:
+    c, _ = await _resolve_user_context(request, **kw)
+    return c
 
 
 logger = logging.getLogger("punto-cero-api.discovery")
@@ -94,6 +111,7 @@ async def entity_related(
     slug: str,
     request: Request,
     country: Optional[str] = Query(default=None, description="ISO alpha-2 override (e.g. CO)"),
+    city: Optional[str] = Query(default=None, description="City override"),
     session_token: Optional[str] = Cookie(default=None),
     authorization: Optional[str] = Header(default=None),
 ):
@@ -101,10 +119,11 @@ async def entity_related(
     entity = await _find_entity(db, slug)
     if not entity:
         raise HTTPException(404, "entity not found")
-    user_country = await _resolve_user_country(
-        request, session_token=session_token, authorization=authorization, override=country,
+    user_country, user_city = await _resolve_user_context(
+        request, session_token=session_token, authorization=authorization,
+        override=country, city_override=city,
     )
-    return await resolver.gather(db, entity, user_country=user_country)
+    return await resolver.gather(db, entity, user_country=user_country, user_city=user_city)
 
 
 @router.get("/trending")

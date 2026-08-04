@@ -65,21 +65,57 @@ def country_tier(item_country: Optional[str], user_country: Optional[str]) -> st
     return "global"
 
 
-def region_score(item_country: Optional[str], user_country: Optional[str]) -> float:
-    """Return the 0..100 weight of an item given the user's country."""
+def _normalize_city(city: Optional[str]) -> Optional[str]:
+    if not city:
+        return None
+    s = str(city).strip().lower()
+    return s or None
+
+
+def hyperlocal_tier(item_country: Optional[str], item_city: Optional[str],
+                    user_country: Optional[str], user_city: Optional[str]) -> str:
+    """Return one of: 'city' | 'country' | 'latam' | 'global'.
+
+    'city' is a *stronger* tier than 'country' — used by the Hyperlocal
+    Discovery Engine (Wave 9.2). It requires BOTH a matching country and a
+    matching city (case-insensitive).
+    """
+    uc = normalize_country(user_country)
+    ic = normalize_country(item_country)
+    ucity = _normalize_city(user_city)
+    icity = _normalize_city(item_city)
+    if uc and ic and ic == uc and ucity and icity and icity == ucity:
+        return "city"
+    if uc and ic and ic == uc:
+        return "country"
+    if ic in LATAM_PLUS_ES:
+        return "latam"
+    return "global"
+
+
+def region_score(item_country: Optional[str], user_country: Optional[str],
+                 *, item_city: Optional[str] = None,
+                 user_city: Optional[str] = None) -> float:
+    """Return the 0..100 weight of an item given the user's country + optional
+    city. City tier (hyperlocal) inherits a `country_weight * 1.5` boost so
+    the same-city items always land on top without breaking the 60/25/15
+    intent for country/LATAM/global.
+    """
     wc, wl, wg = weights()
-    tier = country_tier(item_country, user_country)
-    return {"country": wc, "latam": wl, "global": wg}[tier]
+    tier = hyperlocal_tier(item_country, item_city, user_country, user_city)
+    return {"city": wc * 1.5, "country": wc, "latam": wl, "global": wg}[tier]
 
 
 def regional_sort(items: Iterable[dict], user_country: Optional[str],
-                  country_key: str = "country") -> list[dict]:
-    """Stable sort: country tier → LATAM tier → global tier. Preserves the
-    original order inside each tier (so recency / relevance from upstream is
+                  country_key: str = "country",
+                  user_city: Optional[str] = None,
+                  city_key: str = "city") -> list[dict]:
+    """Stable sort: city → country → LATAM → global. Preserves the original
+    order inside each tier (so recency / relevance from upstream is
     retained).
 
-    Items may live at different depths — an optional `country_key` lets you
-    dig for e.g. `origin.country` etc. Missing/blank → treated as global.
+    When `user_city` is supplied, items whose `city` matches (case-insensitive)
+    AND whose `country` matches are floated to a dedicated top tier.
     """
     uc = normalize_country(user_country)
     if not uc:
@@ -91,10 +127,18 @@ def regional_sort(items: Iterable[dict], user_country: Optional[str],
             v = it["meta"].get("country")
         return normalize_country(v)
 
-    tier_rank = {"country": 0, "latam": 1, "global": 2}
+    def _get_city(it: dict) -> Optional[str]:
+        v = it.get(city_key)
+        if v is None and "meta" in it and isinstance(it["meta"], dict):
+            v = it["meta"].get("city")
+        return _normalize_city(v)
+
+    tier_rank = {"city": 0, "country": 1, "latam": 2, "global": 3}
     return sorted(
         items,
-        key=lambda it: tier_rank[country_tier(_get_country(it), uc)],
+        key=lambda it: tier_rank[hyperlocal_tier(
+            _get_country(it), _get_city(it), uc, user_city,
+        )],
     )
 
 
