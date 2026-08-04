@@ -1,10 +1,25 @@
 import React from 'react';
-import { Newspaper, MapPin, Share2, Bookmark, Copy } from 'lucide-react';
+import { Newspaper, MapPin, Share2, Bookmark, Copy, Clock } from 'lucide-react';
 import BaseCard, { CardCTA, CardGhostCTA, CardMeta } from './BaseCard';
 
 const ACCENT = '#0369A1';
 
 const NewsCard = ({ item }) => {
+  const meta = item.metadata || {};
+  const category = item.category || meta.vertical;
+  const author = meta.author;
+  const date = item.created_at || meta.meta?.published_at;
+
+  const fmtDate = (d) => {
+    if (!d) return null;
+    try {
+      const dt = new Date(d);
+      if (isNaN(dt)) return null;
+      return dt.toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch { return null; }
+  };
+  const dateLabel = fmtDate(date);
+
   const flash = (msg) => {
     const el = document.createElement('div');
     el.textContent = msg;
@@ -33,29 +48,46 @@ const NewsCard = ({ item }) => {
 
   const save = () => flash('Guardado próximamente');
 
+  const sourceFavicon = item.source && !item.image ? null : (
+    // Best-effort: some feeds embed logos separately. When only image is present
+    // we still show it as the hero.
+    null
+  );
+
   return (
     <BaseCard
       accent={ACCENT}
-      badgeLabel="Noticia"
+      badgeLabel={category ? category.toUpperCase() : 'Noticia'}
       badgeIcon={Newspaper}
       testid={`card-news-${item.id}`}
-      media={item.image && (
+      media={item.image ? (
         <a href={item.external_url} target="_blank" rel="noopener noreferrer"
-          style={{ display: 'block', maxHeight: 220, overflow: 'hidden' }}>
+          style={{ display: 'block', position: 'relative', maxHeight: 280, overflow: 'hidden' }}>
           <img src={item.image} alt="" referrerPolicy="no-referrer"
-            style={{ width: '100%', maxHeight: 220, objectFit: 'cover', display: 'block' }} />
+            style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }} />
+          <div aria-hidden style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.35) 100%)',
+          }} />
         </a>
+      ) : (
+        <div style={{
+          height: 96,
+          background: `linear-gradient(135deg, ${ACCENT} 0%, #075985 100%)`,
+        }} />
       )}
       title={item.title}
       description={item.description}
       meta={
         <>
-          <CardMeta>{item.source || 'Fuente pública'}</CardMeta>
+          <CardMeta style={{ fontWeight: 700, color: ACCENT }}>{item.source || 'Fuente'}</CardMeta>
+          {dateLabel && <CardMeta><Clock size={11} /> {dateLabel}</CardMeta>}
+          {author && <CardMeta>· {author}</CardMeta>}
           {item.country_label && <CardMeta><MapPin size={11} /> {item.country_label}</CardMeta>}
         </>
       }
       primaryAction={
-        <CardCTA href={item.external_url} label="Ver noticia" color={ACCENT}
+        <CardCTA href={item.external_url} label="Leer noticia" color={ACCENT}
           testid={`card-news-open-${item.id}`} />
       }
       secondaryActions={

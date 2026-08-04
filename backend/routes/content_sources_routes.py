@@ -141,6 +141,20 @@ MIX_TARGET = [
 ]
 
 
+def _clean_html(text: str) -> str:
+    """Strip HTML entities/tags from summaries so they render as plain text."""
+    if not text:
+        return ""
+    import html
+    import re
+    # Decode entities like &lt; &gt; &amp; &nbsp;
+    decoded = html.unescape(text)
+    # Strip tags
+    stripped = re.sub(r"<[^>]+>", " ", decoded)
+    # Collapse whitespace
+    return re.sub(r"\s+", " ", stripped).strip()
+
+
 def _shape_growth_item(it: dict, *, kind_hint: Optional[str] = None) -> dict:
     """Project a growth_items doc into a ContentSource-ish shape."""
     country = (it.get("country") or "").upper() or None
@@ -148,8 +162,8 @@ def _shape_growth_item(it: dict, *, kind_hint: Optional[str] = None) -> dict:
     return {
         "id": it.get("id"),
         "kind": kind,
-        "title": it.get("title") or "",
-        "description": (it.get("summary") or "")[:280],
+        "title": _clean_html(it.get("title") or ""),
+        "description": _clean_html(it.get("summary") or "")[:280],
         "image": it.get("image_url"),
         "category": it.get("category") or it.get("vertical"),
         "location": it.get("city"),

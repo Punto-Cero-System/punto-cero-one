@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, ArrowRight, Compass, Users, Building2, Scale, Gauge, TrendingUp, ChevronDown } from 'lucide-react';
 import AppIcon from './AppIcon';
 import { WeatherWidget, CalendarWidget, PodcastWidget, CompaniesShoutout } from './Widgets';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
@@ -145,6 +145,9 @@ const LeftSidebar = () => {
         <ActivityRow label="Conexiones" value="—" />
       </SidebarBlock>
 
+      {/* Conoce Punto Cero — mega-menú relocalizado desde el header */}
+      <ConoceSidebarBlock />
+
       {/* Grupos */}
       <SidebarBlock title="Grupos">
         <GroupRow icon="legal" label="Legal Latam" hint="1.2k activos" />
@@ -222,6 +225,91 @@ const QuickLink = ({ icon, label, href, to, external }) => {
       <AppIcon name={icon} size={20} />
       <span>{label}</span>
     </Comp>
+  );
+};
+
+/**
+ * ConoceSidebarBlock — reubicación del mega-menú "Conoce Punto Cero".
+ * Antes vivía en el header como dropdown; ahora es un accordion en el
+ * sidebar izquierdo, siempre disponible sin ocupar espacio del header.
+ */
+const ConoceSidebarBlock = () => {
+  const [open, setOpen] = useState(true);
+  const items = [
+    { to: '/nuestra-historia',  label: 'Nuestra Historia', desc: 'Visión y personas', icon: Sparkles },
+    { to: '/#fundadores',       label: 'Fundadores',       desc: 'Equipo fundador',   icon: Users },
+    { to: '/capital',           label: 'Capital',          desc: 'Estrategia',        icon: TrendingUp },
+    { to: '/investor-room',     label: 'Inversionistas',   desc: 'Portal',            icon: Building2 },
+    { to: '/executive-summary', label: 'Investor Center',  desc: 'Resumen',           icon: Compass },
+    { to: '/legal/terminos',    label: 'Punto Cero Legal', desc: 'IA jurídica',       icon: Scale },
+    { to: '/comunidad',         label: 'Comunidad',        desc: 'Grupos profesionales', icon: Users },
+    { to: '/capital-strategy',  label: 'Simulador',        desc: 'Estrategia capital', icon: Gauge },
+  ];
+  return (
+    <div data-testid="sidebar-conoce-block" style={{
+      background: '#FFFFFF', borderRadius: 16,
+      border: '1px solid rgba(11,31,58,0.06)',
+      boxShadow: '0 4px 20px rgba(11,31,58,0.04)',
+      overflow: 'hidden',
+    }}>
+      <button onClick={() => setOpen((v) => !v)} data-testid="sidebar-conoce-toggle"
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+          padding: '0.85rem 1rem', background: 'transparent', border: 'none',
+          cursor: 'pointer', color: NAVY, textAlign: 'left',
+        }}>
+        <div style={{
+          width: 26, height: 26, borderRadius: 8,
+          background: 'linear-gradient(135deg, #0B1F3A, #4C1D95)',
+          color: EMERALD, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}><Compass size={13} /></div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '0.62rem', letterSpacing: '0.2em', fontWeight: 700,
+            color: 'rgba(11,31,58,0.5)' }}>CONOCE PUNTO CERO</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, marginTop: 2 }}>Explorar el ecosistema</div>
+        </div>
+        <ChevronDown size={14} style={{
+          opacity: 0.5, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s',
+        }} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '0 0.6rem 0.75rem', display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {items.map((it) => (
+                <Link key={it.label} to={it.to}
+                  data-testid={`sidebar-conoce-${it.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '0.5rem 0.55rem', borderRadius: 10,
+                    textDecoration: 'none', color: NAVY, transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(11,31,58,0.04)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
+                  <div style={{
+                    width: 24, height: 24, borderRadius: 7,
+                    background: 'rgba(0,200,150,0.10)', color: '#00825E',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <it.icon size={12} />
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '-0.005em' }}>{it.label}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(11,31,58,0.5)' }}>{it.desc}</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 

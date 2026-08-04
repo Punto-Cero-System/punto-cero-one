@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Search, MessageCircle, ChevronDown, LogIn, LogOut, Compass, Users, Building2, Scale, Sparkles, Gauge, TrendingUp } from 'lucide-react';
+import { Menu, X, Search, MessageCircle, ChevronDown, LogIn, LogOut } from 'lucide-react';
 import BrandMark from './BrandMark';
 import AppIcon from './community/AppIcon';
 import HeaderSearchBar from './community/HeaderSearchBar';
@@ -81,9 +81,6 @@ const Header = () => {
         <div className="pc-header-right" style={{
           display: 'flex', alignItems: 'center', gap: '0.35rem',
         }}>
-          {/* Conoce Punto Cero — mega-menú desplegable */}
-          <ConoceMenu />
-
           {/* Mensajes — un único botón */}
           <Link to="/mensajes" data-testid="header-messages" aria-label="Mensajes" className="interactive"
             style={{
@@ -409,95 +406,7 @@ const IconAction = ({ icon, label, testid }) => (
 );
 
 /**
- * ConoceMenu — mega-menú desplegable "Conoce Punto Cero".
- *
- * Unifica los enlaces que antes estaban repartidos por Home / footer /
- * sidebars: Fundadores, Capital, Inversionistas, Investor Center, Punto
- * Cero Legal, Comunidad, Simulador, Nuestra Historia. Un solo punto de
- * entrada, un solo espacio.
+ * (ConoceMenu se reubicó al LeftSidebar como accordion — Wave 12 Fase 5.)
  */
-const ConoceMenu = () => {
-  const [open, setOpen] = useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    if (!open) return;
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    window.addEventListener('click', close);
-    return () => window.removeEventListener('click', close);
-  }, [open]);
-  const items = [
-    { to: '/nuestra-historia', label: 'Nuestra Historia', desc: 'Visión y personas detrás', icon: Sparkles },
-    { to: '/#fundadores',      label: 'Fundadores',       desc: 'Equipo fundador',        icon: Users },
-    { to: '/capital',          label: 'Capital',          desc: 'Estrategia y rondas',    icon: TrendingUp },
-    { to: '/investor-room',    label: 'Inversionistas',   desc: 'Portal de inversores',   icon: Building2 },
-    { to: '/executive-summary',label: 'Investor Center',  desc: 'Resumen ejecutivo',      icon: Compass },
-    { to: '/legal/terminos',   label: 'Punto Cero Legal', desc: 'Marco legal · IA jurídica', icon: Scale },
-    { to: '/comunidad',        label: 'Comunidad',        desc: 'Grupos profesionales',   icon: Users },
-    { to: '/capital-strategy', label: 'Simulador',        desc: 'Estrategia de capital',  icon: Gauge },
-  ];
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
-        data-testid="header-conoce-btn"
-        className="interactive"
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-          padding: '0.45rem 0.75rem', borderRadius: 100,
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          color: '#FFFFFF', cursor: 'pointer',
-          fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.01em',
-        }}>
-        <Compass size={13} /> Conoce
-        <ChevronDown size={11} style={{ opacity: 0.6, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.97 }}
-            transition={{ duration: 0.15 }}
-            data-testid="header-conoce-menu"
-            style={{
-              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-              width: 460, background: '#0A0F1C',
-              border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-              padding: '0.55rem', display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.25rem', zIndex: 200,
-            }}>
-            {items.map((it) => (
-              <Link key={it.label} to={it.to} onClick={() => setOpen(false)}
-                data-testid={`header-conoce-${it.label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`}
-                style={{
-                  display: 'flex', gap: '0.55rem', alignItems: 'flex-start',
-                  padding: '0.6rem 0.7rem', borderRadius: 10,
-                  textDecoration: 'none', color: '#FFFFFF',
-                  background: 'transparent', transition: 'background 0.15s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 8,
-                  background: 'linear-gradient(135deg, #1E1B4B, #4C1D95)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, color: '#00C896',
-                }}>
-                  <it.icon size={14} />
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>{it.label}</div>
-                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{it.desc}</div>
-                </div>
-              </Link>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
 
 export default Header;

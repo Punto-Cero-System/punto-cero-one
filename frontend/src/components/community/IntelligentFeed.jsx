@@ -40,6 +40,16 @@ const IntelligentFeed = ({ limit = 30, country }) => {
 
   return (
     <div data-testid="intelligent-feed" style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+      <style>{`
+        @media (max-width: 720px) {
+          [data-testid="intelligent-feed-grid"] {
+            grid-template-columns: 1fr !important;
+          }
+          [data-testid="intelligent-feed-grid"] > * {
+            grid-column: 1 / -1 !important;
+          }
+        }
+      `}</style>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', flexWrap: 'wrap' }}>
         <span data-testid="intelligent-feed-badge" style={{
           display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -92,9 +102,29 @@ const IntelligentFeed = ({ limit = 30, country }) => {
         }}>{error}</div>
       )}
 
-      {items.map((it, idx) => (
-        <ContentCard key={`${it.kind}-${it.id || idx}`} item={it} />
-      ))}
+      {items.length > 0 && (
+        <div data-testid="intelligent-feed-grid" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gap: '0.9rem',
+          gridAutoFlow: 'dense',
+        }}>
+          {items.map((it, idx) => {
+            // Ritmo visual: noticias con imagen y user_posts ocupan doble
+            // ancho; el resto queda compacto. También hacemos "hero" al
+            // primer item si tiene imagen.
+            const isWide = idx === 0 && it.image
+              || (it.kind === 'news' && it.image && idx % 6 === 1)
+              || (it.kind === 'user_post');
+            return (
+              <div key={`${it.kind}-${it.id || idx}`}
+                style={{ gridColumn: isWide ? '1 / -1' : 'auto' }}>
+                <ContentCard item={it} />
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {!loading && items.length === 0 && !error && (
         <div style={{

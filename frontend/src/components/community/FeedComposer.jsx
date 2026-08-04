@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Image, Video, Calendar, Briefcase, Sparkles, Send, FileText, BarChart3, ShoppingBag, X } from 'lucide-react';
+import { Image, Send, X } from 'lucide-react';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 
 const NAVY = '#0B1F3A';
@@ -28,8 +28,6 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
     setToast(msg);
     setTimeout(() => setToast(''), 2200);
   };
-
-  const chipStub = (label) => () => flash(`${label}: disponible próximamente`);
 
   const onPhotoPick = async (e) => {
     const file = e.target.files?.[0];
@@ -168,13 +166,6 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
         <ComposerChip icon={<Image size={16} />} label="Foto" color="#3B82F6" onClick={() => photoInputRef.current?.click()} testid="composer-chip-photo" />
         <input ref={photoInputRef} type="file" accept="image/*" onChange={onPhotoPick}
           data-testid="composer-photo-input" style={{ display: 'none' }} />
-        <ComposerChip icon={<Video size={16} />} label="Video" color="#8B5CF6" onClick={chipStub('Video')} testid="composer-chip-video" />
-        <ComposerChip icon={<FileText size={16} />} label="Documento" color="#0EA5E9" onClick={chipStub('Documento')} testid="composer-chip-doc" />
-        <ComposerChip icon={<BarChart3 size={16} />} label="Encuesta" color="#14B8A6" onClick={chipStub('Encuesta')} testid="composer-chip-poll" />
-        <ComposerChip icon={<ShoppingBag size={16} />} label="Marketplace" color="#F97316" onClick={chipStub('Marketplace')} testid="composer-chip-marketplace" />
-        <ComposerChip icon={<Calendar size={16} />} label="Evento" color="#EC4899" onClick={chipStub('Evento')} testid="composer-chip-event" />
-        <ComposerChip icon={<Briefcase size={16} />} label="Empleo" color="#D4AF37" onClick={chipStub('Empleo')} testid="composer-chip-job" />
-        <ComposerChip icon={<Sparkles size={16} />} label="IA" color="#22D3EE" onClick={() => { window.location.href = '/ia'; }} testid="composer-chip-ai" />
 
         <div style={{ marginLeft: 'auto' }}>
           <motion.button

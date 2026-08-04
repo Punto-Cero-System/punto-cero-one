@@ -1,5 +1,44 @@
 # Punto Cero System — Changelog
 
+## 2026-08-04 — Wave 12 Fase 5: Feed visual + Composer simplificado + Conoce en sidebar
+
+### Content Sources System — rediseño visual
+- **NewsCard**: hero image de 280px con overlay degradado; badge de categoría dinámico (usa `item.category`); meta con fuente en color + fecha (formatter es-CO) + autor + ubicación; botón "Leer noticia".
+- **JobCard**: HeroBand degradado morado con logo overlap; muestra salario destacado en verde; tags como pills; botón "Aplicar".
+- **EventCard**: HeroBand ámbar con overlay; fecha formateada al idioma es; categoría en pill; botón "Registrarse".
+- **CompanyCard**: HeroBand azul + logo circular overlap; muestra seguidores cuando existan; botón "Ver empresa".
+- **CommunityCard**: HeroBand verde con overlay decorativo; avatar circular overlap; muestra miembros; botón "Unirse".
+- **MarketplaceCard**: imagen principal de 176px con precio flotante en pill oscuro; botón "Ver producto".
+- **VideoCard**: miniatura 16:9 con overlay 20%, play button 56px, badge de duración; botón "Ver en YouTube".
+- Backend `content_sources_routes._shape_growth_item` — nueva helper `_clean_html` que decodifica entities y strippea tags para que las descripciones se rendericen limpias (elimina el `&lt;p&gt;` que aparecía en algunos feeds).
+
+### Feed dinámico — ritmo visual
+- `IntelligentFeed` rediseñado a grid de 2 columnas con `gridAutoFlow: dense`. El primer item con imagen y las noticias/user_posts periódicas ocupan ancho completo → efecto "magazine".
+- Media query embebida: en < 720px colapsa a 1 columna automáticamente.
+
+### Composer simplificado
+- Eliminados los 7 botones "próximamente" (Video/Documento/Encuesta/Marketplace/Evento/Empleo/IA). Solo queda **Foto** — 100% funcional (upload real).
+- Imports depurados; `chipStub` eliminado.
+
+### Menú "Conoce" reubicado al Sidebar
+- Retirado del Header (`ConoceMenu` eliminado + imports limpios).
+- **NEW** `ConoceSidebarBlock` en `LeftSidebar.jsx`: bloque accordion con los 8 items (Nuestra Historia, Fundadores, Capital, Inversionistas, Investor Center, Punto Cero Legal, Comunidad, Simulador). Toggle expandible con `AnimatePresence`, `data-testid` por item. Siempre visible en la columna izquierda.
+
+### Tests
+- Todos los tests siguen en verde: **39/39** en la suite Wave 12 (content-sources + UX + final + groups-ext).
+
+### Files changed (Fase 5)
+- Backend: `routes/content_sources_routes.py` (_clean_html + _shape_growth_item con clean).
+- Frontend:
+  - `components/community/cards/NewsCard.jsx`, `JobCard.jsx`, `EventCard.jsx`, `CompanyCard.jsx`, `CommunityCard.jsx`, `MarketplaceCard.jsx`, `VideoCard.jsx` (rewrites con hero + logos)
+  - `components/community/IntelligentFeed.jsx` (grid dinámico + responsive)
+  - `components/community/FeedComposer.jsx` (solo Foto)
+  - `components/community/LeftSidebar.jsx` (ConoceSidebarBlock)
+  - `components/Header.jsx` (ConoceMenu removido)
+
+---
+
+
 ## 2026-08-04 — Wave 12 Fase 4: Group Notifications + Group Covers + Final Validation
 
 ### Group notifications (services/notifications)
