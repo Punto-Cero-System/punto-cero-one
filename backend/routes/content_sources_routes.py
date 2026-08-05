@@ -215,7 +215,7 @@ def _shape_growth_item(it: dict, *, kind_hint: Optional[str] = None) -> dict:
     }
 
 
-async def _pool_growth(db, *, kind: str, country: Optional[str], limit: int) -> list[dict]:
+async def _pool_growth(db, *, kind: str, country: Optional[str], limit: int, skip: int = 0) -> list[dict]:
     """Query growth_items filtered by kind + country priority (Ciudad→País→LATAM→Global)."""
     countries: list[str] = []
     if country:
@@ -224,7 +224,7 @@ async def _pool_growth(db, *, kind: str, country: Optional[str], limit: int) -> 
 
     q: dict = {"kind": kind}
     q["country"] = {"$in": countries + [None]}
-    cursor = db.growth_items.find(q, {"_id": 0}).sort([("published_at", -1)]).limit(limit * 2)
+    cursor = db.growth_items.find(q, {"_id": 0}).sort([("published_at", -1)]).skip(skip).limit(limit * 2)
     docs = [d async for d in cursor]
     # Re-rank: exact-country first, then LATAM, then rest.
     if country:
@@ -238,8 +238,8 @@ async def _pool_growth(db, *, kind: str, country: Optional[str], limit: int) -> 
     return [_shape_growth_item(d) for d in docs[:limit]]
 
 
-async def _pool_user_posts(db, *, limit: int) -> list[dict]:
-    cursor = db.posts.find({"status": "published"}, {"_id": 0}).sort("created_at", -1).limit(limit)
+async def _pool_user_posts(db, *, limit: int, skip: int = 0) -> list[dict]:
+    cursor = db.posts.find({"status": "published"}, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit)
     out: list[dict] = []
     async for p in cursor:
         author = await db.users.find_one(
@@ -276,11 +276,11 @@ async def _pool_user_posts(db, *, limit: int) -> list[dict]:
     return out
 
 
-async def _pool_companies(db, *, country: Optional[str], limit: int) -> list[dict]:
+async def _pool_companies(db, *, country: Optional[str], limit: int, skip: int = 0) -> list[dict]:
     q: dict = {"is_deleted": {"$ne": True}, "verification": {"$in": ["verified", "pending"]}}
     if country:
         q["country"] = country
-    cursor = db.companies.find(q, {"_id": 0}).sort("updated_at", -1).limit(limit * 2)
+    cursor = db.companies.find(q, {"_id": 0}).sort("updated_at", -1).skip(skip).limit(limit * 2)
     docs = [d async for d in cursor]
     return [{
         "id": c.get("id"),
@@ -380,6 +380,7 @@ def _compose_editorial(pools: dict[str, list[dict]], *, total: int) -> list[dict
 async def mixed_feed(
     request: Request,
     limit: int = Query(default=30, ge=6, le=80),
+    offset: int = Query(default=0, ge=0, le=1000),
     country: Optional[str] = Query(default=None),
     session_token: Optional[str] = Cookie(default=None),
     accept_language: Optional[str] = Header(default=None, alias="Accept-Language"),
@@ -391,6 +392,10 @@ async def mixed_feed(
 
     Response items always carry a `kind` field so the frontend can pick
     the right visual card (NewsCard / JobCard / EventCard / ...).
+
+    Pagination: pass `offset` to skip N items from each pool and get the
+    next batch. When `next_offset` in the response is null, the pools
+    are exhausted for this session.
     """
     db = request.app.state.db
     viewer = await _viewer(request, session_token)
@@ -403,12 +408,12 @@ async def mixed_feed(
     # slack to satisfy the "no two consecutive of same kind" rule.
     per_pool = max(6, limit // 4)
 
-    news = await _pool_growth(db, kind="news", country=resolved, limit=per_pool)
-    jobs = await _pool_growth(db, kind="job", country=resolved, limit=per_pool)
-    events = await _pool_growth(db, kind="event", country=resolved, limit=per_pool)
-    videos_dyn = await _pool_growth(db, kind="video", country=resolved, limit=per_pool)
-    user_posts = await _pool_user_posts(db, limit=per_pool)
-    companies = await _pool_companies(db, country=resolved, limit=per_pool)
+    news = await _pool_growth(db, kind="news", country=resolved, limit=per_pool, skip=offset)
+    jobs = await _pool_growth(db, kind="job", country=resolved, limit=per_pool, skip=offset)
+    events = await _pool_growth(db, kind="event", country=resolved, limit=per_pool, skip=offset)
+    videos_dyn = await _pool_growth(db, kind="video", country=resolved, limit=per_pool, skip=offset)
+    user_posts = await _pool_user_posts(db, limit=per_pool, skip=offset)
+    companies = await _pool_companies(db, country=resolved, limit=per_pool, skip=offset)
 
     # Fill curated pools where dynamic pool came back empty or short.
     if len(news) < 3:
@@ -464,8 +469,17 @@ async def mixed_feed(
     for it in mix:
         layout_counts[it.get("layout", "medium")] = layout_counts.get(it.get("layout", "medium"), 0) + 1
 
+    # next_offset for infinite scroll — advance by whatever we returned.
+    # When all pools returned empty (mix is short of `limit`), we've
+    # exhausted the sources and signal EOF via next_offset=None.
+    next_offset: Optional[int] = None
+    if len(mix) >= max(6, limit // 3):  # meaningful batch → try next page
+        next_offset = offset + per_pool
+
     return {
         "items": mix,
+        "offset": offset,
+        "next_offset": next_offset,
         "resolved_country": resolved,
         "resolved_country_label": COUNTRY_LABELS.get(resolved) if resolved else None,
         "pool_sizes": {k: len(v) for k, v in pools.items()},

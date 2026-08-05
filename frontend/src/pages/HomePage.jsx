@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Settings, LayoutGrid, Check } from 'lucide-react';
 import Header from '../components/Header';
-import Footer from '../components/Footer';
 import CustomCursor from '../components/CustomCursor';
 
 import CommunityLayout from '../components/community/CommunityLayout';
@@ -74,7 +73,6 @@ const HomePage = () => {
         />
         </WorkspaceDndProvider>
       </main>
-      <Footer />
     </>
   );
 };

@@ -42,7 +42,7 @@ const PreviewCard = ({ item }) => {
         boxShadow: '0 2px 12px rgba(11,31,58,0.03)',
       }}>
       {item.image ? (
-        <img src={item.image} alt="" referrerPolicy="no-referrer"
+        <img src={item.image} alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async"
           style={{
             width: 52, height: 52, borderRadius: 10, objectFit: 'cover',
             flexShrink: 0, background: '#F4F6FB',

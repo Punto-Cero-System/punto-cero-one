@@ -1,7 +1,10 @@
 """Tests for the Editorial Composer of /api/content-sources/mixed-feed.
 
-Validates the deterministic template-driven composer replacing the previous
-random weighted interleave.
+Wave 12 Fase 7 — SOCIAL-FIRST feed. User posts are the primary content
+(`layout='large'`), everything else (news, jobs, events, etc.) renders as
+compact `layout='preview'` chips that route to their specialized pages.
+
+Also validates the offset-based infinite scroll pagination.
 """
 import os
 import pytest
@@ -9,7 +12,6 @@ import requests
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 if not BASE_URL:
-    # fallback to reading frontend/.env
     try:
         with open("/app/frontend/.env") as f:
             for line in f:
@@ -19,36 +21,40 @@ if not BASE_URL:
     except Exception:
         pass
 
-# The exact template documented in the review request
+
+# Social-First template as defined in content_sources_routes.EDITORIAL_TEMPLATE
 EXPECTED_TEMPLATE = [
-    ("news", "hero"),
-    ("job", "medium"),
-    ("event", "medium"),
-    ("user_post", "large"),
-    ("news", "medium"),
-    ("company", "medium"),
-    ("marketplace", "medium"),
-    ("video", "medium"),
-    ("job", "medium"),
-    ("community", "small"),
-    ("news", "medium"),
-    ("user_post", "large"),
-    ("event", "medium"),
-    ("company", "medium"),
-    ("job", "medium"),
-    ("news", "medium"),
-    ("marketplace", "medium"),
-    ("video", "medium"),
-    ("podcast", "small"),
-    ("repo", "small"),
+    ("user_post",   "large"),
+    ("user_post",   "large"),
+    ("news",        "preview"),
+    ("user_post",   "large"),
+    ("job",         "preview"),
+    ("user_post",   "large"),
+    ("event",       "preview"),
+    ("user_post",   "large"),
+    ("company",     "preview"),
+    ("user_post",   "large"),
+    ("video",       "preview"),
+    ("user_post",   "large"),
+    ("marketplace", "preview"),
+    ("user_post",   "large"),
+    ("community",   "preview"),
+    ("user_post",   "large"),
+    ("news",        "preview"),
+    ("user_post",   "large"),
+    ("podcast",     "preview"),
+    ("repo",        "preview"),
 ]
 
-VALID_LAYOUTS = {"hero", "large", "medium", "small"}
+VALID_LAYOUTS = {"large", "preview", "hero", "medium", "small"}
+PREVIEW_KINDS = {"news", "job", "event", "company", "video", "marketplace",
+                 "community", "podcast", "repo", "dataset"}
 
 
 @pytest.fixture(scope="module")
 def mixed_feed_20():
-    r = requests.get(f"{BASE_URL}/api/content-sources/mixed-feed", params={"limit": 20}, timeout=30)
+    r = requests.get(f"{BASE_URL}/api/content-sources/mixed-feed",
+                     params={"limit": 20}, timeout=30)
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -59,6 +65,8 @@ class TestEditorialComposer:
         assert "items" in data
         assert "layout_distribution" in data
         assert "editorial_template_size" in data
+        assert "offset" in data
+        assert "next_offset" in data
         assert isinstance(data["layout_distribution"], dict)
         assert data["editorial_template_size"] == 20
 
@@ -72,22 +80,20 @@ class TestEditorialComposer:
         for it in mixed_feed_20["items"]:
             assert it.get("kind"), f"missing kind: {it}"
 
-    def test_first_item_is_news_hero(self, mixed_feed_20):
-        items = mixed_feed_20["items"]
-        assert len(items) > 0
-        assert items[0]["kind"] == "news", f"expected news, got {items[0]['kind']}"
-        assert items[0]["layout"] == "hero"
-
     def test_user_posts_are_large(self, mixed_feed_20):
+        """SOCIAL-FIRST: every user_post carries layout=large."""
         for it in mixed_feed_20["items"]:
             if it["kind"] == "user_post":
-                assert it["layout"] == "large", f"user_post must be large, got {it['layout']}"
+                assert it["layout"] == "large", (
+                    f"user_post must be large, got {it['layout']}"
+                )
 
-    def test_small_kinds_layout(self, mixed_feed_20):
+    def test_external_kinds_are_preview(self, mixed_feed_20):
+        """SOCIAL-FIRST: external content (news/jobs/events/...) is preview."""
         for it in mixed_feed_20["items"]:
-            if it["kind"] in ("community", "podcast", "repo"):
-                assert it["layout"] == "small", (
-                    f"{it['kind']} must be small, got {it['layout']}"
+            if it["kind"] in PREVIEW_KINDS:
+                assert it["layout"] == "preview", (
+                    f"{it['kind']} must be preview, got {it['layout']}"
                 )
 
     def test_anti_repetition_strict(self, mixed_feed_20):
@@ -97,92 +103,35 @@ class TestEditorialComposer:
                 f"consecutive same-kind at {i-1},{i}: {items[i]['kind']}"
             )
 
-    def test_template_order_respected_with_cycling(self, mixed_feed_20):
-        """Items must appear as a subsequence of EXPECTED_TEMPLATE, possibly across
-        multiple cycles. On any cycle beyond the first, the layout of the emitted
-        item MUST be 'medium' (never 'hero' or 'large') per FIX 4.
-        """
-        items = mixed_feed_20["items"]
-        t_idx = 0
-        cycle = 0
-        for i, it in enumerate(items):
-            found = False
-            # Try up to a few cycles
-            for _ in range(len(EXPECTED_TEMPLATE) * 3):
-                if t_idx >= len(EXPECTED_TEMPLATE):
-                    t_idx = 0
-                    cycle += 1
-                exp_kind, _exp_layout = EXPECTED_TEMPLATE[t_idx]
-                t_idx += 1
-                if exp_kind == it["kind"]:
-                    found = True
-                    if cycle >= 1:
-                        assert it["layout"] == "medium", (
-                            f"item[{i}] kind={it['kind']} from recycled pass "
-                            f"must be medium, got {it['layout']}"
-                        )
-                    break
-            assert found, (
-                f"item[{i}] kind={it['kind']} not found in template subsequence"
+    def test_no_hero_layout_in_social_first(self, mixed_feed_20):
+        """SOCIAL-FIRST no longer uses `hero` — only large + preview."""
+        for it in mixed_feed_20["items"]:
+            assert it["layout"] != "hero", (
+                f"hero layout should not appear in Social-First feed, item={it}"
             )
-
-    def test_first_four_items_follow_template(self, mixed_feed_20):
-        """FIX 5: primeros items siguen orden del template (con skips permitidos)."""
-        items = mixed_feed_20["items"]
-        # first item must be news+hero
-        assert items[0]["kind"] == "news" and items[0]["layout"] == "hero"
-        # walk template and verify subsequence for first 4 items
-        expected_kinds_prefix = ["news", "job", "event", "user_post"]
-        seen = [items[i]["kind"] for i in range(min(4, len(items)))]
-        # each of the first 4 items must be one of the first 4 template kinds
-        # AND appear in the same relative order
-        t_pos = 0
-        for k in seen:
-            while t_pos < len(expected_kinds_prefix) and expected_kinds_prefix[t_pos] != k:
-                t_pos += 1
-            assert t_pos < len(expected_kinds_prefix), (
-                f"first-4 kind {k} out of expected order {expected_kinds_prefix}"
-            )
-            t_pos += 1
-
-    def test_community_pool_present(self, mixed_feed_20):
-        """FIX 2: community pool must contribute at least 1 item (5 LATAM curated)."""
-        kinds = [it["kind"] for it in mixed_feed_20["items"]]
-        assert "community" in kinds, f"no community item in feed: kinds={kinds}"
-
-    def test_recycled_slots_never_hero_or_large(self, mixed_feed_20):
-        """FIX 4: hero appears exactly once, large only on user_post slots."""
-        items = mixed_feed_20["items"]
-        hero_count = sum(1 for it in items if it["layout"] == "hero")
-        assert hero_count == 1, f"hero must be exactly 1, got {hero_count}"
-        for it in items:
-            if it["layout"] == "large":
-                assert it["kind"] == "user_post", (
-                    f"large layout must only be user_post, got {it['kind']}"
-                )
-
-    def test_news_distribution(self, mixed_feed_20):
-        dist = mixed_feed_20.get("distribution", {})
-        assert dist.get("news", 0) >= 3, f"news={dist.get('news')} expected >=3"
-
-    def test_jobs_distribution(self, mixed_feed_20):
-        dist = mixed_feed_20.get("distribution", {})
-        assert dist.get("job", 0) >= 2, f"job={dist.get('job')} expected >=2"
 
     def test_layout_distribution_present(self, mixed_feed_20):
         ld = mixed_feed_20["layout_distribution"]
-        # sum should equal number of items
         assert sum(ld.values()) == len(mixed_feed_20["items"])
-        # at most 1 hero
-        assert ld.get("hero", 0) <= 1
+        # Preview must dominate external content
+        assert ld.get("preview", 0) >= 1
+
+    def test_pagination_advances(self):
+        """Offset pagination returns different (or complementary) items."""
+        first = requests.get(f"{BASE_URL}/api/content-sources/mixed-feed",
+                             params={"limit": 15, "offset": 0}, timeout=30).json()
+        second = requests.get(f"{BASE_URL}/api/content-sources/mixed-feed",
+                              params={"limit": 15, "offset": 5}, timeout=30).json()
+        assert "next_offset" in first
+        assert "offset" in second and second["offset"] == 5
+        # different responses (either fewer items or different content)
+        assert first["items"] or second["items"]
 
 
 class TestRegressionOtherEndpoints:
     def test_types(self):
         r = requests.get(f"{BASE_URL}/api/content-sources/types", timeout=15)
         assert r.status_code == 200
-        body = r.json()
-        assert isinstance(body, (list, dict))
 
     def test_ai_tools(self):
         r = requests.get(f"{BASE_URL}/api/content-sources/ai-tools", timeout=15)

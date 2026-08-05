@@ -1,0 +1,44 @@
+{
+  "summary": "Wave 12 UX Refinement (Social-First feed) end-to-end validation. Backend: all 30 pytest tests across test_editorial_composer.py, test_wave12_photo_fix.py, test_wave12_content_sources.py pass. Mixed-feed API returns offset/next_offset, layout_distribution, editorial_template_size=20, user_post=large + external kinds=preview (no hero). Regression fix confirmed: /api/community/users/media/{path} now streams post images with HTTP 200 (previously 403). Frontend: IntelligentFeed renders, infinite scroll works (30 → 105 slots over 4 scrolls), Footer hidden on HomePage, preview chips render 'Ver más' CTAs, header search dropdown works, notifications bell panel opens, /perfil + /comunidad + secondary pages (/noticias /empleos /eventos /empresas /videos) load with no runtime errors. Composer photo upload flow verified end-to-end: text-only + text+photo posts persist after F5 (validated via /api/feed/posts?author_id).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "IntelligentFeed",
+        "issue": "Scroll position restoration does NOT restore fully. Before navigation scrollY=23026 (105 items loaded). After clicking 'Ver más' → /noticias → browser back, sessionStorage cache 'pc_intelligent_feed_cache_v1' is present and items are restored (105 slots preserved), BUT window.scrollY only restored to 1310 (not close to 23026). Root cause: the 30ms setTimeout in useEffect fires before lazy-loaded images/DOM height stabilize, so window.scrollTo({top:cached.scrollY}) is clamped to the current maximum scrollHeight. Suggested fix: replace fixed 30ms timeout with a ResizeObserver / rAF retry loop that re-issues scrollTo until document.body.scrollHeight >= cached.scrollY (or a small retry counter with 100ms cadence up to ~2s).",
+        "selector": "[data-testid='intelligent-feed']",
+        "priority": "P0"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/comunidad group cards", "issues": ["Group card cover area uses purple gradient fallback for all groups (no cover image). Functional fallback, but visually every card looks identical — consider generating a per-group hash-based gradient or emoji seed to differentiate."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_editorial_composer.py",
+    "/app/backend/tests/test_wave12_photo_fix.py",
+    "/app/backend/tests/test_wave12_content_sources.py",
+    "/app/test_reports/pytest/iter32_backend.xml"
+  ],
+  "action_items": [
+    "P0: Fix IntelligentFeed scroll restoration — replace 30ms setTimeout with iterative rAF/ResizeObserver-based restore that waits until document.body.scrollHeight >= cached.scrollY (or retries up to ~2s). Current cache stores items and scrollY correctly, but restore times out before layout finishes.",
+    "P3 (spec sync only): Review request references data-testid='create-btn' for GroupCreator; actual is 'community-create-btn'. Functionality works; no code change required — update docs if needed."
+  ],
+  "critical_code_review_comments": [
+    "IntelligentFeed.jsx: scroll-restore timeout should be dynamic (ResizeObserver or rAF loop), not a fixed 30ms; this is the sole failing P0 requirement of this iteration.",
+    "IntelligentFeed.jsx caches next_offset as `offset` (hasMore ? offset : null). Ensure that when hydrating from cache, subsequent pages still use the correct offset baseline — appears correct on inspection, but worth verifying with a resume-load probe.",
+    "content_sources_routes mixed-feed: offset advances only by number of user_posts consumed per page (6 in template of 20). This is correct given the Social-First template but is confusing terminology — consider renaming to `user_post_offset` in docs for clarity (no code change needed)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "~95% (all flows work; scroll-restore off)"},
+  "test_credentials": "member.demo@puntocero.test-e2e.com / MemberDemo2026 (login OK). Live session token used in tests: cs_46dc2afcec554f918f53323acb718bdf64b6fe40",
+  "seed_data_creation": "Created 2 posts under user_4df475feefa5 as part of E2E flow: post_1046846cc14e (TEST_E2E_iter32_textonly_*) and post_efd6229ebb5c (TEST_E2E_i32_photo_* with image /api/community/users/media/punto-cero-system/posts/user_4df475feefa5/cbaa4a5c229d4628.png). Both persist across reloads; image stream returns 200.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend for Wave 12 Social-First feed + photo/media fix is FULLY GREEN (30/30). Only remaining issue is FRONTEND scroll-position restoration in /app/frontend/src/components/community/IntelligentFeed.jsx (line 113-121). Cache items restore correctly (105 slots), but scrollY restore fails due to premature setTimeout(30ms) — DOM height not yet expanded. When fixing, verify by: (1) load /, scroll 4x to reach ~scrollY 20000+, (2) click any 'Ver más' anchor to navigate to /noticias, (3) browser back — expect window.scrollY within ~500px of previous. Composer testids to use: feed-composer-input, composer-chip-photo, composer-photo-input, feed-composer-submit. GroupCreator testid is community-create-btn (not create-btn).",
+  "rca_of_the_issue": "Scroll-restore RCA: IntelligentFeed hydrates items from sessionStorage synchronously in useState initializer, and schedules window.scrollTo(cached.scrollY) after a fixed 30ms. However child FeedPostCard/PreviewCard images use loading='lazy' and content cards render progressively as React reconciles the 100+ node list. At t=30ms, document.body.scrollHeight is typically still <5000px while cached.scrollY is 23026 → browser clamps to max available (~1310). Fix must wait for layout: either ResizeObserver on the feed container until scrollHeight >= cached.scrollY, or a bounded rAF retry (max ~20 frames / ~2s) that re-invokes scrollTo. Alternative: pre-render lazy images as fixed-aspect placeholders so scrollHeight is deterministic even before image load."
+}

@@ -13,7 +13,7 @@ const AiToolCard = ({ item }) => {
       badgeIcon={Sparkles}
       testid={`card-ai-${item.id}`}
       header={item.image && (
-        <img src={item.image} alt={item.title} referrerPolicy="no-referrer"
+        <img src={item.image} alt={item.title} referrerPolicy="no-referrer" loading="lazy" decoding="async"
           style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'contain', background: '#F4F6FB', padding: 3 }} />
       )}
       title={item.title}

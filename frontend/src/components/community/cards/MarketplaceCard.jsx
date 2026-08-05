@@ -18,7 +18,7 @@ const MarketplaceCard = ({ item }) => {
       testid={`card-marketplace-${item.id}`}
       media={item.image ? (
         <div style={{ position: 'relative', height: 176, background: '#F4F6FB' }}>
-          <img src={item.image} alt="" referrerPolicy="no-referrer"
+          <img src={item.image} alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async"
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           {price && (
             <span style={{

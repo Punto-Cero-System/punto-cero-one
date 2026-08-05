@@ -66,7 +66,7 @@ const NewsCard = ({ item, layout = 'medium' }) => {
           style={{ display: 'block', position: 'relative',
                    maxHeight: isHero ? 420 : 240,
                    overflow: 'hidden' }}>
-          <img src={item.image} alt="" referrerPolicy="no-referrer"
+          <img src={item.image} alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async"
             style={{ width: '100%',
                      maxHeight: isHero ? 420 : 240,
                      objectFit: 'cover', display: 'block' }} />

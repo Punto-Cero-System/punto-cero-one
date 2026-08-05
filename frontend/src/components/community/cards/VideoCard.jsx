@@ -18,7 +18,7 @@ const VideoCard = ({ item }) => {
         <a href={item.external_url} target="_blank" rel="noopener noreferrer"
           style={{ display: 'block', position: 'relative', aspectRatio: '16 / 9', background: '#0A0F1C' }}>
           {item.image ? (
-            <img src={item.image} alt="" referrerPolicy="no-referrer"
+            <img src={item.image} alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async"
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           ) : (
             <div style={{

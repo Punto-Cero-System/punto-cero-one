@@ -111,8 +111,20 @@ async def clear_profile_slot(
 
 @router.get("/media/{path:path}")
 async def stream_profile_media(path: str):
-    """Public streaming — safe to hotlink."""
-    if not path.startswith(f"{app_prefix()}/users/"):
+    """Public streaming — safe to hotlink.
+
+    Serves images stored under the app namespace, whether they belong to
+    user profiles (`users/`), feed post attachments (`posts/`) or group
+    covers (`groups/`). All three are surfaced through this endpoint so
+    they share a single canonical URL scheme.
+    """
+    prefix = app_prefix()
+    allowed_subpaths = (
+        f"{prefix}/users/",
+        f"{prefix}/posts/",
+        f"{prefix}/groups/",
+    )
+    if not path.startswith(allowed_subpaths):
         raise HTTPException(status_code=403, detail="Ruta no permitida")
     try:
         data, ct = get_storage().get(path)

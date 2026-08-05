@@ -30,7 +30,7 @@ const CompanyLogo = ({ src, name, accent }) => (
     overflow: 'hidden', flexShrink: 0,
   }}>
     {src ? (
-      <img src={src} alt="" referrerPolicy="no-referrer"
+      <img src={src} alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async"
         style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#F4F6FB' }} />
     ) : (
       <span style={{

@@ -91,8 +91,8 @@ export const growthService = {
  * rendered by <ContentCard /> (dispatcher).
  */
 export const contentSourcesService = {
-  mixedFeed: ({ limit = 30, country } = {}) => {
-    const qs = new URLSearchParams({ limit: String(limit) });
+  mixedFeed: ({ limit = 30, offset = 0, country } = {}) => {
+    const qs = new URLSearchParams({ limit: String(limit), offset: String(offset) });
     if (country) qs.set('country', country);
     return fj(`/api/content-sources/mixed-feed?${qs.toString()}`).then(throwOnError);
   },
