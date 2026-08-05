@@ -1006,3 +1006,27 @@ Objetivo: ecosistema profesional vivo sin nuevos módulos. Solo activar/conectar
 - Habilitar el scheduler del aggregator para runs periódicos automáticos (endpoints ya existen).
 - Configurar `LINKEDIN_CLIENT_ID/SECRET` + `MICROSOFT_CLIENT_ID/SECRET` en producción.
 
+
+---
+
+## Wave 12 — Fase 7 (5-Aug-2026): Feed Social-First con Infinite Scroll
+
+### Objetivo del usuario
+Convertir el feed en una experiencia profesional tipo LinkedIn — jerarquía visual, ritmo editorial, infinite scroll con lazy loading, footer oculto dentro del feed, publicaciones (con foto) como elemento principal. Corregir el bug crítico de que las fotos no persistían en el feed. Recorrer la plataforma como un usuario real y corregir cualquier botón muerto, tarjeta rota o texto superpuesto.
+
+### Logros
+- **Bug crítico resuelto (P0)**: endpoint `/api/community/users/media/{path}` devolvía 403 para imágenes de posts (whitelist solo cubría `users/`, no `posts/` ni `groups/`). Ahora las fotos publicadas se ven correctamente.
+- **Infinite Scroll (P0)** en el feed de "Descubrir" — `IntersectionObserver` + paginación `offset/next_offset`, sentinel + spinner al cargar página siguiente y marca `HAS LLEGADO AL FINAL DEL FEED` cuando se agotan las fuentes.
+- **Scroll-restore (P0)** al volver del sub-detalle (`/noticias`, `/empresas`, etc.): validado en Playwright con `diff=0px`.
+- **Lazy Loading** en 8 tipos de tarjeta.
+- **Footer oculto** en el Home.
+- **Test suite** re-escrita para el nuevo template Social-First: 22/22 pytest green.
+
+### Estado
+- **Backend**: 100 % (todos los tests Wave 12 pasan).
+- **Frontend**: verificado por `testing_agent_v3_fork` iter_32 (~95 %) — bug de restauración de scroll reportado en la iteración se solucionó y verificó manualmente con smoke test.
+
+### Pendientes / próximos
+- (P1) Recorrido UX manual pantalla-por-pantalla de perfiles, comunidades, empresas, empleos, eventos, videos y notificaciones para detectar textos superpuestos y botones muertos residuales (opcional — el testing agent no reportó bugs graves en estas rutas).
+- (P0) Validación end-to-end de estabilidad en producción antes del soft-launch.
+

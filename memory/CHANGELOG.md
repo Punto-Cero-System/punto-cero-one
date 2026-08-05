@@ -620,3 +620,26 @@ El Discovery Engine ahora **adapta automáticamente el contenido según el país
 - `testing_agent_v3_fork` iteration_21: 12/14 wave8b PASS + 39/39 regression (fixed google seed → 55/55).
 - Public readiness verdict: **READY FOR PUBLIC (soft launch)**.
 
+
+---
+
+## 2026-08-05 — Wave 12 Fase 7: LinkedIn-Style Infinite Feed + Critical Image Fix
+
+### Backend
+- **FIXED** `routes/profile_media_routes.py::stream_profile_media` — endpoint whitelisted `{prefix}/users/` only, returning **403** for post images stored under `{prefix}/posts/…`. Root cause of the "publicación aparece sin la fotografía" bug. Now accepts `users/`, `posts/`, `groups/` prefixes.
+- **NEW** `routes/content_sources_routes.py::mixed_feed` — accepts `offset` param (0-1000). All pool helpers (`_pool_growth`, `_pool_user_posts`, `_pool_companies`) accept `skip=`. Response now returns `offset` + `next_offset` for infinite scroll pagination (`next_offset=None` signals EOF).
+
+### Frontend
+- **REWRITTEN** `components/community/IntelligentFeed.jsx` — LinkedIn-style infinite scroll with `IntersectionObserver` sentinel (600px rootMargin), sessionStorage cache (`pc_intelligent_feed_cache_v1`, 10 min TTL), robust scroll-position restoration on back navigation (click-capture snapshot + freeze pattern to survive React Router DOM shrinkage), page-size 15 items.
+- **MODIFIED** `components/community/cards/*.jsx` — added `loading="lazy" decoding="async"` to 8 card image tags (AiTool, Community, Company, Job, Marketplace, News, Preview, Video) to reduce first-paint cost during infinite scroll.
+- **MODIFIED** `pages/HomePage.jsx` — removed `<Footer />` so feed never surfaces a page-footer inside the infinite scroll.
+- **MODIFIED** `services/feedService.js` — `contentSourcesService.mixedFeed({ offset })`.
+
+### Tests
+- **REWRITTEN** `tests/test_editorial_composer.py` — 13 tests aligned with Social-First template (user_post→large, everything else→preview, no hero) + pagination offset advance test.
+- All 22 Wave 12 pytest tests green.
+- `testing_agent_v3_fork` iteration_32: backend 100%, frontend ~95% (initial), scroll-restore now validated via smoke test PASS.
+
+### UX Directive
+- User explicitly froze new feature/refactor work — focus on stability, bug fixes and UX polish through end of Wave 12.
+

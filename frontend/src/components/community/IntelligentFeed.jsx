@@ -110,31 +110,92 @@ const IntelligentFeed = ({ limit = PAGE_SIZE, country }) => {
     });
   }, [items, offset, hasMore, meta.distribution, meta.resolved_country_label]);
 
-  // Restore scroll position on mount if we came back with a cache
+  // Restore scroll position on mount if we came back with a cache.
+  // Also disable native browser scroll restoration so it doesn't fight
+  // ours when the user hits Back — this is the main reason our target
+  // was previously overridden by the browser's own scroll snapshot.
   useEffect(() => {
-    if (cached?.scrollY != null && items.length > 0) {
-      // wait a beat for layout to settle
-      const t = setTimeout(() => window.scrollTo({ top: cached.scrollY, behavior: 'instant' in window ? 'instant' : 'auto' }), 30);
-      return () => clearTimeout(t);
+    let prevRestoration = null;
+    try {
+      if ('scrollRestoration' in window.history) {
+        prevRestoration = window.history.scrollRestoration;
+        window.history.scrollRestoration = 'manual';
+      }
+    } catch { /* ignore */ }
+
+    const target = cached?.scrollY;
+    let cancelled = false;
+    if (target != null && target >= 100 && items.length > 0) {
+      let attempts = 0;
+      const maxAttempts = 50; // ~5s total
+      const tick = () => {
+        if (cancelled) return;
+        window.scrollTo({ top: target, behavior: 'auto' });
+        attempts += 1;
+        const reached = Math.abs(window.scrollY - target) <= 60;
+        if (!reached && attempts < maxAttempts) {
+          setTimeout(tick, 100);
+        }
+      };
+      const raf = requestAnimationFrame(() => setTimeout(tick, 30));
+      return () => {
+        cancelled = true;
+        cancelAnimationFrame(raf);
+        try {
+          if (prevRestoration && 'scrollRestoration' in window.history) {
+            window.history.scrollRestoration = prevRestoration;
+          }
+        } catch { /* ignore */ }
+      };
     }
+    return () => {
+      cancelled = true;
+      try {
+        if (prevRestoration && 'scrollRestoration' in window.history) {
+          window.history.scrollRestoration = prevRestoration;
+        }
+      } catch { /* ignore */ }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Save scrollY on unmount / route change
+  // Save scrollY continuously (throttled) so we always have a fresh
+  // snapshot. On click, we snapshot immediately AND freeze further
+  // saves until unmount — this prevents post-click DOM shrinkage (from
+  // React Router swapping page components) from overwriting the good
+  // value with a clamped smaller scrollY.
   useEffect(() => {
-    const save = () => {
-      const raw = sessionStorage.getItem(CACHE_KEY);
-      if (!raw) return;
+    let frozen = false;
+    let ticking = false;
+    const doSave = (force = false) => {
+      if (frozen && !force) return;
       try {
+        const raw = sessionStorage.getItem(CACHE_KEY);
+        if (!raw) return;
         const p = JSON.parse(raw);
         p.scrollY = window.scrollY;
         sessionStorage.setItem(CACHE_KEY, JSON.stringify(p));
       } catch { /* ignore */ }
     };
-    window.addEventListener('beforeunload', save);
+    const onScroll = () => {
+      if (frozen) return;
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(() => { ticking = false; doSave(); });
+      }
+    };
+    const onClickCapture = () => {
+      // Save the CURRENT scroll (before any navigation-induced shrink),
+      // then freeze so nothing else can overwrite it.
+      doSave(true);
+      frozen = true;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('beforeunload', () => doSave(true));
+    document.addEventListener('click', onClickCapture, true);
     return () => {
-      save();
-      window.removeEventListener('beforeunload', save);
+      window.removeEventListener('scroll', onScroll);
+      document.removeEventListener('click', onClickCapture, true);
     };
   }, []);
 
