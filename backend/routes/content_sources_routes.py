@@ -149,27 +149,32 @@ MIX_TARGET = [
 # · podcast 5% · repo 5% · dataset 5%) Y define la jerarquía visual de cada
 # slot (hero / large / medium / small) para que el frontend pueda componer
 # un feed tipo revista sin decidir tamaños por su cuenta.
+# ---------------------------------------------------------------------------
+# Wave 12 Fase 7 — Feed SOCIAL FIRST. Las publicaciones de usuarios son
+# el contenido principal; el resto se renderiza como previews compactos
+# que redirigen a las páginas especializadas (Noticias, Empleos, etc.).
+# El Feed sirve para DESCUBRIR — cada módulo profundiza.
 EDITORIAL_TEMPLATE: list[tuple[str, str]] = [
-    ("news",        "hero"),    # 01 · noticia principal
-    ("job",         "medium"),  # 02 · empleo
-    ("event",       "medium"),  # 03 · evento
-    ("user_post",   "large"),   # 04 · publicación social
-    ("news",        "medium"),  # 05 · noticia secundaria
-    ("company",     "medium"),  # 06 · empresa recomendada
-    ("marketplace", "medium"),  # 07 · marketplace
-    ("video",       "medium"),  # 08 · video
-    ("job",         "medium"),  # 09 · segundo empleo
-    ("community",   "small"),   # 10 · comunidad sugerida
-    ("news",        "medium"),  # 11 · tercera noticia
-    ("user_post",   "large"),   # 12 · segunda publicación social
-    ("event",       "medium"),  # 13 · segundo evento
-    ("company",     "medium"),  # 14 · segunda empresa
-    ("job",         "medium"),  # 15 · tercer empleo
-    ("news",        "medium"),  # 16 · cuarta noticia (news 4/20 = 20%)
-    ("marketplace", "medium"),  # 17 · segundo marketplace
-    ("video",       "medium"),  # 18 · segundo video
-    ("podcast",     "small"),   # 19 · podcast
-    ("repo",        "small"),   # 20 · repositorio
+    ("user_post",   "large"),   # 01 · publicación
+    ("user_post",   "large"),   # 02 · publicación
+    ("news",        "preview"), # 03 → /noticias
+    ("user_post",   "large"),   # 04 · publicación
+    ("job",         "preview"), # 05 → /empleos
+    ("user_post",   "large"),   # 06 · publicación
+    ("event",       "preview"), # 07 → /eventos
+    ("user_post",   "large"),   # 08 · publicación
+    ("company",     "preview"), # 09 → /empresas
+    ("user_post",   "large"),   # 10 · publicación
+    ("video",       "preview"), # 11 → /videos
+    ("user_post",   "large"),   # 12 · publicación
+    ("marketplace", "preview"), # 13 → /marketplace
+    ("user_post",   "large"),   # 14 · publicación
+    ("community",   "preview"), # 15 → /comunidad
+    ("user_post",   "large"),   # 16 · publicación
+    ("news",        "preview"), # 17 → /noticias
+    ("user_post",   "large"),   # 18 · publicación
+    ("podcast",     "preview"), # 19
+    ("repo",        "preview"), # 20
 ]
 
 
@@ -246,7 +251,7 @@ async def _pool_user_posts(db, *, limit: int) -> list[dict]:
             "kind": "user_post",
             "title": (p.get("body") or "")[:120],
             "description": (p.get("body") or "")[:280],
-            "image": None,
+            "image": p.get("image_url"),
             "category": p.get("category_key"),
             "country": (author.get("country") or "").upper() or None,
             "source": author.get("name"),
@@ -257,6 +262,7 @@ async def _pool_user_posts(db, *, limit: int) -> list[dict]:
                     "id": p["id"],
                     "body": p.get("body"),
                     "hashtags": p.get("hashtags") or [],
+                    "image_url": p.get("image_url"),
                     "counts": p.get("counts") or {},
                 },
                 "author": {
@@ -344,8 +350,12 @@ def _compose_editorial(pools: dict[str, list[dict]], *, total: int) -> list[dict
             if kind == last_kind:
                 # Skip para no repetir kind consecutivo.
                 continue
-            # Downgrade hero/large en pases subsiguientes.
-            effective_layout = layout if pass_index == 0 else "medium"
+            # Downgrade hero/large en pases subsiguientes (evita heros
+            # duplicados). Preview mantiene su tamaño compacto siempre.
+            if pass_index > 0 and layout in ("hero", "large"):
+                effective_layout = "medium"
+            else:
+                effective_layout = layout
             item = pools[kind].pop(0)
             out.append({
                 **item,

@@ -40,16 +40,6 @@ const IntelligentFeed = ({ limit = 30, country }) => {
 
   return (
     <div data-testid="intelligent-feed" style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-      <style>{`
-        @media (max-width: 720px) {
-          [data-testid="intelligent-feed-grid"] {
-            grid-template-columns: 1fr !important;
-          }
-          [data-testid="intelligent-feed-grid"] > * {
-            grid-column: 1 / -1 !important;
-          }
-        }
-      `}</style>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', flexWrap: 'wrap' }}>
         <span data-testid="intelligent-feed-badge" style={{
           display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -104,25 +94,15 @@ const IntelligentFeed = ({ limit = 30, country }) => {
 
       {items.length > 0 && (
         <div data-testid="intelligent-feed-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          gap: '1rem',
-          gridAutoFlow: 'dense',
+          display: 'flex', flexDirection: 'column', gap: '0.85rem',
         }}>
           {items.map((it, idx) => {
-            // Layout dictado por el composer editorial en el backend:
-            //   hero   → doble ancho, primera posición del ciclo
-            //   large  → doble ancho, publicaciones sociales
-            //   medium → una columna, estándar
-            //   small  → una columna, comunidades/podcasts/repos
             const layout = it.layout || 'medium';
-            const wide = layout === 'hero' || layout === 'large';
             return (
               <div key={`${it.kind}-${it.id || idx}`}
                 data-testid={`feed-slot-${layout}-${idx}`}
                 data-layout={layout}
-                data-kind={it.kind}
-                style={{ gridColumn: wide ? '1 / -1' : 'auto' }}>
+                data-kind={it.kind}>
                 <ContentCard item={it} layout={layout} />
               </div>
             );

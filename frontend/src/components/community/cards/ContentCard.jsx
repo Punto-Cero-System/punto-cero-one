@@ -16,6 +16,7 @@ import MarketplaceCard from './MarketplaceCard';
 import RepoCard from './RepoCard';
 import DatasetCard from './DatasetCard';
 import AiToolCard from './AiToolCard';
+import PreviewCard from './PreviewCard';
 import BaseCard from './BaseCard';
 import FeedPostCard from '../FeedPostCard';
 
@@ -49,6 +50,7 @@ const shapeAsPost = (item) => {
     },
     body: p.body || item.description || item.title || '',
     hashtags: p.hashtags || [],
+    image_url: p.image_url || item.image || null,
     category_key: item.category || null,
     visibility: 'public',
     link_url: null,
@@ -66,6 +68,11 @@ const ContentCard = ({ item, layout = 'medium' }) => {
   if (!item || !item.kind) return null;
   if (item.kind === 'user_post') {
     return <FeedPostCard post={shapeAsPost(item)} />;
+  }
+  // Wave 12 Fase 7 — layout='preview' → tarjeta compacta con CTA a la
+  // página especializada (Noticias, Empleos, Eventos, …).
+  if (layout === 'preview') {
+    return <PreviewCard item={item} />;
   }
   const Component = REGISTRY[item.kind];
   if (Component) return <Component item={item} layout={layout} />;

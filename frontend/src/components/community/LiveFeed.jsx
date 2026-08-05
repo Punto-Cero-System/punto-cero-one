@@ -52,6 +52,7 @@ const LiveFeed = ({ initialCategory = null }) => {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState('');
   const [tab, setTab] = useState('discover');  // 'discover' | 'latest' | 'for-you'
+  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
   const [forYouMode, setForYouMode] = useState(null);
   const [growth, setGrowth] = useState([]);
   const [resolvedCountry, setResolvedCountry] = useState(null);
@@ -179,6 +180,9 @@ const LiveFeed = ({ initialCategory = null }) => {
       image_url: imageUrl || null,
     });
     setItems((prev) => [post, ...prev]);
+    // Descubrir tiene su propio fetcher; forzamos un remount para que el
+    // usuario vea su publicación al instante sin cambiar de pestaña.
+    setFeedRefreshKey((k) => k + 1);
     return post;
   };
 
@@ -214,7 +218,7 @@ const LiveFeed = ({ initialCategory = null }) => {
 
       {/* DESCUBRIR — Intelligent Mixed Feed (Wave 12) */}
       {tab === 'discover' && (
-        <IntelligentFeed limit={30} />
+        <IntelligentFeed key={feedRefreshKey} limit={30} />
       )}
 
       {tab !== 'discover' && resolvedCountry && (

@@ -1,0 +1,31 @@
+{
+  "summary": "Backend regression para Wave 12 Fase 7 (bug crítico de foto + social-first feed). Ejecutado contra REACT_APP_BACKEND_URL público. test_wave12_photo_fix.py: 9/9 PASSED — los 5 casos del usuario (solo texto, solo imagen, texto+imagen, varios consecutivos, reload) + list endpoint + mixed-feed exponiendo image en item.image y metadata.post.image_url quedan verdes. Suite completa (photo_fix + content_sources + final + ux + groups_ext + editorial_composer): 60 PASSED, 6 FAILED — todas las 6 fallas son en test_editorial_composer.py y son assertions OBSOLETAS del template news-first previo (esperan items[0]==news/hero, layout∈{hero,large,medium,small}). El nuevo template social-first intencionalmente pone user_post primero y usa layout='preview' para non-social, lo cual es EL COMPORTAMIENTO SOLICITADO en el review_request. No es una regresión real; el archivo test_editorial_composer.py necesita ser actualizado o retirado por el main agent para alinearlo con el nuevo diseño social-first.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "test_editorial_composer.py (suite de tests, no endpoint)", "issue": "6 tests asumen el template editorial antiguo (news-first, layouts hero/large/medium/small). Con el nuevo social-first (user_post primero + layout 'preview' para non-social) fallan por diseño. Actualizar o retirar el archivo."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_wave12_photo_fix.py",
+    "/app/test_reports/pytest/wave12_photo_fix.xml",
+    "/app/test_reports/pytest/wave12_regression.xml"
+  ],
+  "action_items": [
+    "Actualizar /app/backend/tests/test_editorial_composer.py para reflejar el template social-first (user_post primero con layout='large', non-social con layout='preview'), o marcar los 6 tests obsoletos como skipped/xfail con motivo claro."
+  ],
+  "critical_code_review_comments": [
+    "El fix del bug de foto funciona end-to-end: upload → image_url persiste en Mongo → GET single/list devuelve image_url → nueva sesión sin cookies sigue viendo la imagen (persistencia real confirmada).",
+    "mixed-feed correctamente expone image tanto en item.image como en metadata.post.image_url — shapeAsPost del frontend puede reconstruir la foto.",
+    "Anti-repetición y layout_distribution del social-first template validados por test_wave12_content_sources.py (pass)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "91% (60/66 en la suite regresión completa; 100% en los tests relevantes al fix del bug — 9/9 photo_fix + 100% wave12_*)"},
+  "test_credentials": "N/A — los tests registran usuarios ad-hoc con emails pytest+photo+*.",
+  "seed_data_creation": "Cada test crea su propio user + posts vía API pública; sin seeds compartidas.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Los 6 fallos de test_editorial_composer.py NO son un bug del backend — son assertions viejas del template news-first. El backend cambió correctamente a social-first. Cuando main agent actualice ese archivo, correr solo pytest backend/tests/test_editorial_composer.py -v para verificar. El fix crítico del bug de foto está 100% funcional (9/9 tests photo_fix verdes contra el URL público).",
+  "rca of the issue": "N/A — no hay bug pendiente. El bug reportado por el usuario (foto no persistía) está resuelto: _pool_user_posts ahora agrega image e metadata.post.image_url, y feed_routes persiste image_url en Mongo y lo devuelve en GET single/list. Confirmado por test_case5_reload_still_shows_image que abre nueva sesión sin cookies y sigue viendo la imagen."
+}

@@ -74,21 +74,22 @@ class TestContentSources:
         data = r.json()
         items = data["items"]
         assert len(items) > 0
-        # Every item must carry a `kind` AND a `layout` (editorial composer).
+        # Every item must carry a `kind` AND a `layout`.
         for it in items:
             assert "kind" in it and it["kind"], it
-            assert it.get("layout") in ("hero", "large", "medium", "small"), it
-        # Anti-repetición estricta (editorial): jamás dos items del mismo kind
+            assert it.get("layout") in ("hero", "large", "medium", "small", "preview"), it
+        # Anti-repetición estricta: nunca dos items del mismo kind
         # consecutivos.
         for i in range(1, len(items)):
             assert items[i]["kind"] != items[i - 1]["kind"], (
                 f"editorial break — consecutive {items[i]['kind']} at #{i}: "
                 f"{[x['kind'] for x in items]}"
             )
-        # El primer item debe ser hero (según EDITORIAL_TEMPLATE) o al menos
-        # aparecer al menos un hero en las primeras 4 posiciones.
-        assert any(it.get("layout") == "hero" for it in items[:4]), \
-            "no hero in the first 4 slots"
+        # Wave 12 Fase 7 (social first): al menos un item con
+        # layout='large' O 'preview' presente. La mayoría del feed debe
+        # ser social (user_post) cuando hay posts disponibles.
+        layouts = [it.get("layout") for it in items]
+        assert any(l in ("large", "preview") for l in layouts), layouts
 
     def test_mixed_feed_distribution_report(self):
         r = requests.get(f"{BASE_URL}/api/content-sources/mixed-feed", params={"limit": 12})
