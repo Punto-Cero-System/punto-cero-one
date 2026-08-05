@@ -1,0 +1,34 @@
+{
+  "summary": "Wave 12 Final Sweep. Backend: 30/30 pytest tests green (test_editorial_composer.py + test_wave12_photo_fix.py + test_wave12_content_sources.py). Frontend UX walkthrough on all 8 secondary routes (/perfil /comunidad /empresas /noticias /empleos /eventos /videos /marketplace) — all load cleanly with 0 broken images in-viewport. Feed hierarchy validated: user_post cards ~759x717px vs preview cards ~91x32px (clear visual dominance). Footer confirmed hidden on '/'. Infinite scroll grows page (30→104 articles across 4 scrolls). Composer photo publish end-to-end works (image-only post published, image served with HTTP 200 image/png, persists after F5). Scroll restoration NOW WORKS after two bug fixes I applied — diff=0px in E2E test.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_editorial_composer.py",
+    "/app/backend/tests/test_wave12_photo_fix.py",
+    "/app/backend/tests/test_wave12_content_sources.py",
+    "/app/test_reports/pytest/iter33_backend.xml"
+  ],
+  "action_items": [
+    "No blocking issues remain. All P0 and P1 requirements from the review request are met."
+  ],
+  "critical_code_review_comments": [
+    "IntelligentFeed.jsx had TWO scroll-restore bugs (both fixed this iteration): (1) the items-persist useEffect wrote cache without preserving scrollY, so every re-render wiped the scroll snapshot; (2) the scroll-saver's onScroll listener kept writing scrollY even after route changes fired scroll events with clamped values — added a `pathname === '/'` gate in doSave().",
+    "backend/data/countries_sources.json had 8 YouTube maxresdefault.jpg URLs that 404 for videos without HD thumbs; swapped to hqdefault.jpg (always exists) — removes 4-5 visible broken video-card thumbnails from Videos surface.",
+    "External-domain 404s remain but are third-party issues (e.g. https://t1.gstatic.com favicon for sena.edu.co) — no in-app fix warranted."
+  ],
+  "updated_files": [
+    "/app/frontend/src/components/community/IntelligentFeed.jsx",
+    "/app/backend/data/countries_sources.json"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "member.demo@puntocero.test-e2e.com / MemberDemo2026 (validated login 200)",
+  "seed_data_creation": "Created 1 E2E test post (post_bc296b806f80) under user_a39694d190bf with an image at /api/community/users/media/punto-cero-system/posts/user_a39694d190bf/cf886f3dd2334fc0.png — verified image streams with HTTP 200 image/png and post persists across F5.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Two production bugs were fixed in IntelligentFeed.jsx: (1) writeCache in the items-persist useEffect now reads and preserves the existing scrollY from sessionStorage before writing; (2) doSave() now no-ops when window.location.pathname !== '/', preventing scroll-saver from clobbering the good scrollY with a clamped value after route transition. E2E validated: click a CTA (via el.click() to avoid Playwright's scrollIntoView) → navigate → browser back → scrollY restored exactly (diff=0). Also swapped YouTube maxresdefault→hqdefault in countries_sources.json to eliminate 8 broken thumbnail URLs.",
+  "rca_of_the_issue": "Scroll-restore RCA (v2, superseding iter32): iter32 fix added onClickCapture freeze but two other paths still wiped scrollY. Fix A: items-persist effect now merges existing cache.scrollY (was silently dropping it on every state update — items are updated many times during infinite scroll, each wipe). Fix B: pathname-gate in doSave() rejects writes when component is on non-'/' routes (scroll events can fire mid-transition from the still-registered listener as the new page's shorter DOM triggers window scroll clamp). Playwright note: page.click() calls elementHandle.scrollIntoView() first, which artificially scrolls the viewport before the click and confuses the restore test — use `el.click()` from page.evaluate() or click by coordinates on an already-visible CTA to accurately reproduce real user behavior."
+}

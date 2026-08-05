@@ -278,11 +278,17 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
           <a href={post.image_url.startsWith('http') ? post.image_url : `${process.env.REACT_APP_BACKEND_URL}${post.image_url}`}
              target="_blank" rel="noopener noreferrer"
              data-testid={`feed-post-image-${post.id}`}
-             style={{ display: 'block', marginTop: '0.65rem', borderRadius: 12, overflow: 'hidden' }}>
+             style={{
+               display: 'block', marginTop: '0.65rem', borderRadius: 12, overflow: 'hidden',
+               background: '#F4F6FB', maxHeight: 520,
+             }}>
             <img
               src={post.image_url.startsWith('http') ? post.image_url : `${process.env.REACT_APP_BACKEND_URL}${post.image_url}`}
-              alt="Publicación" referrerPolicy="no-referrer"
-              style={{ width: '100%', maxHeight: 480, objectFit: 'cover', display: 'block' }} />
+              alt="Publicación" referrerPolicy="no-referrer" loading="lazy" decoding="async"
+              style={{
+                width: '100%', height: 'auto', maxHeight: 520,
+                objectFit: 'contain', display: 'block', margin: '0 auto',
+              }} />
           </a>
         )}
         {post.hashtags?.length > 0 && (

@@ -99,14 +99,23 @@ const IntelligentFeed = ({ limit = PAGE_SIZE, country }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Persist to sessionStorage whenever items change (debounced via effect)
+  // Persist to sessionStorage whenever items change (debounced via effect).
+  // IMPORTANT: preserve any scrollY that the scroll-saver effect stored on
+  // the same cache object — otherwise this write wipes it and the
+  // restore-on-back path finds scrollY = undefined.
   useEffect(() => {
     if (items.length === 0) return;
+    let existingScrollY;
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (raw) { existingScrollY = JSON.parse(raw).scrollY; }
+    } catch { /* ignore */ }
     writeCache({
       items,
       next_offset: hasMore ? offset : null,
       resolved_country_label: meta.resolved_country_label,
       distribution: meta.distribution,
+      scrollY: existingScrollY,
     });
   }, [items, offset, hasMore, meta.distribution, meta.resolved_country_label]);
 
@@ -169,6 +178,13 @@ const IntelligentFeed = ({ limit = PAGE_SIZE, country }) => {
     let ticking = false;
     const doSave = (force = false) => {
       if (frozen && !force) return;
+      // Only save scrollY when we're actually on the home feed route.
+      // Otherwise another mounted IntelligentFeed (or a stale listener
+      // firing during route transition) would clobber the good value
+      // with a smaller clamped scrollY from the new page.
+      try {
+        if (window.location.pathname !== '/') return;
+      } catch { /* ignore */ }
       try {
         const raw = sessionStorage.getItem(CACHE_KEY);
         if (!raw) return;
