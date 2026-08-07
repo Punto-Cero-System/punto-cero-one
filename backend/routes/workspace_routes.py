@@ -67,22 +67,23 @@ class WorkspaceDoc(BaseModel):
 # ---------- Defaults ----------
 
 def default_workspace() -> Dict[str, Any]:
-    """Default Mi Espacio layout — mirrors the current HomePage widget order.
+    """Default Mi Espacio layout — minimalist Home (Fase de Optimización).
 
-    Widget IDs must match the frontend registry (see workspaceRegistry.js).
+    Only the essentials on first visit: profile card, activity, quick
+    links (left), feed + inline stats (center), and ONE preview of each
+    news/event/recommendation on the right. Everything else lives in
+    its own dedicated module (Noticias, Empresas, Empleos, …). Users can
+    still enable additional widgets from Mi Espacio → Configuración.
+
+    Widget IDs must match the frontend registry (workspaceRegistry.jsx).
     """
     return {
         "layout_version": LAYOUT_VERSION,
         "panels": {
             "left": [
                 "profile-card",
-                "nuestra-historia",
                 "activity",
-                "groups",
                 "quick-links",
-                "weather-mini",
-                "calendar-mini",
-                "podcast-mini",
             ],
             "center": [
                 "welcome-band",
@@ -90,28 +91,9 @@ def default_workspace() -> Dict[str, Any]:
                 "inline-stats",
             ],
             "right": [
-                "messages",
-                "trending-companies",
                 "rss-news",
-                "trending",
-                "trending-editorial",
                 "events",
-                "discover-entities",
-                "companies",
-                "investor-center",
-                "ai-tools",
-                "crypto-live",
-                "fx-live",
-                "weather-live",
-                "youtube-live",
-                "markets",
-                "ai-of-the-day",
-                "poll",
-                "launches",
-                "courses",
-                "marketplace",
                 "suggested-people",
-                "capital-cta",
             ],
         },
         "widgets": {},  # empty = every listed widget uses defaults (enabled=true)

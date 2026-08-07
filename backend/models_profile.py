@@ -33,6 +33,7 @@ class ProfileSocialLinks(BaseModel):
     github: Optional[str] = None
     instagram: Optional[str] = None
     youtube: Optional[str] = None
+    facebook: Optional[str] = None
 
 
 class UIPreferences(BaseModel):

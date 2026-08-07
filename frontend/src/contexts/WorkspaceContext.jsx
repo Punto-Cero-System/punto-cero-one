@@ -58,16 +58,15 @@ export const WorkspaceProvider = ({ children }) => {
             setWorkspace(ws || dfs || DEFAULT_WORKSPACE);
           }
         } else {
-          // Anonymous — pull just the defaults (a lightweight endpoint would be nice
-          // but calling /api/workspace/me for anon returns 401, so we synthesise
-          // the same template client-side. The list of default IDs must stay in sync
-          // with the backend; the widget registry keeps them centralised anyway).
+          // Anonymous — minimalist Home per user directive: solo Feed +
+          // 1 noticia + 1 empleo + 1 evento + 1 recomendación. Todo el
+          // resto se descubre navegando a cada módulo especializado.
           const fallback = {
             layout_version: 1,
             panels: {
-              left: ['profile-card', 'nuestra-historia', 'activity', 'groups', 'quick-links', 'weather-mini', 'calendar-mini', 'podcast-mini'],
+              left: ['profile-card', 'activity', 'quick-links'],
               center: ['welcome-band', 'feed', 'inline-stats'],
-              right: ['messages', 'trending-companies', 'rss-news', 'trending', 'trending-editorial', 'events', 'discover-entities', 'companies', 'investor-center', 'ai-tools', 'crypto-live', 'fx-live', 'weather-live', 'youtube-live', 'markets', 'ai-of-the-day', 'poll', 'launches', 'courses', 'marketplace', 'suggested-people', 'capital-cta'],
+              right: ['rss-news', 'events', 'suggested-people'],
             },
             widgets: {},
             theme: 'auto',

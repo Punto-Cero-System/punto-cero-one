@@ -174,3 +174,53 @@ async def entity_count(entity_type: str, entity_id: str, request: Request):
         legacy = await db.company_follows.count_documents({"company_id": eid})
         count = max(count, legacy)
     return {"entity_type": entity_type, "entity_id": eid, "count": count}
+
+
+# ---------- Followers / Following lists (users only) ---------------------
+#
+# Simple LIST endpoints that reuse the existing `follows` collection. No new
+# collections, no schema changes. Used by the profile page modal to show
+# who follows / is followed by a user.
+
+async def _hydrate_users(db, user_ids: list[str]) -> list[dict]:
+    """Return public-safe user snippets for a list of user_ids."""
+    if not user_ids:
+        return []
+    docs = db.users.find(
+        {"id": {"$in": user_ids}},
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "picture": 1,
+         "headline": 1, "country": 1, "current_company": 1},
+    )
+    return [d async for d in docs]
+
+
+@router.get("/user/{user_id}/followers")
+async def list_followers(user_id: str, request: Request,
+                         limit: int = Query(default=50, ge=1, le=200)):
+    """Users who follow `user_id`."""
+    db = request.app.state.db
+    cursor = db.follows.find(
+        {"entity_type": "user", "entity_id": user_id},
+        {"_id": 0, "user_id": 1, "created_at": 1},
+    ).sort("created_at", -1).limit(limit)
+    rows = [r async for r in cursor]
+    users = await _hydrate_users(db, [r["user_id"] for r in rows])
+    by_id = {u["id"]: u for u in users}
+    ordered = [by_id[r["user_id"]] for r in rows if r["user_id"] in by_id]
+    return {"user_id": user_id, "count": len(ordered), "items": ordered}
+
+
+@router.get("/user/{user_id}/following")
+async def list_following(user_id: str, request: Request,
+                         limit: int = Query(default=50, ge=1, le=200)):
+    """Users that `user_id` is following."""
+    db = request.app.state.db
+    cursor = db.follows.find(
+        {"user_id": user_id, "entity_type": "user"},
+        {"_id": 0, "entity_id": 1, "created_at": 1},
+    ).sort("created_at", -1).limit(limit)
+    rows = [r async for r in cursor]
+    users = await _hydrate_users(db, [r["entity_id"] for r in rows])
+    by_id = {u["id"]: u for u in users}
+    ordered = [by_id[r["entity_id"]] for r in rows if r["entity_id"] in by_id]
+    return {"user_id": user_id, "count": len(ordered), "items": ordered}

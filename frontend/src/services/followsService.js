@@ -30,4 +30,15 @@ export const followsService = {
   count: (type, id) => fetch(
     `${API}/api/follows/${type}/${encodeURIComponent(id)}/count`,
   ).then(asJson),
+
+  // Followers/Following lists — reuse existing `follows` collection.
+  listFollowers: (userId, limit = 50) => fetch(
+    `${API}/api/follows/user/${encodeURIComponent(userId)}/followers?limit=${limit}`,
+    { credentials: 'include' },
+  ).then(asJson),
+
+  listFollowing: (userId, limit = 50) => fetch(
+    `${API}/api/follows/user/${encodeURIComponent(userId)}/following?limit=${limit}`,
+    { credentials: 'include' },
+  ).then(asJson),
 };

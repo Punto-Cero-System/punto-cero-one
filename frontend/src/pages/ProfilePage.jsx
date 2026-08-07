@@ -114,10 +114,7 @@ const ProfileView = ({ profile, onEdit, onMediaUpdate }) => (
       </div>
     </motion.section>
 
-    <TagBlock title="Skills"       tags={profile.skills}       testid="profile-skills" />
-    <TagBlock title="Especialidades" tags={profile.specialties} testid="profile-specialties" />
-    <TagBlock title="Verticales activas" tags={profile.verticals} testid="profile-verticals" />
-    <TagBlock title="Idiomas"      tags={profile.languages}    testid="profile-languages" />
+    <TagBlock title="Especialidad" tags={profile.specialties} testid="profile-specialties" />
     <TagBlock title="Intereses"    tags={profile.interests}    testid="profile-interests" />
   </>
 );
@@ -327,30 +324,42 @@ const TagBlock = ({ title, tags, testid }) => {
 };
 
 // ---------------------------------------------------------------------------
-// Editor
+// Editor — simplified professional identity form (Fase de Optimización)
 // ---------------------------------------------------------------------------
+const INTEREST_OPTIONS = [
+  'Legal', 'IA', 'Capital', 'Empresas', 'Comunidad', 'Eventos',
+  'Empleos', 'Marketplace', 'Noticias', 'Videos', 'Medicina',
+  'Contabilidad', 'Educación', 'Real Estate', 'Marketing',
+  'Tecnología', 'Sostenibilidad', 'Startups', 'Fintech', 'E-commerce',
+];
+
 const ProfileEditor = ({ initial, onCancel, onSaved }) => {
   const [form, setForm] = useState({
     name: initial.name || '',
-    headline: initial.headline || '',
-    bio: initial.bio || '',
+    headline: initial.headline || '',           // Profesión
+    bio: initial.bio || '',                     // Resumen profesional
     country: initial.country || '',
     city: initial.city || '',
     current_company: initial.current_company || '',
     current_title: initial.current_title || '',
-    portfolio_url: initial.portfolio_url || '',
-    skills: (initial.skills || []).join(', '),
-    specialties: (initial.specialties || []).join(', '),
-    verticals: (initial.verticals || []).join(', '),
-    languages: (initial.languages || []).join(', '),
-    interests: (initial.interests || []).join(', '),
+    specialty: (initial.specialties && initial.specialties[0]) || '',
+    // Social links live inside `social` in the backend.
+    website: initial.social?.website || initial.portfolio_url || '',
+    linkedin: initial.social?.linkedin || '',
+    facebook: initial.social?.facebook || '',
+    instagram: initial.social?.instagram || '',
+    // Intereses as an ARRAY (checkbox chips) to feed the multi-select.
+    interests: Array.isArray(initial.interests) ? initial.interests : [],
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const toList = (s) => s.split(',').map((t) => t.trim()).filter(Boolean);
+  const toggleInterest = (opt) => setForm((f) => {
+    const has = f.interests.includes(opt);
+    return { ...f, interests: has ? f.interests.filter((x) => x !== opt) : [...f.interests, opt] };
+  });
 
   const submit = async (e) => {
     e.preventDefault();
@@ -365,12 +374,17 @@ const ProfileEditor = ({ initial, onCancel, onSaved }) => {
         city: form.city.trim() || undefined,
         current_company: form.current_company.trim() || undefined,
         current_title: form.current_title.trim() || undefined,
-        portfolio_url: form.portfolio_url.trim() || undefined,
-        skills: toList(form.skills),
-        specialties: toList(form.specialties),
-        verticals: toList(form.verticals),
-        languages: toList(form.languages),
-        interests: toList(form.interests),
+        // Single specialty maps to the existing list (first entry).
+        specialties: form.specialty.trim() ? [form.specialty.trim()] : [],
+        // Migrate portfolio_url → social.website as canonical field.
+        portfolio_url: form.website.trim() || undefined,
+        social: {
+          website: form.website.trim() || undefined,
+          linkedin: form.linkedin.trim() || undefined,
+          facebook: form.facebook.trim() || undefined,
+          instagram: form.instagram.trim() || undefined,
+        },
+        interests: form.interests,
       });
       onSaved(fresh);
     } catch (err) {
@@ -395,30 +409,57 @@ const ProfileEditor = ({ initial, onCancel, onSaved }) => {
 
       <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: '1fr 1fr' }}>
         <Field label="Nombre"><input value={form.name} onChange={(e) => set('name', e.target.value)} data-testid="profile-editor-name" style={inp} /></Field>
-        <Field label="Titular / Headline"><input value={form.headline} onChange={(e) => set('headline', e.target.value)} data-testid="profile-editor-headline" style={inp} /></Field>
+        <Field label="Profesión"><input value={form.headline} onChange={(e) => set('headline', e.target.value)} data-testid="profile-editor-headline" style={inp} placeholder="Ej. Abogada corporativa" /></Field>
       </div>
 
-      <Field label="Bio">
-        <textarea value={form.bio} onChange={(e) => set('bio', e.target.value)} rows={3} data-testid="profile-editor-bio" style={{ ...inp, resize: 'vertical' }} />
+      <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: '1fr 1fr' }}>
+        <Field label="Cargo"><input value={form.current_title} onChange={(e) => set('current_title', e.target.value)} data-testid="profile-editor-title" style={inp} /></Field>
+        <Field label="Empresa"><input value={form.current_company} onChange={(e) => set('current_company', e.target.value)} data-testid="profile-editor-company" style={inp} /></Field>
+      </div>
+
+      <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: '1fr 1fr' }}>
+        <Field label="Ciudad"><input value={form.city} onChange={(e) => set('city', e.target.value)} data-testid="profile-editor-city" style={inp} /></Field>
+        <Field label="País"><input value={form.country} onChange={(e) => set('country', e.target.value)} data-testid="profile-editor-country" style={inp} /></Field>
+      </div>
+
+      <Field label="Especialidad">
+        <input value={form.specialty} onChange={(e) => set('specialty', e.target.value)} data-testid="profile-editor-specialty" style={inp} placeholder="Ej. Derecho societario" />
+      </Field>
+
+      <Field label="Resumen profesional">
+        <textarea value={form.bio} onChange={(e) => set('bio', e.target.value)} rows={4} data-testid="profile-editor-bio" style={{ ...inp, resize: 'vertical' }} placeholder="Cuenta tu trayectoria en pocas líneas…" />
       </Field>
 
       <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: '1fr 1fr' }}>
-        <Field label="País"><input value={form.country} onChange={(e) => set('country', e.target.value)} data-testid="profile-editor-country" style={inp} /></Field>
-        <Field label="Ciudad"><input value={form.city} onChange={(e) => set('city', e.target.value)} data-testid="profile-editor-city" style={inp} /></Field>
+        <Field label="Sitio web"><input value={form.website} onChange={(e) => set('website', e.target.value)} data-testid="profile-editor-website" style={inp} placeholder="https://…" /></Field>
+        <Field label="LinkedIn"><input value={form.linkedin} onChange={(e) => set('linkedin', e.target.value)} data-testid="profile-editor-linkedin" style={inp} placeholder="https://linkedin.com/in/…" /></Field>
       </div>
-
       <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: '1fr 1fr' }}>
-        <Field label="Cargo actual"><input value={form.current_title} onChange={(e) => set('current_title', e.target.value)} data-testid="profile-editor-title" style={inp} /></Field>
-        <Field label="Empresa actual"><input value={form.current_company} onChange={(e) => set('current_company', e.target.value)} data-testid="profile-editor-company" style={inp} /></Field>
+        <Field label="Facebook"><input value={form.facebook} onChange={(e) => set('facebook', e.target.value)} data-testid="profile-editor-facebook" style={inp} placeholder="https://facebook.com/…" /></Field>
+        <Field label="Instagram"><input value={form.instagram} onChange={(e) => set('instagram', e.target.value)} data-testid="profile-editor-instagram" style={inp} placeholder="https://instagram.com/…" /></Field>
       </div>
 
-      <Field label="Portafolio (URL)"><input value={form.portfolio_url} onChange={(e) => set('portfolio_url', e.target.value)} data-testid="profile-editor-portfolio" style={inp} placeholder="https://…" /></Field>
-
-      <Field label="Skills · separados por coma"><input value={form.skills} onChange={(e) => set('skills', e.target.value)} data-testid="profile-editor-skills" style={inp} /></Field>
-      <Field label="Especialidades · separadas por coma"><input value={form.specialties} onChange={(e) => set('specialties', e.target.value)} data-testid="profile-editor-specialties" style={inp} /></Field>
-      <Field label="Verticales activas · legal, ia, capital, …"><input value={form.verticals} onChange={(e) => set('verticals', e.target.value)} data-testid="profile-editor-verticals" style={inp} /></Field>
-      <Field label="Idiomas"><input value={form.languages} onChange={(e) => set('languages', e.target.value)} data-testid="profile-editor-languages" style={inp} /></Field>
-      <Field label="Intereses"><input value={form.interests} onChange={(e) => set('interests', e.target.value)} data-testid="profile-editor-interests" style={inp} /></Field>
+      <Field label="Intereses">
+        <div data-testid="profile-editor-interests"
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '0.35rem 0', minHeight: 40 }}>
+          {INTEREST_OPTIONS.map((opt) => {
+            const active = form.interests.includes(opt);
+            return (
+              <button type="button" key={opt} onClick={() => toggleInterest(opt)}
+                data-testid={`profile-editor-interest-${opt.toLowerCase()}`}
+                style={{
+                  padding: '0.32rem 0.7rem', borderRadius: 100,
+                  border: `1px solid ${active ? '#00A277' : 'rgba(11,31,58,0.15)'}`,
+                  background: active ? 'rgba(0,200,150,0.14)' : '#FFFFFF',
+                  color: active ? '#00A277' : NAVY,
+                  fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer',
+                }}>
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+      </Field>
 
       {error && <div data-testid="profile-editor-error" style={{ color: '#B91C1C', fontSize: '0.8rem' }}>{error}</div>}
 

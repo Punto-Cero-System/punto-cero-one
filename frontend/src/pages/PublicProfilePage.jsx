@@ -45,6 +45,8 @@ const PublicProfilePage = () => {
   const [followBusy, setFollowBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // 'followers' | 'following' | null — opens the FollowsListModal below.
+  const [listMode, setListMode] = useState(null);
 
   const isSelf = viewer && typeof viewer === 'object' && viewer.id === userId;
 
@@ -279,8 +281,10 @@ const PublicProfilePage = () => {
                 borderTop: '1px solid rgba(11,31,58,0.06)', paddingTop: '1rem',
               }}>
               <Stat label="Publicaciones" value={profile.posts_count} testid="stat-posts" />
-              <Stat label="Seguidores" value={profile.followers_count} testid="stat-followers" />
-              <Stat label="Siguiendo" value={profile.following_count} testid="stat-following" />
+              <Stat label="Seguidores" value={profile.followers_count} testid="stat-followers"
+                onClick={() => setListMode('followers')} />
+              <Stat label="Siguiendo" value={profile.following_count} testid="stat-following"
+                onClick={() => setListMode('following')} />
             </div>
           </div>
         </section>
@@ -354,6 +358,11 @@ const PublicProfilePage = () => {
       </main>
       <Footer />
 
+      {listMode && (
+        <FollowsListModal userId={profile.id} mode={listMode}
+          onClose={() => setListMode(null)} />
+      )}
+
       <style>{`
         .pcone-spin { animation: pcSpin 1s linear infinite; }
         @keyframes pcSpin { to { transform: rotate(360deg); } }
@@ -369,18 +378,27 @@ const metaSpan = {
   display: 'inline-flex', alignItems: 'center', gap: 5,
 };
 
-const Stat = ({ label, value, testid }) => (
-  <div data-testid={testid}>
-    <div style={{ fontFamily: '"Space Grotesk", sans-serif',
-                  fontSize: '1.35rem', fontWeight: 700, color: NAVY }}>
-      {(value ?? 0).toLocaleString('es-MX')}
+const Stat = ({ label, value, testid, onClick }) => {
+  const interactive = !!onClick;
+  return (
+    <div data-testid={testid}
+      onClick={onClick}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={interactive ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
+      style={{ cursor: interactive ? 'pointer' : 'default', userSelect: 'none' }}>
+      <div style={{ fontFamily: '"Space Grotesk", sans-serif',
+                    fontSize: '1.35rem', fontWeight: 700, color: NAVY }}>
+        {(value ?? 0).toLocaleString('es-MX')}
+      </div>
+      <div style={{ fontSize: '0.72rem', letterSpacing: '0.14em',
+                    fontWeight: 700,
+                    color: interactive ? '#00A277' : 'rgba(11,31,58,0.5)' }}>
+        {label.toUpperCase()}
+      </div>
     </div>
-    <div style={{ fontSize: '0.72rem', letterSpacing: '0.14em',
-                  fontWeight: 700, color: 'rgba(11,31,58,0.5)' }}>
-      {label.toUpperCase()}
-    </div>
-  </div>
-);
+  );
+};
 
 const Card = ({ title, children, testid }) => (
   <section data-testid={testid}
@@ -427,6 +445,128 @@ const SocialLink = ({ url, icon, label }) => {
       }}>
       {icon}<span>{label}</span>
     </a>
+  );
+};
+
+/**
+ * FollowsListModal — light dialog listing followers or following. Consumes
+ * GET /api/follows/user/:id/{followers|following}. No extra state, no new
+ * collections; reuses the existing `follows` records via the two new list
+ * endpoints in follows_routes.
+ */
+const FollowsListModal = ({ userId, mode, onClose }) => {
+  const [items, setItems] = useState([]);
+  const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true); setError(''); setItems([]);
+    const load = mode === 'followers'
+      ? followsService.listFollowers(userId)
+      : followsService.listFollowing(userId);
+    load
+      .then((d) => { if (!cancelled) { setItems(d.items || []); setCount(d.count || 0); } })
+      .catch((e) => { if (!cancelled) setError(e?.message || 'No se pudo cargar la lista'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [userId, mode]);
+
+  const title = mode === 'followers' ? 'Seguidores' : 'Siguiendo';
+
+  return (
+    <div data-testid="follows-modal-backdrop"
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1200,
+        background: 'rgba(11,31,58,0.55)', backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '1rem',
+      }}>
+      <div data-testid="follows-modal"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 'min(460px, 100%)', maxHeight: '78vh', overflow: 'auto',
+          background: '#FFFFFF', borderRadius: 18,
+          boxShadow: '0 30px 80px rgba(0,0,0,0.3)',
+        }}>
+        <div style={{
+          padding: '1rem 1.15rem', borderBottom: '1px solid rgba(11,31,58,0.06)',
+          display: 'flex', alignItems: 'center', gap: 8,
+          position: 'sticky', top: 0, background: '#FFFFFF', zIndex: 1,
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: '"Space Grotesk", sans-serif',
+                          fontSize: '1.05rem', fontWeight: 700, color: NAVY }}>
+              {title}
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'rgba(11,31,58,0.55)' }}>
+              {count.toLocaleString('es-MX')} {count === 1 ? 'persona' : 'personas'}
+            </div>
+          </div>
+          <button onClick={onClose} data-testid="follows-modal-close"
+            aria-label="Cerrar"
+            style={{ padding: '0.35rem 0.55rem', borderRadius: 8,
+                     background: 'rgba(11,31,58,0.04)', border: 'none',
+                     cursor: 'pointer', color: NAVY, fontWeight: 700 }}>×</button>
+        </div>
+        <div style={{ padding: '0.35rem 0.4rem 0.6rem' }}>
+          {loading && (
+            <div style={{ padding: '1.5rem', textAlign: 'center', color: 'rgba(11,31,58,0.5)', fontSize: '0.85rem' }}>
+              <Loader2 size={16} className="pcone-spin" style={{ verticalAlign: 'middle', marginRight: 6 }} />
+              Cargando…
+              <style>{`.pcone-spin { animation: pcSpin 1s linear infinite; }
+                @keyframes pcSpin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          )}
+          {error && (
+            <div style={{ padding: '1rem', color: '#B91C1C', fontSize: '0.85rem' }}>{error}</div>
+          )}
+          {!loading && !error && items.length === 0 && (
+            <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'rgba(11,31,58,0.5)', fontSize: '0.85rem' }}>
+              {mode === 'followers' ? 'Aún no tiene seguidores.' : 'Aún no sigue a nadie.'}
+            </div>
+          )}
+          {items.map((u) => (
+            <Link key={u.id} to={`/u/${u.id}`} onClick={onClose}
+              data-testid={`follows-modal-item-${u.id}`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '0.65rem 0.75rem', borderRadius: 10,
+                textDecoration: 'none', color: NAVY,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(11,31,58,0.04)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+              {u.picture ? (
+                <img src={asAbsoluteMedia(u.picture)} alt="" referrerPolicy="no-referrer"
+                  loading="lazy"
+                  style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', background: '#F4F6FB' }} />
+              ) : (
+                <div style={{ width: 40, height: 40, borderRadius: '50%',
+                              background: 'linear-gradient(135deg, #0B1F3A, #1E293B)',
+                              color: '#FFFFFF', display: 'flex', alignItems: 'center',
+                              justifyContent: 'center', fontWeight: 700 }}>
+                  {(u.name || u.email || '?').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700,
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {u.name || u.email || 'Miembro'}
+                </div>
+                {(u.headline || u.current_company) && (
+                  <div style={{ fontSize: '0.72rem', color: 'rgba(11,31,58,0.55)',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {u.headline || u.current_company}
+                  </div>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
 
