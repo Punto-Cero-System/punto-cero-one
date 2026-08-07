@@ -219,7 +219,7 @@ const LiveFeed = ({ initialCategory = null }) => {
 
       {/* DESCUBRIR — Intelligent Mixed Feed (Wave 12) */}
       {tab === 'discover' && (
-        <IntelligentFeed key={feedRefreshKey} limit={30} />
+        <IntelligentFeed key={feedRefreshKey} limit={12} />
       )}
 
       {tab !== 'discover' && resolvedCountry && (

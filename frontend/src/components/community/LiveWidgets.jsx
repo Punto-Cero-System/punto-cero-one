@@ -154,6 +154,14 @@ export const RssLiveWidget = ({ feedKey = 'noticias', title = 'Noticias en vivo'
           )}
         </a>
       ))}
+      {items.length > 0 && (
+        <a href="/noticias" data-testid="rss-see-all"
+          style={{
+            display: 'block', textAlign: 'center', marginTop: '0.5rem',
+            padding: '0.35rem 0', fontSize: '0.72rem', fontWeight: 700,
+            color: '#00A277', textDecoration: 'none', letterSpacing: '0.06em',
+          }}>Ver todas las noticias →</a>
+      )}
     </WidgetShell>
   );
 };

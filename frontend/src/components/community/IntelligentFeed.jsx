@@ -1,21 +1,23 @@
 /**
- * IntelligentFeed — Wave 12 SOCIAL-FIRST feed with infinite scroll.
+ * IntelligentFeed — Wave 12 SOCIAL-FIRST feed with "Ver más" pagination.
  *
  * - Consumes /api/content-sources/mixed-feed with `offset` pagination.
- * - IntersectionObserver sentinel triggers next page as user scrolls.
- * - Preserves scroll position + loaded items in sessionStorage so
- *   returning from another page keeps the reader's spot (LinkedIn-style).
+ * - Initial page shows 12 items (10-15 range) — kept low to avoid mounting
+ *   many card components at once and to reduce memory footprint.
+ * - Next batch is loaded ON-CLICK (no infinite scroll) so we don't fetch
+ *   or render anything the user hasn't explicitly asked for.
+ * - Preserves scroll position across route changes (sessionStorage).
  * - Lazy-loads images inside cards (loading="lazy" on <img>).
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Loader, RefreshCw, MapPin, Sparkles } from 'lucide-react';
+import { Loader, RefreshCw, MapPin, Sparkles, ChevronDown } from 'lucide-react';
 import { contentSourcesService } from '../../services/feedService';
 import ContentCard from './cards/ContentCard';
 
 const NAVY = '#0B1F3A';
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 12;                 // 10-15 range per user directive
 const CACHE_KEY = 'pc_intelligent_feed_cache_v1';
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
+const CACHE_TTL_MS = 10 * 60 * 1000;  // 10 min
 
 const readCache = () => {
   try {
@@ -49,7 +51,6 @@ const IntelligentFeed = ({ limit = PAGE_SIZE, country }) => {
     distribution: cached?.distribution || {},
   });
   const inflight = useRef(false);
-  const sentinelRef = useRef(null);
   const hasMoreRef = useRef(hasMore);
   const offsetRef = useRef(offset);
 
@@ -215,18 +216,8 @@ const IntelligentFeed = ({ limit = PAGE_SIZE, country }) => {
     };
   }, []);
 
-  // IntersectionObserver — trigger next page when sentinel is near
-  useEffect(() => {
-    const node = sentinelRef.current;
-    if (!node) return;
-    const io = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMoreRef.current && !inflight.current) {
-        loadPage(offsetRef.current);
-      }
-    }, { rootMargin: '600px 0px' });
-    io.observe(node);
-    return () => io.disconnect();
-  }, [loadPage]);
+  // NO IntersectionObserver — pagination is now click-driven so we never
+  // load a batch the user hasn't asked for. See "Ver más" button below.
 
   const refresh = () => {
     clearCache();
@@ -237,6 +228,14 @@ const IntelligentFeed = ({ limit = PAGE_SIZE, country }) => {
     offsetRef.current = 0;
     loadPage(0, true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Ver más — append the next batch without touching scroll position.
+  // React preserves scroll when appending nodes below the viewport, so no
+  // manual scrollTo is needed here.
+  const loadMore = () => {
+    if (loading || !hasMoreRef.current) return;
+    loadPage(offsetRef.current);
   };
 
   return (
@@ -314,18 +313,29 @@ const IntelligentFeed = ({ limit = PAGE_SIZE, country }) => {
         </div>
       )}
 
-      {/* Infinite-scroll sentinel + loader */}
-      {hasMore && (
-        <div ref={sentinelRef} data-testid="intelligent-feed-sentinel"
-          style={{
-            padding: '1.2rem', textAlign: 'center',
-            color: 'rgba(11,31,58,0.5)', fontSize: '0.8rem',
-          }}>
-          {loading && items.length > 0 && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Loader size={14} className="pc-spin" /> Cargando más contenido…
-            </span>
-          )}
+      {/* Ver más publicaciones — click-driven pagination */}
+      {hasMore && items.length > 0 && (
+        <div style={{ padding: '0.9rem 0 0.4rem', display: 'flex', justifyContent: 'center' }}>
+          <button
+            data-testid="intelligent-feed-load-more"
+            onClick={loadMore}
+            disabled={loading}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '0.7rem 1.2rem', borderRadius: 100,
+              background: loading ? 'rgba(11,31,58,0.06)' : '#FFFFFF',
+              border: '1px solid rgba(11,31,58,0.12)',
+              color: NAVY, fontSize: '0.82rem', fontWeight: 700,
+              cursor: loading ? 'wait' : 'pointer',
+              boxShadow: '0 4px 14px rgba(11,31,58,0.06)',
+              transition: 'background 120ms ease, transform 120ms ease',
+            }}
+            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = 'rgba(11,31,58,0.03)'; }}
+            onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = '#FFFFFF'; }}>
+            {loading
+              ? <><Loader size={14} className="pc-spin" /> Cargando…</>
+              : <><ChevronDown size={14} /> Ver más publicaciones</>}
+          </button>
         </div>
       )}
 

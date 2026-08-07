@@ -11,7 +11,7 @@ const SuggestedPeopleWidget = () => {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${process.env.REACT_APP_BACKEND_URL}/api/feed/posts?limit=15`, { credentials: 'include' })
+    fetch(`${process.env.REACT_APP_BACKEND_URL}/api/feed/posts?limit=8`, { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : { items: [] }))
       .then((d) => {
         if (cancelled) return;
@@ -34,7 +34,8 @@ const SuggestedPeopleWidget = () => {
 
   if (!people || people.length === 0) return null;
   return (
-    <RightCard title="Personas sugeridas" icon="community" testid="workspace-widget-suggested-people">
+    <RightCard title="Personas sugeridas" icon="community" testid="workspace-widget-suggested-people"
+      seeAllHref="/comunidad" seeAllLabel="Ver más recomendaciones">
       {people.map((u) => (
         <div key={u.id} data-testid={`suggested-person-${u.id}`}
           style={{

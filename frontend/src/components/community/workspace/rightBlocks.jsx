@@ -10,7 +10,7 @@ import AppIcon from '../AppIcon';
 
 const NAVY = '#0B1F3A';
 
-export const RightCard = ({ title, icon, children, testid }) => (
+export const RightCard = ({ title, icon, children, testid, seeAllHref, seeAllLabel }) => (
   <div data-testid={testid} style={{
     background: '#FFFFFF', borderRadius: 16,
     border: '1px solid rgba(11,31,58,0.06)',
@@ -27,6 +27,17 @@ export const RightCard = ({ title, icon, children, testid }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
       {children}
     </div>
+    {seeAllHref && (
+      <a href={seeAllHref}
+        data-testid={testid ? `${testid}-see-all` : 'right-card-see-all'}
+        style={{
+          display: 'block', textAlign: 'center', marginTop: '0.55rem',
+          padding: '0.3rem 0', fontSize: '0.72rem', fontWeight: 700,
+          color: '#00A277', textDecoration: 'none', letterSpacing: '0.06em',
+        }}>
+        {seeAllLabel || 'Ver todos'} →
+      </a>
+    )}
   </div>
 );
 
