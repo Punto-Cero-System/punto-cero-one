@@ -21,6 +21,7 @@ request time — everything is either DB-cached or hand-curated.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Optional
 
 from fastapi import APIRouter, Cookie, Header, Query, Request
@@ -224,8 +225,19 @@ async def _pool_growth(db, *, kind: str, country: Optional[str], limit: int, ski
 
     q: dict = {"kind": kind}
     q["country"] = {"$in": countries + [None]}
-    cursor = db.growth_items.find(q, {"_id": 0}).sort([("published_at", -1)]).skip(skip).limit(limit * 2)
+    cursor = db.growth_items.find(q, {"_id": 0}).sort([("published_at", -1)]).skip(skip).limit(limit * 3)
     docs = [d async for d in cursor]
+    # Dedupe by title (case-insensitive) so the same headline sourced under
+    # multiple countries (e.g. CO + LATAM) doesn't appear twice in one page.
+    seen_titles: set[str] = set()
+    unique: list[dict] = []
+    for d in docs:
+        key = (d.get("title") or "").strip().lower()
+        if not key or key in seen_titles:
+            continue
+        seen_titles.add(key)
+        unique.append(d)
+    docs = unique
     # Re-rank: exact-country first, then LATAM, then rest.
     if country:
         def bucket(d):
@@ -238,19 +250,53 @@ async def _pool_growth(db, *, kind: str, country: Optional[str], limit: int, ski
     return [_shape_growth_item(d) for d in docs[:limit]]
 
 
+# Regex catches automated-test post bodies ("Case1", "Case42", "MixedFeedCase",
+# "list-endpoint-check", "mixed-feed image", bare "📷" placeholder, …) so they
+# never reach the public feed. The feed then backfills with regional news /
+# events / jobs — informative content for real visitors.
+_TEST_POST_BODY_RE = re.compile(
+    r"^\s*(?:case\s?\d+|mixedfeedcase\b|list-endpoint-check\b|mixed-feed image\b|📷)\s*$",
+    re.IGNORECASE,
+)
+
+
+def _is_test_post(body: str | None) -> bool:
+    if not body:
+        return True  # empty body without image is also uninformative
+    if _TEST_POST_BODY_RE.match(body.strip()):
+        return True
+    return False
+
+
 async def _pool_user_posts(db, *, limit: int, skip: int = 0) -> list[dict]:
-    cursor = db.posts.find({"status": "published"}, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit)
+    # Pull a wider window (limit * 3) then filter out test artifacts client-side
+    # so the informative pool ends up close to `limit`. We can't do the regex
+    # entirely inside Mongo because the filter also excludes empty-body posts
+    # unless they have an image_url.
+    raw_limit = max(limit * 3, limit + 10)
+    cursor = db.posts.find({"status": "published"}, {"_id": 0}).sort("created_at", -1).skip(skip).limit(raw_limit)
     out: list[dict] = []
     async for p in cursor:
+        body = p.get("body")
+        # Keep the post if body is meaningful OR it carries a real image_url.
+        if _is_test_post(body) and not p.get("image_url"):
+            continue
+        # Body still matches a test-artifact pattern → skip even if it has
+        # a (usually 1×1) test image.
+        if body and _TEST_POST_BODY_RE.match(body.strip()):
+            continue
         author = await db.users.find_one(
             {"id": p.get("author_id")},
-            {"_id": 0, "id": 1, "name": 1, "picture": 1, "headline": 1, "country": 1},
+            {"_id": 0, "id": 1, "name": 1, "picture": 1, "headline": 1, "country": 1, "email": 1},
         ) or {}
+        # Also skip posts from the automated e2e community accounts.
+        if (author.get("email") or "").endswith(".test-e2e.com"):
+            continue
         out.append({
             "id": p["id"],
             "kind": "user_post",
-            "title": (p.get("body") or "")[:120],
-            "description": (p.get("body") or "")[:280],
+            "title": (body or "")[:120],
+            "description": (body or "")[:280],
             "image": p.get("image_url"),
             "category": p.get("category_key"),
             "country": (author.get("country") or "").upper() or None,
@@ -260,7 +306,7 @@ async def _pool_user_posts(db, *, limit: int, skip: int = 0) -> list[dict]:
             "metadata": {
                 "post": {
                     "id": p["id"],
-                    "body": p.get("body"),
+                    "body": body,
                     "hashtags": p.get("hashtags") or [],
                     "image_url": p.get("image_url"),
                     "counts": p.get("counts") or {},
@@ -273,6 +319,8 @@ async def _pool_user_posts(db, *, limit: int, skip: int = 0) -> list[dict]:
                 },
             },
         })
+        if len(out) >= limit:
+            break
     return out
 
 
