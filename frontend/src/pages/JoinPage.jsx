@@ -5,7 +5,7 @@ import { Mail, ArrowLeft, Sparkles, Lock, Eye, EyeOff, Loader2 } from 'lucide-re
 import BrandMark from '../components/BrandMark';
 import { AUTH_PROVIDERS, authService } from '../services/authService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
-import { armWelcome } from '../components/community/WelcomeModal';
+import { armWelcome } from '../components/community/welcomeArm';
 
 const NAVY = '#0B1F3A';
 

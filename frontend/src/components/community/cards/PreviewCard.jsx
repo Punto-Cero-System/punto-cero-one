@@ -94,4 +94,9 @@ const PreviewCard = ({ item }) => {
   );
 };
 
-export default PreviewCard;
+// PreviewCards render dozens of times inside the Intelligent Feed and never
+// change between renders unless their `item` prop changes. Memoize by id+kind
+// so scrolling / feed remounts stay cheap.
+export default React.memo(PreviewCard, (prev, next) => (
+  prev.item?.id === next.item?.id && prev.item?.kind === next.item?.kind
+));

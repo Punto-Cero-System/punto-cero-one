@@ -40,7 +40,10 @@ import HashtagPage from './pages/HashtagPage';
 import MiEspacioConfigPage from './pages/MiEspacioConfigPage';
 import ProfileCustomizePage from './pages/ProfileCustomizePage';
 import MobileBottomNav from './components/community/MobileBottomNav';
-import WelcomeModal from './components/community/WelcomeModal';
+// WelcomeModal is only ever shown once per user (right after registration).
+// Lazy-load it so its canvas-confetti + framer-motion deps stay out of the
+// initial bundle for everyone else.
+const WelcomeModal = React.lazy(() => import('./components/community/WelcomeModal'));
 import { AuthProvider } from './contexts/AuthContext';
 import { CommunityAuthProvider } from './contexts/CommunityAuthContext';
 import { RealtimeProvider } from './contexts/RealtimeContext';
@@ -84,7 +87,9 @@ function App() {
                 <WorkspaceProvider>
                   <AppRouter />
                   <MobileBottomNav />
-                  <WelcomeModal />
+                  <React.Suspense fallback={null}>
+                    <WelcomeModal />
+                  </React.Suspense>
                 </WorkspaceProvider>
               </RealtimeProvider>
             </UIPreferencesProvider>

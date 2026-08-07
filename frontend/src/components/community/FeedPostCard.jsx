@@ -550,7 +550,20 @@ const ReactionButton = ({ meta, onClick, onPickReaction, disabled, testid }) => 
   );
 };
 
-export default FeedPostCard;
+export default React.memo(FeedPostCard, (prev, next) => (
+  // FeedPostCard is a large tree that owns its own internal state. It only
+  // needs to re-render if the post identity or any counter/reaction visible
+  // to the user actually changed. We compare a small signature to skip the
+  // vast majority of parent-driven re-renders (feed scroll, sibling updates).
+  prev.post?.id === next.post?.id &&
+  prev.post?.updated_at === next.post?.updated_at &&
+  prev.post?.image_url === next.post?.image_url &&
+  prev.post?.body === next.post?.body &&
+  prev.post?.counts?.reactions === next.post?.counts?.reactions &&
+  prev.post?.counts?.comments === next.post?.counts?.comments &&
+  prev.post?.my_reaction === next.post?.my_reaction &&
+  prev.post?.my_saved === next.post?.my_saved
+));
 
 const FeedPostMenu = ({ post, onSave, onShare, isAuthed }) => {
   const [open, setOpen] = React.useState(false);

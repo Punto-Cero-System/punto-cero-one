@@ -24,11 +24,11 @@ import { X, Sparkles, ArrowRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import useCommunityStats, { formatCount } from '../../hooks/useCommunityStats';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
+import { WELCOME_STORAGE_KEY as STORAGE_KEY, armWelcome } from './welcomeArm';
 
 const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
 const GOLD = '#D4AF37';
-const STORAGE_KEY = 'pcone_welcome_pending';
 
 const runConfetti = () => {
   const duration = 3400;
@@ -59,8 +59,6 @@ const runConfetti = () => {
 
 const WelcomeModal = () => {
   const { user } = useCommunityAuth();
-  const navigate = useNavigate();
-  const { stats } = useCommunityStats(60000);
   const [open, setOpen] = useState(false);
   const firedRef = useRef(false);
 
@@ -81,16 +79,22 @@ const WelcomeModal = () => {
     return undefined;
   }, [user?.id]);
 
+  // Lightweight trigger: while closed we return null and never call
+  // useCommunityStats — that avoids the background /api/community/stats
+  // polling for every visitor of the app (the modal used to fire ~1 request
+  // every 60 s per tab regardless of who was logged in).
+  if (!open) return null;
+  return <WelcomeModalInner onClose={() => setOpen(false)} />;
+};
+
+const WelcomeModalInner = ({ onClose }) => {
+  const navigate = useNavigate();
+  const { stats } = useCommunityStats(60000);
+  const memberCount = stats?.total_members ?? null;
   const close = () => {
-    setOpen(false);
-    // Navigate the user to the feed / Mi Espacio after closing.
+    onClose();
     setTimeout(() => navigate('/'), 220);
   };
-
-  if (!open) return null;
-
-  const memberCount = stats?.total_members ?? null;
-
   return (
     <AnimatePresence>
       <motion.div
@@ -243,7 +247,7 @@ const WelcomeModal = () => {
               Comenzar a explorar <ArrowRight size={16} />
             </button>
             <button
-              onClick={() => { setOpen(false); setTimeout(() => navigate('/perfil/personalizar'), 220); }}
+              onClick={() => { onClose(); setTimeout(() => navigate('/perfil/personalizar'), 220); }}
               data-testid="welcome-modal-profile-cta"
               style={{
                 marginTop: '0.5rem',
@@ -267,11 +271,8 @@ const WelcomeModal = () => {
   );
 };
 
-/** Fire this from JoinPage right after a successful registration to arm
- *  the welcome trigger for the resulting session. */
-export const armWelcome = (userId) => {
-  if (!userId) return;
-  try { localStorage.setItem(STORAGE_KEY, userId); } catch { /* ignore */ }
-};
+/** Re-export of the tiny helper from `./welcomeArm` so existing imports
+ *  (`import { armWelcome } from './WelcomeModal'`) keep working. */
+export { armWelcome };
 
 export default WelcomeModal;
