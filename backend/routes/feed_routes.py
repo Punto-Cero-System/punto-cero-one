@@ -389,10 +389,37 @@ async def list_posts(
     if cursor:
         query["created_at"] = {"$lt": cursor}
 
-    cursor_docs = db.posts.find(query, {"_id": 0}).sort("created_at", -1).limit(limit + 1)
-    docs = [d async for d in cursor_docs]
-    has_more = len(docs) > limit
-    docs = docs[:limit]
+    cursor_docs = db.posts.find(query, {"_id": 0}).sort("created_at", -1).limit((limit + 1) * 3)
+    raw_docs = [d async for d in cursor_docs]
+    # Hide test-artifact posts from anyone who isn't an admin. Same regex as
+    # content_sources_routes._TEST_POST_BODY_RE — kept inline (very small)
+    # to avoid a cross-module import in the hot list path.
+    is_admin = bool(viewer and viewer.get("role") == "admin")
+    if not is_admin:
+        import re as _re
+        _TEST = _re.compile(
+            r"^\s*(?:case\s?\d+|mixedfeedcase\b|list-endpoint-check\b|mixed-feed image\b|📷)\s*$",
+            _re.IGNORECASE,
+        )
+        # Collect author emails in one round-trip so we can skip test-e2e authors.
+        author_ids = list({d.get("author_id") for d in raw_docs if d.get("author_id")})
+        emails_by_id: dict[str, str] = {}
+        if author_ids:
+            async for u in db.users.find(
+                {"id": {"$in": author_ids}}, {"_id": 0, "id": 1, "email": 1}
+            ):
+                emails_by_id[u["id"]] = (u.get("email") or "")
+        def _keep(d: dict) -> bool:
+            body = (d.get("body") or "").strip()
+            if body and _TEST.match(body):
+                return False
+            email = emails_by_id.get(d.get("author_id") or "", "")
+            if email.endswith(".test-e2e.com"):
+                return False
+            return True
+        raw_docs = [d for d in raw_docs if _keep(d)]
+    has_more = len(raw_docs) > limit
+    docs = raw_docs[:limit]
     items = [await _serialize_post(db, d, viewer) for d in docs]
     next_cursor = docs[-1]["created_at"] if has_more and docs else None
     return PostListResponse(items=items, next_cursor=next_cursor)

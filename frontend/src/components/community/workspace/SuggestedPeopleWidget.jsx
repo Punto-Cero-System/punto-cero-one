@@ -5,6 +5,10 @@ import { useRealtime } from '../../../contexts/RealtimeContext';
 
 const NAVY = '#0B1F3A';
 
+// Client-side guard against test artifacts leaking into the sidebar
+// suggestions (same intent as the backend `_pool_user_posts` filter).
+const TEST_NAME_RE = /^(case\s?\d+|mixedfeedcase|listcase|photo bug user)$/i;
+
 const SuggestedPeopleWidget = () => {
   const [people, setPeople] = useState(null);
   const { subscribe } = useRealtime();
@@ -20,6 +24,7 @@ const SuggestedPeopleWidget = () => {
         for (const p of (d.items || [])) {
           const a = p.author;
           if (!a?.id || seen.has(a.id)) continue;
+          if (a.name && TEST_NAME_RE.test(a.name.trim())) continue;
           seen.add(a.id);
           out.push({ id: a.id, name: a.name, headline: a.headline || 'Miembro', picture: a.picture });
           if (out.length >= 5) break;
