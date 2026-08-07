@@ -96,14 +96,29 @@ const PublicProfilePage = () => {
     setFollowBusy(true);
     const next = !following;
     setFollowing(next);
+    // Optimistic count update so the followers stat refreshes immediately.
+    setProfile((p) => p ? {
+      ...p,
+      followers_count: Math.max(0, (p.followers_count || 0) + (next ? 1 : -1)),
+    } : p);
     try {
-      if (next) await followsService.follow('user', profile.id);
-      else await followsService.unfollow('user', profile.id);
+      const res = next
+        ? await followsService.follow('user', profile.id)
+        : await followsService.unfollow('user', profile.id);
+      // Sync with authoritative count from the server if available.
+      if (res && typeof res.count === 'number') {
+        setProfile((p) => p ? { ...p, followers_count: res.count } : p);
+      }
       window.dispatchEvent(new CustomEvent('pc:follow-change', {
-        detail: { entityType: 'user', entityId: profile.id, following: next },
+        detail: { entityType: 'user', entityId: profile.id, following: next, count: res?.count },
       }));
     } catch {
-      setFollowing(!next); // rollback
+      // rollback both toggle + count
+      setFollowing(!next);
+      setProfile((p) => p ? {
+        ...p,
+        followers_count: Math.max(0, (p.followers_count || 0) + (next ? -1 : 1)),
+      } : p);
     } finally { setFollowBusy(false); }
   };
 

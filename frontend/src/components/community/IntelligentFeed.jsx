@@ -279,6 +279,9 @@ const IntelligentFeed = ({ limit = PAGE_SIZE, country }) => {
           padding: '2rem 1.5rem', textAlign: 'center',
           background: '#FFFFFF', borderRadius: 16,
           border: '1px dashed rgba(11,31,58,0.12)',
+          minHeight: 600, display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          color: 'rgba(11,31,58,0.5)',
         }}>
           <Loader size={16} className="pc-spin" style={{ marginRight: 8 }} />
           Componiendo tu feed personalizado…

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Search, MessageCircle, ChevronDown, LogIn, LogOut } from 'lucide-react';
+import { Menu, X, Search, ChevronDown, LogIn, LogOut } from 'lucide-react';
 import BrandMark from './BrandMark';
 import AppIcon from './community/AppIcon';
 import HeaderSearchBar from './community/HeaderSearchBar';
@@ -81,17 +81,9 @@ const Header = () => {
         <div className="pc-header-right" style={{
           display: 'flex', alignItems: 'center', gap: '0.35rem',
         }}>
-          {/* Mensajes — un único botón */}
-          <Link to="/mensajes" data-testid="header-messages" aria-label="Mensajes" className="interactive"
-            style={{
-              width: 38, height: 38, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: '#FFFFFF', textDecoration: 'none',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-            <MessageCircle size={18} />
-          </Link>
+          {/* Icono de Mensajes retirado del header (Fase de Optimización)
+              para evitar duplicidad con el widget de Mi Espacio y con la
+              página /mensajes accesible desde el sidebar. */}
 
           {/* Notificaciones — un único botón (NotificationsBell) */}
           <NotificationsBell />

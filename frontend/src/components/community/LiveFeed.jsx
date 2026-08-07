@@ -180,8 +180,9 @@ const LiveFeed = ({ initialCategory = null }) => {
       image_url: imageUrl || null,
     });
     setItems((prev) => [post, ...prev]);
-    // Descubrir tiene su propio fetcher; forzamos un remount para que el
-    // usuario vea su publicación al instante sin cambiar de pestaña.
+    // Invalidate the Descubrir feed cache so the user sees their fresh
+    // publication immediately when the tab remounts (no stale hydration).
+    try { sessionStorage.removeItem('pc_intelligent_feed_cache_v1'); } catch { /* ignore */ }
     setFeedRefreshKey((k) => k + 1);
     return post;
   };

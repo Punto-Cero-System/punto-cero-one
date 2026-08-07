@@ -204,11 +204,24 @@ const MessagesPage = () => {
                 })}
                 {messages.length === 0 && <div style={{ textAlign: 'center', color: 'rgba(11,31,58,0.45)', fontSize: '0.82rem' }}>Envía el primer mensaje.</div>}
               </div>
-              <form onSubmit={send} style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem', borderTop: '1px solid rgba(11,31,58,0.06)' }}>
-                <input value={body} onChange={(e) => setBody(e.target.value)} placeholder="Escribe un mensaje…"
-                  data-testid="messages-input" style={{ flex: 1, padding: '0.55rem 0.85rem', borderRadius: 100, border: '1px solid rgba(11,31,58,0.12)', outline: 'none', fontSize: '0.85rem' }} />
+              <form onSubmit={send} style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem', borderTop: '1px solid rgba(11,31,58,0.06)', alignItems: 'flex-end' }}>
+                <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Escribe un mensaje…"
+                  data-testid="messages-input" rows={1}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(e); }
+                  }}
+                  ref={(el) => {
+                    if (!el) return;
+                    // auto-grow: reset then match scrollHeight, clamped by CSS max-height
+                    el.style.height = 'auto';
+                    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+                  }}
+                  style={{ flex: 1, padding: '0.6rem 0.9rem', borderRadius: 18,
+                    border: '1px solid rgba(11,31,58,0.12)', outline: 'none',
+                    fontSize: '0.85rem', fontFamily: 'inherit',
+                    resize: 'none', lineHeight: 1.4, maxHeight: 140, overflowY: 'auto' }} />
                 <button type="submit" disabled={busy || !body.trim()} data-testid="messages-send"
-                  style={{ padding: '0.5rem 0.85rem', borderRadius: 100, background: NAVY, color: '#FFFFFF', border: 'none', cursor: 'pointer' }}>
+                  style={{ padding: '0.5rem 0.85rem', borderRadius: 100, background: NAVY, color: '#FFFFFF', border: 'none', cursor: 'pointer', height: 40 }}>
                   <Send size={13} />
                 </button>
               </form>

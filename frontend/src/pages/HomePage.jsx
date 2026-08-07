@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Settings, LayoutGrid, Check } from 'lucide-react';
+import { LayoutGrid, Check } from 'lucide-react';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import CustomCursor from '../components/CustomCursor';
 
 import CommunityLayout from '../components/community/CommunityLayout';
 import WorkspacePanel from '../components/community/workspace/WorkspacePanel';
 import MobileWorkspaceDrawer from '../components/community/workspace/MobileWorkspaceDrawer';
 import WorkspaceDndProvider from '../components/community/workspace/WorkspaceDndProvider';
-import WorkspacePresetBar from '../components/community/workspace/WorkspacePresetBar';
 import SlideCarousel from '../components/SlideCarousel';
 import { PRIMARY_SLIDES } from '../components/PrimarySlides';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
@@ -32,7 +31,6 @@ const HomePage = () => {
   const { ready } = useWorkspace();
   const isAuthed = !!user && typeof user === 'object';
   const [editing, setEditing] = useState(false);
-  const navigate = useNavigate();
 
   return (
     <>
@@ -56,10 +54,8 @@ const HomePage = () => {
                 <WorkspaceToolbar
                   editing={editing}
                   onToggle={() => setEditing((v) => !v)}
-                  onConfig={() => navigate('/mi-espacio/configuracion')}
                 />
               )}
-              {isAuthed && editing && <WorkspacePresetBar />}
               {ready && <WorkspacePanel panel="left" editing={editing} testid="community-left-sidebar" />}
             </>
           }
@@ -73,16 +69,18 @@ const HomePage = () => {
         />
         </WorkspaceDndProvider>
       </main>
+      <Footer />
     </>
   );
 };
 
 /**
  * Compact toolbar shown at the top of the left panel for authenticated
- * users. Two actions: toggle edit-mode in place, or jump into the
- * dedicated Configuración page.
+ * users. Single action: toggle edit-mode in place ("Configuración" and
+ * the preset bar were removed per the Fase de Optimización directive —
+ * users administer Mi Espacio directly by editing widgets in place).
  */
-const WorkspaceToolbar = ({ editing, onToggle, onConfig }) => (
+const WorkspaceToolbar = ({ editing, onToggle }) => (
   <motion.div
     initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
     data-testid="workspace-toolbar"
@@ -109,18 +107,6 @@ const WorkspaceToolbar = ({ editing, onToggle, onConfig }) => (
       }}>
       {editing ? <Check size={12} /> : <LayoutGrid size={12} />}
       {editing ? 'Listo' : 'Editar'}
-    </button>
-    <button onClick={onConfig}
-      data-testid="workspace-open-config"
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-        padding: '0.35rem 0.6rem', borderRadius: 100,
-        background: 'rgba(11,31,58,0.04)',
-        border: '1px solid rgba(11,31,58,0.08)',
-        color: '#0B1F3A', fontSize: '0.68rem', fontWeight: 800,
-        cursor: 'pointer',
-      }}>
-      <Settings size={12} /> Config
     </button>
   </motion.div>
 );
