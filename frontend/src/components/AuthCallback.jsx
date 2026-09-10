@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 import BrandMark from './BrandMark';
+import { armWelcome } from './community/welcomeArm';
 
 /**
  * AuthCallback — invoked when the URL fragment contains `session_id=...`.
@@ -14,7 +15,7 @@ import BrandMark from './BrandMark';
 const AuthCallback = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { setUserFromCallback } = useCommunityAuth();
+  const { setUserFromCallback, refresh } = useCommunityAuth();
   const [error, setError] = useState('');
   const processed = useRef(false);
 
@@ -31,8 +32,24 @@ const AuthCallback = () => {
 
     (async () => {
       try {
-        const user = await authService.exchangeSession({ provider: 'google', sessionId });
-        setUserFromCallback(user);
+        // First exchange the session_id with the backend. Then call `/me`
+        // to confirm the httpOnly cookie was successfully set server-side.
+        const exchanged = await authService.exchangeSession({ provider: 'google', sessionId });
+        const refreshed = await refresh();
+        if (!refreshed) throw new Error('No se pudo verificar la sesión en el servidor');
+        setUserFromCallback(refreshed);
+        // If the exchange response indicates a freshly-created account (created_at
+        // very recent), arm the welcome modal so the UI shows the celebration.
+        try {
+          if (exchanged && exchanged.created_at) {
+            const createdAt = Date.parse(exchanged.created_at);
+            if (!isNaN(createdAt) && Date.now() - createdAt < 30_000) {
+              armWelcome(exchanged.id);
+            }
+          }
+        } catch (err) {
+          // best-effort only
+        }
         // clear the hash before navigating away
         window.history.replaceState(null, '', window.location.pathname);
         navigate('/', { replace: true, state: { justJoined: true } });

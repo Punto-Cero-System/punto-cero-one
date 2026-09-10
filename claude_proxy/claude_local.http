@@ -1,0 +1,11 @@
+### Test Anthropic / Local Proxy
+POST http://localhost:3000/v1/complete
+Content-Type: application/json
+
+{
+  "prompt": "Find occurrences of 'regional_sort' in the workspace and summarize.",
+  "model": "claude-2.1"
+}
+
+### Health
+GET http://localhost:3000/health

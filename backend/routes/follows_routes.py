@@ -68,18 +68,23 @@ async def follow(entity_type: str, entity_id: str, request: Request,
     db = request.app.state.db
     doc = {"user_id": user["id"], "entity_type": entity_type, "entity_id": eid, "created_at": _now()}
     try:
-        await db.follows.update_one(
+        res = await db.follows.update_one(
             {"user_id": user["id"], "entity_type": entity_type, "entity_id": eid},
             {"$setOnInsert": doc}, upsert=True,
         )
-        # Bridge to company_follows so all Wave 2 logic keeps working unchanged.
-        if entity_type == "company":
-            await db.company_follows.update_one(
+        inserted = getattr(res, "upserted_id", None) is not None
+        # Bridge to company_follows and increment company counter only when a new
+        # follow was actually inserted. This prevents double-counting on retries
+        # or repeated requests.
+        if entity_type == "company" and inserted:
+            res2 = await db.company_follows.update_one(
                 {"user_id": user["id"], "company_id": eid},
                 {"$setOnInsert": {"user_id": user["id"], "company_id": eid, "created_at": _now()}},
                 upsert=True,
             )
-            await db.companies.update_one({"id": eid}, {"$inc": {"follower_count": 1}})
+            # Only increment when company_follows was newly inserted as well.
+            if getattr(res2, "upserted_id", None) is not None:
+                await db.companies.update_one({"id": eid}, {"$inc": {"follower_count": 1}})
     except Exception as e:
         logger.warning("follows.follow write failed: %s", e)
         raise HTTPException(status_code=502, detail="No se pudo registrar la relación")

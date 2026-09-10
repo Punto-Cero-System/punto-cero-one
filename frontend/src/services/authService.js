@@ -57,7 +57,15 @@ export const authService = {
   },
 
   async logout() {
-    await authFetch('/api/community/auth/logout', { method: 'POST' });
+    const res = await authFetch('/api/community/auth/logout', { method: 'POST' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      let detail = data?.detail || data?.message || 'logout_failed';
+      const err = new Error(String(detail));
+      err.status = res.status;
+      throw err;
+    }
+    return res.json().catch(() => ({}));
   },
 
   // Native email / password

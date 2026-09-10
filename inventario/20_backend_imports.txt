@@ -1,0 +1,695 @@
+backend/auth.py:import os
+backend/auth.py:import jwt
+backend/auth.py:import bcrypt
+backend/auth.py:from datetime import datetime, timezone, timedelta
+backend/auth.py:from fastapi import Depends, HTTPException, Request, status
+backend/auth.py:from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+backend/routes/event_routes.py:from __future__ import annotations
+backend/routes/event_routes.py:import logging
+backend/routes/event_routes.py:from datetime import datetime, timezone
+backend/routes/event_routes.py:from typing import Optional
+backend/routes/event_routes.py:from fastapi import APIRouter, Depends, HTTPException, Query, Request
+backend/routes/event_routes.py:from services.community_deps import current_user_or_none, require_current_user
+backend/routes/event_routes.py:from services.analytics import record_event
+backend/routes/event_routes.py:from services.notifications import dispatch as dispatch_notif
+backend/routes/event_routes.py:from models_business import (
+backend/routes/growth_routes.py:from __future__ import annotations
+backend/routes/growth_routes.py:import logging
+backend/routes/growth_routes.py:from typing import Optional
+backend/routes/growth_routes.py:from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Query, Request
+backend/routes/growth_routes.py:from auth import require_admin
+backend/routes/growth_routes.py:from services.growth import aggregator, sources, recommender
+backend/routes/growth_routes.py:from services.growth.sources import COUNTRIES, COUNTRY_LABELS
+backend/routes/document_routes.py:from __future__ import annotations
+backend/routes/document_routes.py:import os
+backend/routes/document_routes.py:import uuid
+backend/routes/document_routes.py:import logging
+backend/routes/document_routes.py:from datetime import datetime, timezone
+backend/routes/document_routes.py:from typing import Literal, Optional
+backend/routes/document_routes.py:from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form, Query, Response
+backend/routes/document_routes.py:from pydantic import BaseModel, ConfigDict, Field
+backend/routes/document_routes.py:from auth import get_current_user, require_admin
+backend/routes/document_routes.py:from services.object_storage import get_storage, app_prefix, ObjectStorageError
+backend/routes/realtime_routes.py:from __future__ import annotations
+backend/routes/realtime_routes.py:import asyncio
+backend/routes/realtime_routes.py:import logging
+backend/routes/realtime_routes.py:from typing import Optional
+backend/routes/realtime_routes.py:from fastapi import APIRouter, Depends, Query, Request
+backend/routes/realtime_routes.py:from fastapi.responses import StreamingResponse
+backend/routes/realtime_routes.py:from services.community_deps import require_current_user, current_user_or_none
+backend/routes/realtime_routes.py:from services.realtime import get_broker
+backend/routes/workspace_routes.py:from __future__ import annotations
+backend/routes/workspace_routes.py:import logging
+backend/routes/workspace_routes.py:from datetime import datetime, timezone
+backend/routes/workspace_routes.py:from typing import Any, Dict, List, Optional
+backend/routes/workspace_routes.py:from fastapi import APIRouter, Depends, HTTPException, Request
+backend/routes/workspace_routes.py:from pydantic import BaseModel, Field
+backend/routes/workspace_routes.py:from services.community_deps import require_current_user
+backend/routes/discovery_routes.py:from __future__ import annotations
+backend/routes/discovery_routes.py:import logging
+backend/routes/discovery_routes.py:from typing import Optional
+backend/routes/discovery_routes.py:from fastapi import APIRouter, Cookie, Header, HTTPException, Query, Request
+backend/routes/discovery_routes.py:from services.discovery import resolver
+backend/routes/discovery_routes.py:from services.discovery.regional import (
+backend/routes/feed_routes.py:from __future__ import annotations
+backend/routes/feed_routes.py:import re
+backend/routes/feed_routes.py:import logging
+backend/routes/feed_routes.py:from datetime import datetime, timezone, timedelta
+backend/routes/feed_routes.py:from typing import Optional
+backend/routes/feed_routes.py:from fastapi import APIRouter, HTTPException, Request, Response, Cookie, Header, Query, Depends, UploadFile, File
+backend/routes/feed_routes.py:from pydantic import BaseModel
+backend/routes/feed_routes.py:from auth import require_admin
+backend/routes/feed_routes.py:from services.notifications import dispatch as dispatch_notif
+backend/routes/feed_routes.py:from services.feed_engine import build_for_you_feed
+backend/routes/feed_routes.py:from services.object_storage import get_storage, app_prefix, ObjectStorageError
+backend/routes/feed_routes.py:from models_feed import (
+backend/routes/messaging_routes.py:from __future__ import annotations
+backend/routes/messaging_routes.py:import uuid
+backend/routes/messaging_routes.py:import logging
+backend/routes/messaging_routes.py:from datetime import datetime, timezone
+backend/routes/messaging_routes.py:from typing import Literal, Optional
+backend/routes/messaging_routes.py:from fastapi import APIRouter, Depends, HTTPException, Query, Request
+backend/routes/messaging_routes.py:from pydantic import BaseModel, ConfigDict, Field
+backend/routes/messaging_routes.py:from services.community_deps import require_current_user
+backend/routes/messaging_routes.py:from services.notifications import dispatch as dispatch_notif
+backend/routes/analytics_routes.py:from __future__ import annotations
+backend/routes/analytics_routes.py:from datetime import datetime, timezone, timedelta
+backend/routes/analytics_routes.py:from typing import Optional
+backend/routes/analytics_routes.py:from fastapi import APIRouter, Depends, Query, Request
+backend/routes/analytics_routes.py:from auth import require_admin
+backend/routes/groups_routes.py:from __future__ import annotations
+backend/routes/groups_routes.py:import uuid
+backend/routes/groups_routes.py:from datetime import datetime, timezone
+backend/routes/groups_routes.py:from typing import Optional, Literal
+backend/routes/groups_routes.py:from fastapi import APIRouter, Cookie, Depends, File, Header, HTTPException, Query, Request, UploadFile
+backend/routes/groups_routes.py:from pydantic import BaseModel, Field
+backend/routes/groups_routes.py:from services.community_deps import require_current_user
+backend/routes/groups_routes.py:from services.notifications import dispatch as dispatch_notif
+backend/routes/groups_routes.py:from services.object_storage import get_storage, app_prefix, ObjectStorageError
+backend/routes/profile_media_routes.py:from __future__ import annotations
+backend/routes/profile_media_routes.py:import logging
+backend/routes/profile_media_routes.py:import os
+backend/routes/profile_media_routes.py:import uuid
+backend/routes/profile_media_routes.py:from datetime import datetime, timezone
+backend/routes/profile_media_routes.py:from typing import Literal
+backend/routes/profile_media_routes.py:from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
+backend/routes/profile_media_routes.py:from services.community_deps import require_current_user
+backend/routes/profile_media_routes.py:from services.object_storage import get_storage, app_prefix, ObjectStorageError
+backend/routes/community_auth_routes.py:import os
+backend/routes/community_auth_routes.py:import re
+backend/routes/community_auth_routes.py:import uuid
+backend/routes/community_auth_routes.py:import secrets
+backend/routes/community_auth_routes.py:import logging
+backend/routes/community_auth_routes.py:from datetime import datetime, timezone, timedelta
+backend/routes/community_auth_routes.py:from typing import Optional
+backend/routes/community_auth_routes.py:from fastapi import APIRouter, HTTPException, Request, Response, Cookie, Header
+backend/routes/community_auth_routes.py:from pydantic import BaseModel, ConfigDict, Field, EmailStr
+backend/routes/community_auth_routes.py:from auth import hash_password, verify_password
+backend/routes/community_auth_routes.py:from services.community_auth import (
+backend/routes/community_auth_routes.py:from fastapi.responses import RedirectResponse
+backend/routes/admin_platform_routes.py:from __future__ import annotations
+backend/routes/admin_platform_routes.py:from datetime import datetime, timezone
+backend/routes/admin_platform_routes.py:from typing import Optional
+backend/routes/admin_platform_routes.py:from fastapi import APIRouter, Depends, HTTPException, Query, Request
+backend/routes/admin_platform_routes.py:from pydantic import BaseModel
+backend/routes/admin_platform_routes.py:from auth import require_admin
+backend/routes/company_routes.py:from __future__ import annotations
+backend/routes/company_routes.py:import logging
+backend/routes/company_routes.py:from datetime import datetime, timezone
+backend/routes/company_routes.py:from typing import Optional
+backend/routes/company_routes.py:from fastapi import APIRouter, Depends, HTTPException, Query, Request
+backend/routes/company_routes.py:from pydantic import BaseModel
+backend/routes/company_routes.py:from auth import require_admin
+backend/routes/company_routes.py:from services.community_deps import current_user_or_none, require_current_user
+backend/routes/company_routes.py:from services.analytics import record_event
+backend/routes/company_routes.py:from services.notifications import dispatch as dispatch_notif
+backend/routes/company_routes.py:from models_business import (
+backend/routes/investor_routes.py:from datetime import datetime, timezone, timedelta
+backend/routes/investor_routes.py:from typing import Optional
+backend/routes/investor_routes.py:import os
+backend/routes/investor_routes.py:import secrets
+backend/routes/investor_routes.py:import uuid
+backend/routes/investor_routes.py:from fastapi import APIRouter, Depends, HTTPException, Query, Request
+backend/routes/investor_routes.py:from pymongo import ReturnDocument
+backend/routes/investor_routes.py:from auth import require_admin, get_current_user, hash_password
+backend/routes/investor_routes.py:from models import (
+backend/routes/follows_routes.py:from __future__ import annotations
+backend/routes/follows_routes.py:import logging
+backend/routes/follows_routes.py:from datetime import datetime, timezone
+backend/routes/follows_routes.py:from typing import Literal, Optional
+backend/routes/follows_routes.py:from fastapi import APIRouter, Depends, HTTPException, Query, Request
+backend/routes/follows_routes.py:from services.community_deps import require_current_user
+backend/routes/follows_routes.py:from services.notifications import dispatch as dispatch_notif
+backend/routes/search_routes.py:from __future__ import annotations
+backend/routes/search_routes.py:from datetime import datetime, timezone
+backend/routes/search_routes.py:from typing import Optional
+backend/routes/search_routes.py:from fastapi import APIRouter, Cookie, Header, Query, Request
+backend/routes/search_routes.py:from services.discovery.regional import regional_sort, normalize_country, LATAM_PLUS_ES
+backend/routes/email_routes.py:from __future__ import annotations
+backend/routes/email_routes.py:from fastapi import APIRouter, Depends, Request
+backend/routes/email_routes.py:from pydantic import BaseModel, EmailStr
+backend/routes/email_routes.py:from auth import require_admin
+backend/routes/email_routes.py:from services.email import get_provider, EmailStatus
+backend/routes/pitch_deck_routes.py:from datetime import datetime, timezone
+backend/routes/pitch_deck_routes.py:from typing import Optional
+backend/routes/pitch_deck_routes.py:from fastapi import APIRouter, Depends, Request
+backend/routes/pitch_deck_routes.py:from fastapi.responses import Response
+backend/routes/pitch_deck_routes.py:from auth import require_admin
+backend/routes/pitch_deck_routes.py:from models import (
+backend/routes/pitch_deck_routes.py:from services.pdf_service import build_pitch_deck_pdf, build_filename
+backend/routes/content_sources_routes.py:from __future__ import annotations
+backend/routes/content_sources_routes.py:import logging
+backend/routes/content_sources_routes.py:import re
+backend/routes/content_sources_routes.py:from typing import Optional
+backend/routes/content_sources_routes.py:from fastapi import APIRouter, Cookie, Header, Query, Request
+backend/routes/content_sources_routes.py:from services.content_sources import (
+backend/routes/content_sources_routes.py:from services.growth import aggregator
+backend/routes/content_sources_routes.py:from services.growth.sources import COUNTRY_LABELS
+backend/routes/profile_routes.py:from __future__ import annotations
+backend/routes/profile_routes.py:import logging
+backend/routes/profile_routes.py:from datetime import datetime, timezone
+backend/routes/profile_routes.py:from typing import Optional
+backend/routes/profile_routes.py:from fastapi import APIRouter, HTTPException, Request, Depends
+backend/routes/profile_routes.py:from services.community_deps import require_current_user
+backend/routes/profile_routes.py:from services.analytics import record_event
+backend/routes/profile_routes.py:from models_profile import ProfileUpdate, ProfilePublic
+backend/routes/job_routes.py:from __future__ import annotations
+backend/routes/job_routes.py:import logging
+backend/routes/job_routes.py:from datetime import datetime, timezone
+backend/routes/job_routes.py:from typing import Optional
+backend/routes/job_routes.py:from fastapi import APIRouter, Depends, HTTPException, Query, Request
+backend/routes/job_routes.py:from auth import require_admin
+backend/routes/job_routes.py:from services.community_deps import current_user_or_none, require_current_user
+backend/routes/job_routes.py:from services.analytics import record_event
+backend/routes/job_routes.py:from services.notifications import dispatch as dispatch_notif
+backend/routes/job_routes.py:from models_business import (
+backend/routes/auth_routes.py:import os
+backend/routes/auth_routes.py:from datetime import datetime, timezone
+backend/routes/auth_routes.py:from fastapi import APIRouter, Depends, HTTPException, Request
+backend/routes/auth_routes.py:from auth import (
+backend/routes/auth_routes.py:from models import LoginInput, LoginResponse, UserPublic
+backend/routes/notification_routes.py:from __future__ import annotations
+backend/routes/notification_routes.py:from datetime import datetime, timezone
+backend/routes/notification_routes.py:from typing import Optional
+backend/routes/notification_routes.py:from fastapi import APIRouter, Depends, Query, Request
+backend/routes/notification_routes.py:from pydantic import BaseModel
+backend/routes/notification_routes.py:from services.community_deps import require_current_user
+backend/routes/notification_routes.py:from services.notifications import (
+backend/routes/widget_routes.py:from __future__ import annotations
+backend/routes/widget_routes.py:import asyncio
+backend/routes/widget_routes.py:from typing import Optional
+backend/routes/widget_routes.py:from fastapi import APIRouter, Query, Request
+backend/routes/widget_routes.py:from services.integrations import (
+backend/routes/community_stats_routes.py:from __future__ import annotations
+backend/routes/community_stats_routes.py:import asyncio
+backend/routes/community_stats_routes.py:import logging
+backend/routes/community_stats_routes.py:import os
+backend/routes/community_stats_routes.py:import time
+backend/routes/community_stats_routes.py:from datetime import datetime, timezone
+backend/routes/community_stats_routes.py:from typing import Optional
+backend/routes/community_stats_routes.py:import httpx
+backend/routes/community_stats_routes.py:from fastapi import APIRouter, Cookie, Header, Request
+backend/routes/community_stats_routes.py:from services.discovery.regional import LATAM_PLUS_ES, normalize_country
+backend/routes/seo_routes.py:from __future__ import annotations
+backend/routes/seo_routes.py:import os
+backend/routes/seo_routes.py:from datetime import datetime, timezone
+backend/routes/seo_routes.py:from html import escape
+backend/routes/seo_routes.py:from fastapi import APIRouter, Request, Response
+backend/routes/seo_routes.py:from fastapi.responses import HTMLResponse, PlainTextResponse
+backend/routes/company_media_routes.py:from __future__ import annotations
+backend/routes/company_media_routes.py:import logging
+backend/routes/company_media_routes.py:import os
+backend/routes/company_media_routes.py:import uuid
+backend/routes/company_media_routes.py:from datetime import datetime, timezone
+backend/routes/company_media_routes.py:from typing import Literal
+backend/routes/company_media_routes.py:from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
+backend/routes/company_media_routes.py:from services.community_deps import require_current_user
+backend/routes/company_media_routes.py:from services.object_storage import get_storage, app_prefix, ObjectStorageError
+backend/routes/category_routes.py:from datetime import datetime, timezone
+backend/routes/category_routes.py:from typing import Optional
+backend/routes/category_routes.py:from fastapi import APIRouter, Depends, HTTPException, Query, Request
+backend/routes/category_routes.py:from auth import require_admin
+backend/routes/category_routes.py:from models_category import CategoryPublic, CategoryUpsert
+backend/routes/sources_admin_routes.py:from __future__ import annotations
+backend/routes/sources_admin_routes.py:import csv
+backend/routes/sources_admin_routes.py:import io
+backend/routes/sources_admin_routes.py:import json
+backend/routes/sources_admin_routes.py:import logging
+backend/routes/sources_admin_routes.py:from typing import Any, Optional
+backend/routes/sources_admin_routes.py:from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, UploadFile, File
+backend/routes/sources_admin_routes.py:from fastapi.responses import Response
+backend/routes/sources_admin_routes.py:from auth import require_admin
+backend/routes/sources_admin_routes.py:from models_source import (
+backend/routes/sources_admin_routes.py:from services.sources_center.engine import HANDLERS, run_sync
+backend/models_feed.py:from datetime import datetime, timezone
+backend/models_feed.py:from typing import Literal, Optional
+backend/models_feed.py:from pydantic import BaseModel, ConfigDict, Field
+backend/models_feed.py:import uuid
+backend/server.py:import os
+backend/server.py:import uuid
+backend/server.py:import logging
+backend/server.py:from datetime import datetime, timezone
+backend/server.py:from pathlib import Path
+backend/server.py:from dotenv import load_dotenv
+backend/server.py:from fastapi import FastAPI, APIRouter
+backend/server.py:from starlette.middleware.cors import CORSMiddleware
+backend/server.py:from motor.motor_asyncio import AsyncIOMotorClient
+backend/server.py:from auth import hash_password, verify_password
+backend/server.py:from routes.auth_routes import router as auth_router
+backend/server.py:from routes.investor_routes import (
+backend/server.py:from routes.pitch_deck_routes import public_router as pitch_public_router
+backend/server.py:from routes.pitch_deck_routes import admin_router as pitch_admin_router
+backend/server.py:from routes.community_auth_routes import router as community_auth_router
+backend/server.py:from routes.community_stats_routes import router as community_stats_router
+backend/server.py:from routes.seo_routes import router as seo_router
+backend/server.py:from routes.document_routes import router as document_router
+backend/server.py:from routes.feed_routes import router as feed_router
+backend/server.py:from routes.category_routes import router as category_router
+backend/server.py:from routes.company_routes import router as company_router
+backend/server.py:from routes.job_routes import router as job_router
+backend/server.py:from routes.event_routes import router as event_router
+backend/server.py:from routes.profile_routes import router as profile_router
+backend/server.py:from routes.analytics_routes import router as analytics_router
+backend/server.py:from routes.notification_routes import router as notification_router
+backend/server.py:from routes.messaging_routes import router as messaging_router
+backend/server.py:from routes.search_routes import router as search_router
+backend/server.py:from routes.admin_platform_routes import router as admin_platform_router
+backend/server.py:from routes.realtime_routes import router as realtime_router
+backend/server.py:from routes.widget_routes import router as widget_router
+backend/server.py:from routes.company_media_routes import router as company_media_router
+backend/server.py:from routes.profile_media_routes import router as profile_media_router
+backend/server.py:from routes.email_routes import router as email_router
+backend/server.py:from routes.follows_routes import router as follows_router
+backend/server.py:from routes.workspace_routes import router as workspace_router
+backend/server.py:from routes.growth_routes import router as growth_router
+backend/server.py:from routes.discovery_routes import router as discovery_router
+backend/server.py:from routes.sources_admin_routes import router as sources_admin_router
+backend/server.py:from routes.content_sources_routes import router as content_sources_router
+backend/server.py:from routes.groups_routes import router as groups_router
+backend/server.py:from services.growth.scheduler import scheduler as growth_scheduler
+backend/server.py:from services.discovery.seeder import seed_public_entities
+backend/server.py:from models_category import DEFAULT_CATEGORIES
+backend/tests/test_wave4_workspace.py:from __future__ import annotations
+backend/tests/test_wave4_workspace.py:import os
+backend/tests/test_wave4_workspace.py:import time
+backend/tests/test_wave4_workspace.py:import uuid
+backend/tests/test_wave4_workspace.py:import pytest
+backend/tests/test_wave4_workspace.py:import requests
+backend/tests/test_wave12_ux.py:from __future__ import annotations
+backend/tests/test_wave12_ux.py:import io
+backend/tests/test_wave12_ux.py:import os
+backend/tests/test_wave12_ux.py:import uuid
+backend/tests/test_wave12_ux.py:import pytest
+backend/tests/test_wave12_ux.py:import requests
+backend/tests/test_sources_center.py:from __future__ import annotations
+backend/tests/test_sources_center.py:import os
+backend/tests/test_sources_center.py:import time
+backend/tests/test_sources_center.py:import uuid
+backend/tests/test_sources_center.py:import requests
+backend/tests/test_investor_requests.py:import pytest
+backend/tests/test_investor_requests.py:import requests
+backend/tests/test_wave3_media.py:from __future__ import annotations
+backend/tests/test_wave3_media.py:import io
+backend/tests/test_wave3_media.py:import os
+backend/tests/test_wave3_media.py:import time
+backend/tests/test_wave3_media.py:import uuid
+backend/tests/test_wave3_media.py:import pytest
+backend/tests/test_wave3_media.py:import requests
+backend/tests/test_documents.py:import os
+backend/tests/test_documents.py:import io
+backend/tests/test_documents.py:import pytest
+backend/tests/test_documents.py:import requests
+backend/tests/test_wave12_groups_ext.py:from __future__ import annotations
+backend/tests/test_wave12_groups_ext.py:import os
+backend/tests/test_wave12_groups_ext.py:import uuid
+backend/tests/test_wave12_groups_ext.py:import requests
+backend/tests/test_wave11_1_growth.py:import os
+backend/tests/test_wave11_1_growth.py:import re
+backend/tests/test_wave11_1_growth.py:import uuid
+backend/tests/test_wave11_1_growth.py:import pytest
+backend/tests/test_wave11_1_growth.py:import requests
+backend/tests/test_wave8b_prodready.py:import os
+backend/tests/test_wave8b_prodready.py:import sys
+backend/tests/test_wave8b_prodready.py:from datetime import datetime, timezone
+backend/tests/test_wave8b_prodready.py:import pytest
+backend/tests/test_wave8b_prodready.py:import requests
+backend/tests/test_wave8b_prodready.py:from dotenv import load_dotenv
+backend/tests/test_wave3_email.py:from __future__ import annotations
+backend/tests/test_wave3_email.py:import asyncio
+backend/tests/test_wave3_email.py:import os
+backend/tests/test_wave3_email.py:import requests
+backend/tests/test_wave3_email.py:import pytest
+backend/tests/test_wave9_regional.py:import os
+backend/tests/test_wave9_regional.py:import time
+backend/tests/test_wave9_regional.py:import pytest
+backend/tests/test_wave9_regional.py:import requests
+backend/tests/test_health.py:import requests
+backend/tests/test_wave25_core.py:from __future__ import annotations
+backend/tests/test_wave25_core.py:import os
+backend/tests/test_wave25_core.py:import time
+backend/tests/test_wave25_core.py:import uuid
+backend/tests/test_wave25_core.py:import pytest
+backend/tests/test_wave25_core.py:import requests
+backend/tests/test_wave3_foryou.py:from __future__ import annotations
+backend/tests/test_wave3_foryou.py:import os
+backend/tests/test_wave3_foryou.py:import time
+backend/tests/test_wave3_foryou.py:import uuid
+backend/tests/test_wave3_foryou.py:import pytest
+backend/tests/test_wave3_foryou.py:import requests
+backend/tests/test_wave12_final.py:from __future__ import annotations
+backend/tests/test_wave12_final.py:import os
+backend/tests/test_wave12_final.py:import uuid
+backend/tests/test_wave12_final.py:import pytest
+backend/tests/test_wave12_final.py:import requests
+backend/tests/test_wave6_auth_email.py:from __future__ import annotations
+backend/tests/test_wave6_auth_email.py:import os
+backend/tests/test_wave6_auth_email.py:import uuid
+backend/tests/test_wave6_auth_email.py:import pytest
+backend/tests/test_wave6_auth_email.py:import requests
+backend/tests/test_wave6_auth_email.py:from pymongo import MongoClient
+backend/tests/conftest.py:import os
+backend/tests/conftest.py:import time
+backend/tests/conftest.py:import pytest
+backend/tests/conftest.py:import requests
+backend/tests/conftest.py:from pymongo import MongoClient
+backend/tests/test_growth.py:from __future__ import annotations
+backend/tests/test_growth.py:import os
+backend/tests/test_growth.py:import time
+backend/tests/test_growth.py:import uuid
+backend/tests/test_growth.py:import pytest
+backend/tests/test_growth.py:import requests
+backend/tests/test_growth.py:from services.growth import aggregator, normalizer, recommender
+backend/tests/test_growth.py:from services.growth.sources import SOURCES, sources_by_country
+backend/tests/test_feed_categories.py:import os
+backend/tests/test_feed_categories.py:import time
+backend/tests/test_feed_categories.py:import uuid
+backend/tests/test_feed_categories.py:import io
+backend/tests/test_feed_categories.py:import pytest
+backend/tests/test_feed_categories.py:import requests
+backend/tests/test_feed_categories.py:from datetime import datetime, timezone, timedelta
+backend/tests/test_wave9_2_hyperlocal.py:import os
+backend/tests/test_wave9_2_hyperlocal.py:import sys
+backend/tests/test_wave9_2_hyperlocal.py:import pytest
+backend/tests/test_wave9_2_hyperlocal.py:import requests
+backend/tests/test_wave12_content_sources.py:from __future__ import annotations
+backend/tests/test_wave12_content_sources.py:import os
+backend/tests/test_wave12_content_sources.py:import pytest
+backend/tests/test_wave12_content_sources.py:import requests
+backend/tests/test_editorial_composer.py:import os
+backend/tests/test_editorial_composer.py:import pytest
+backend/tests/test_editorial_composer.py:import requests
+backend/tests/test_wave12_photo_fix.py:from __future__ import annotations
+backend/tests/test_wave12_photo_fix.py:import os
+backend/tests/test_wave12_photo_fix.py:import uuid
+backend/tests/test_wave12_photo_fix.py:import requests
+backend/tests/test_wave_ux_community_stats.py:import os
+backend/tests/test_wave_ux_community_stats.py:import time
+backend/tests/test_wave_ux_community_stats.py:import requests
+backend/tests/test_wave_ux_community_stats.py:import pytest
+backend/tests/test_wave2_business.py:import os
+backend/tests/test_wave2_business.py:import time
+backend/tests/test_wave2_business.py:import uuid
+backend/tests/test_wave2_business.py:import pytest
+backend/tests/test_wave2_business.py:import requests
+backend/tests/test_wave2_business.py:from datetime import datetime, timezone, timedelta
+backend/tests/test_discovery.py:from __future__ import annotations
+backend/tests/test_discovery.py:import os
+backend/tests/test_discovery.py:import requests
+backend/tests/test_pitch_deck.py:import io
+backend/tests/test_pitch_deck.py:import os
+backend/tests/test_pitch_deck.py:import time
+backend/tests/test_pitch_deck.py:import uuid
+backend/tests/test_pitch_deck.py:import pytest
+backend/tests/test_pitch_deck.py:import requests
+backend/tests/test_executive_summary_fields.py:import pytest
+backend/tests/test_executive_summary_fields.py:import requests
+backend/tests/test_wave3_integrations.py:from __future__ import annotations
+backend/tests/test_wave3_integrations.py:import os
+backend/tests/test_wave3_integrations.py:import time
+backend/tests/test_wave3_integrations.py:import requests
+backend/tests/test_wave3_integrations.py:import pytest
+backend/tests/test_wave8a_ecosystem.py:import os
+backend/tests/test_wave8a_ecosystem.py:import uuid
+backend/tests/test_wave8a_ecosystem.py:import pytest
+backend/tests/test_wave8a_ecosystem.py:import requests
+backend/tests/test_wave8a_ecosystem.py:from pymongo import MongoClient
+backend/tests/test_wave7_growth.py:from __future__ import annotations
+backend/tests/test_wave7_growth.py:import os
+backend/tests/test_wave7_growth.py:import uuid
+backend/tests/test_wave7_growth.py:import time
+backend/tests/test_wave7_growth.py:import pytest
+backend/tests/test_wave7_growth.py:import requests
+backend/tests/test_wave7_growth.py:from pymongo import MongoClient
+backend/tests/test_community_auth.py:import os
+backend/tests/test_community_auth.py:import time
+backend/tests/test_community_auth.py:import uuid
+backend/tests/test_community_auth.py:import pytest
+backend/tests/test_community_auth.py:import requests
+backend/tests/test_community_auth.py:from datetime import datetime, timezone, timedelta
+backend/tests/test_community_auth.py:from pymongo import MongoClient
+backend/tests/test_auth.py:import time
+backend/tests/test_auth.py:import pytest
+backend/tests/test_auth.py:import requests
+backend/tests/test_wave9_1_region_detect.py:import os
+backend/tests/test_wave9_1_region_detect.py:import time
+backend/tests/test_wave9_1_region_detect.py:import pytest
+backend/tests/test_wave9_1_region_detect.py:import requests
+backend/tests/test_wave3_realtime.py:from __future__ import annotations
+backend/tests/test_wave3_realtime.py:import json
+backend/tests/test_wave3_realtime.py:import os
+backend/tests/test_wave3_realtime.py:import threading
+backend/tests/test_wave3_realtime.py:import time
+backend/tests/test_wave3_realtime.py:import uuid
+backend/tests/test_wave3_realtime.py:import pytest
+backend/tests/test_wave3_realtime.py:import requests
+backend/tests/test_wave4_follows.py:from __future__ import annotations
+backend/tests/test_wave4_follows.py:import os
+backend/tests/test_wave4_follows.py:import time
+backend/tests/test_wave4_follows.py:import uuid
+backend/tests/test_wave4_follows.py:import pytest
+backend/tests/test_wave4_follows.py:import requests
+backend/tests/test_wave11_connectors.py:from __future__ import annotations
+backend/tests/test_wave11_connectors.py:import asyncio
+backend/tests/test_wave11_connectors.py:import os
+backend/tests/test_wave11_connectors.py:import sys
+backend/tests/test_wave11_connectors.py:import time
+backend/tests/test_wave11_connectors.py:import pytest
+backend/tests/test_wave11_connectors.py:import requests
+backend/tests/test_wave6_extended.py:from __future__ import annotations
+backend/tests/test_wave6_extended.py:import base64
+backend/tests/test_wave6_extended.py:import os
+backend/tests/test_wave6_extended.py:import uuid
+backend/tests/test_wave6_extended.py:import pytest
+backend/tests/test_wave6_extended.py:import requests
+backend/tests/test_iter34_feed_filter.py:import os
+backend/tests/test_iter34_feed_filter.py:import re
+backend/tests/test_iter34_feed_filter.py:import requests
+backend/services/discovery/seeder.py:from __future__ import annotations
+backend/services/discovery/seeder.py:import logging
+backend/services/discovery/seeder.py:from datetime import datetime, timezone
+backend/services/discovery/seeder.py:from urllib.parse import urlparse
+backend/services/discovery/seeder.py:from services.discovery.seeds import SEED_ORGS
+backend/services/discovery/resolver.py:from __future__ import annotations
+backend/services/discovery/resolver.py:import asyncio
+backend/services/discovery/resolver.py:import logging
+backend/services/discovery/resolver.py:import re
+backend/services/discovery/resolver.py:from datetime import datetime, timezone
+backend/services/discovery/resolver.py:from typing import Optional
+backend/services/discovery/resolver.py:from urllib.parse import urlparse
+backend/services/discovery/resolver.py:from services.integrations.base import http
+backend/services/discovery/resolver.py:from services.discovery.regional import regional_sort
+backend/services/discovery/regional.py:from __future__ import annotations
+backend/services/discovery/regional.py:import os
+backend/services/discovery/regional.py:from typing import Iterable, Optional
+backend/services/discovery/autotag.py:from __future__ import annotations
+backend/services/discovery/autotag.py:import time
+backend/services/discovery/autotag.py:from typing import Optional
+backend/services/notifications.py:from __future__ import annotations
+backend/services/notifications.py:import uuid
+backend/services/notifications.py:from datetime import datetime, timezone
+backend/services/notifications.py:from typing import Optional, Literal
+backend/services/notifications.py:from pydantic import BaseModel, ConfigDict, Field
+backend/services/sources_center/engine.py:from __future__ import annotations
+backend/services/sources_center/engine.py:import logging
+backend/services/sources_center/engine.py:import re
+backend/services/sources_center/engine.py:from datetime import datetime, timedelta, timezone
+backend/services/sources_center/engine.py:from typing import Any
+backend/services/sources_center/engine.py:from urllib.parse import urlparse
+backend/services/sources_center/engine.py:from services.growth.providers import RSSProvider
+backend/services/sources_center/engine.py:from services.growth.normalizer import normalize_entry
+backend/services/sources_center/engine.py:from services.growth.aggregator import active_sources as growth_active_sources  # noqa: F401
+backend/services/sources_center/engine.py:from services.discovery.autotag import (
+backend/services/sources_center/engine.py:from services.integrations.base import http
+backend/services/sources_center/engine.py:from models_source import FREQUENCY_SECONDS
+backend/services/sources_center/__init__.py:from . import engine  # noqa: F401
+backend/services/growth/recommender.py:from __future__ import annotations
+backend/services/growth/recommender.py:from datetime import datetime, timezone, timedelta
+backend/services/growth/recommender.py:from typing import Iterable, Optional
+backend/services/growth/normalizer.py:from __future__ import annotations
+backend/services/growth/normalizer.py:import hashlib
+backend/services/growth/normalizer.py:import re
+backend/services/growth/normalizer.py:from datetime import datetime, timezone
+backend/services/growth/normalizer.py:from typing import Optional
+backend/services/growth/normalizer.py:from email.utils import parsedate_to_datetime
+backend/services/growth/normalizer.py:from .classifier import detect_verticals, detect_city, priority
+backend/services/growth/connectors/registry.py:from __future__ import annotations
+backend/services/growth/connectors/registry.py:from . import PublicDataConnector
+backend/services/growth/connectors/registry.py:from .ckan import CKANConnector
+backend/services/growth/connectors/ckan.py:from __future__ import annotations
+backend/services/growth/connectors/ckan.py:import hashlib
+backend/services/growth/connectors/ckan.py:from datetime import datetime, timezone
+backend/services/growth/connectors/ckan.py:from typing import Optional
+backend/services/growth/connectors/ckan.py:from services.integrations.base import http
+backend/services/growth/connectors/ckan.py:from services.discovery.autotag import get_company_aliases, autotag_item_payload
+backend/services/growth/connectors/ckan.py:from . import PublicDataConnector
+backend/services/growth/connectors/__init__.py:from __future__ import annotations
+backend/services/growth/connectors/__init__.py:import asyncio
+backend/services/growth/connectors/__init__.py:import logging
+backend/services/growth/connectors/__init__.py:import os
+backend/services/growth/connectors/__init__.py:import time
+backend/services/growth/connectors/__init__.py:from datetime import datetime, timezone
+backend/services/growth/connectors/__init__.py:from typing import Optional
+backend/services/growth/scheduler.py:from __future__ import annotations
+backend/services/growth/scheduler.py:import asyncio
+backend/services/growth/scheduler.py:import logging
+backend/services/growth/scheduler.py:import os
+backend/services/growth/scheduler.py:from .aggregator import run_once
+backend/services/growth/aggregator.py:from __future__ import annotations
+backend/services/growth/aggregator.py:import logging
+backend/services/growth/aggregator.py:from datetime import datetime, timezone
+backend/services/growth/aggregator.py:from typing import Any, Optional
+backend/services/growth/aggregator.py:from .sources import SOURCES, merge_with_overrides
+backend/services/growth/aggregator.py:from .providers import fetch_all
+backend/services/growth/aggregator.py:from .normalizer import normalize_entry
+backend/services/growth/aggregator.py:from services.discovery.autotag import (
+backend/services/growth/classifier.py:from __future__ import annotations
+backend/services/growth/classifier.py:import re
+backend/services/growth/classifier.py:from typing import Iterable
+backend/services/growth/sources.py:from __future__ import annotations
+backend/services/growth/sources.py:from typing import Iterable, Optional
+backend/services/growth/providers.py:from __future__ import annotations
+backend/services/growth/providers.py:import asyncio
+backend/services/growth/providers.py:import logging
+backend/services/growth/providers.py:from typing import Iterable
+backend/services/growth/providers.py:import feedparser
+backend/services/growth/providers.py:from services.integrations.base import http
+backend/services/growth/__init__.py:from . import sources, aggregator, recommender, scheduler  # noqa: F401
+backend/services/object_storage.py:from __future__ import annotations
+backend/services/object_storage.py:import os
+backend/services/object_storage.py:import logging
+backend/services/object_storage.py:from abc import ABC, abstractmethod
+backend/services/object_storage.py:from pathlib import Path
+backend/services/object_storage.py:from typing import Optional, Tuple
+backend/services/object_storage.py:import requests
+backend/services/analytics.py:from __future__ import annotations
+backend/services/analytics.py:from datetime import datetime, timezone
+backend/services/analytics.py:from typing import Optional
+backend/services/integrations/rss.py:from __future__ import annotations
+backend/services/integrations/rss.py:import asyncio
+backend/services/integrations/rss.py:import json
+backend/services/integrations/rss.py:import os
+backend/services/integrations/rss.py:from typing import Optional
+backend/services/integrations/rss.py:import feedparser
+backend/services/integrations/rss.py:from .base import WidgetResponse, WidgetStatus, http, get_cache, set_cache, _now_iso
+backend/services/integrations/crypto.py:from __future__ import annotations
+backend/services/integrations/crypto.py:import time
+backend/services/integrations/crypto.py:from .base import WidgetResponse, WidgetStatus, http, get_cache, set_cache, _now_iso
+backend/services/integrations/fx.py:from __future__ import annotations
+backend/services/integrations/fx.py:from .base import WidgetResponse, WidgetStatus, http, get_cache, set_cache, _now_iso
+backend/services/integrations/base.py:from __future__ import annotations
+backend/services/integrations/base.py:import os
+backend/services/integrations/base.py:from datetime import datetime, timedelta, timezone
+backend/services/integrations/base.py:from enum import Enum
+backend/services/integrations/base.py:from typing import Any, Optional
+backend/services/integrations/base.py:import httpx
+backend/services/integrations/base.py:from pydantic import BaseModel
+backend/services/integrations/weather.py:from __future__ import annotations
+backend/services/integrations/weather.py:from .base import WidgetResponse, WidgetStatus, http, env_key, get_cache, set_cache, _now_iso
+backend/services/integrations/youtube.py:from __future__ import annotations
+backend/services/integrations/youtube.py:from typing import Optional
+backend/services/integrations/youtube.py:from .base import WidgetResponse, WidgetStatus, http, env_key, get_cache, set_cache, _now_iso
+backend/services/integrations/__init__.py:from .base import WidgetResponse, WidgetStatus, get_cache, set_cache
+backend/services/integrations/__init__.py:from .weather import fetch_weather
+backend/services/integrations/__init__.py:from .crypto import fetch_crypto
+backend/services/integrations/__init__.py:from .fx import fetch_fx
+backend/services/integrations/__init__.py:from .rss import fetch_rss
+backend/services/integrations/__init__.py:from .youtube import fetch_youtube
+backend/services/content_sources/__init__.py:from __future__ import annotations
+backend/services/content_sources/__init__.py:import json
+backend/services/content_sources/__init__.py:import logging
+backend/services/content_sources/__init__.py:from functools import lru_cache
+backend/services/content_sources/__init__.py:from pathlib import Path
+backend/services/content_sources/__init__.py:from typing import Optional
+backend/services/pdf_service.py:from io import BytesIO
+backend/services/pdf_service.py:from datetime import datetime, timezone
+backend/services/pdf_service.py:from reportlab.lib.pagesizes import landscape, A4
+backend/services/pdf_service.py:from reportlab.lib.colors import HexColor, Color
+backend/services/pdf_service.py:from reportlab.lib.units import mm
+backend/services/pdf_service.py:from reportlab.pdfgen import canvas
+backend/services/pdf_service.py:from reportlab.pdfbase import pdfmetrics
+backend/services/pdf_service.py:from reportlab.pdfbase.ttfonts import TTFont
+backend/services/community_auth.py:from __future__ import annotations
+backend/services/community_auth.py:import os
+backend/services/community_auth.py:import uuid
+backend/services/community_auth.py:import logging
+backend/services/community_auth.py:from abc import ABC, abstractmethod
+backend/services/community_auth.py:from dataclasses import dataclass, asdict
+backend/services/community_auth.py:from datetime import datetime, timedelta, timezone
+backend/services/community_auth.py:from typing import Optional
+backend/services/community_auth.py:import httpx
+backend/services/community_deps.py:from __future__ import annotations
+backend/services/community_deps.py:from datetime import datetime, timezone
+backend/services/community_deps.py:from typing import Optional
+backend/services/community_deps.py:from fastapi import HTTPException, Request
+backend/services/email.py:from __future__ import annotations
+backend/services/email.py:import logging
+backend/services/email.py:import os
+backend/services/email.py:from datetime import datetime, timezone
+backend/services/email.py:from enum import Enum
+backend/services/email.py:from typing import Optional
+backend/services/email.py:import httpx
+backend/services/feed_engine/engine.py:from __future__ import annotations
+backend/services/feed_engine/engine.py:import asyncio
+backend/services/feed_engine/engine.py:from datetime import datetime, timezone, timedelta
+backend/services/feed_engine/engine.py:from typing import Optional
+backend/services/feed_engine/engine.py:from .base import FeedItem, FeedSignals, FeedMode
+backend/services/feed_engine/engine.py:from .providers import DEFAULT_PROVIDERS
+backend/services/feed_engine/base.py:from __future__ import annotations
+backend/services/feed_engine/base.py:from enum import Enum
+backend/services/feed_engine/base.py:from typing import Optional, Protocol
+backend/services/feed_engine/base.py:from pydantic import BaseModel
+backend/services/feed_engine/providers.py:from __future__ import annotations
+backend/services/feed_engine/providers.py:from datetime import datetime, timezone
+backend/services/feed_engine/providers.py:from math import log1p
+backend/services/feed_engine/providers.py:from typing import Optional
+backend/services/feed_engine/providers.py:from .base import FeedSignals
+backend/services/feed_engine/__init__.py:from .base import FeedItem, FeedProvider, FeedSignals, FeedMode
+backend/services/feed_engine/__init__.py:from .engine import build_for_you_feed, load_user_signals
+backend/services/realtime.py:from __future__ import annotations
+backend/services/realtime.py:import asyncio
+backend/services/realtime.py:import json
+backend/services/realtime.py:import logging
+backend/services/realtime.py:import os
+backend/services/realtime.py:from collections import defaultdict
+backend/services/realtime.py:from datetime import datetime, timezone
+backend/services/realtime.py:from typing import AsyncGenerator, Optional
+backend/models.py:from datetime import datetime, timezone
+backend/models.py:from typing import Optional, Literal
+backend/models.py:from pydantic import BaseModel, EmailStr, Field, ConfigDict
+backend/models.py:import uuid
+backend/models_business.py:from __future__ import annotations
+backend/models_business.py:import re
+backend/models_business.py:import uuid
+backend/models_business.py:from datetime import datetime, timezone
+backend/models_business.py:from typing import Literal, Optional
+backend/models_business.py:from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+backend/models_profile.py:from __future__ import annotations
+backend/models_profile.py:from typing import Optional
+backend/models_profile.py:from pydantic import BaseModel, ConfigDict, Field
+backend/models_source.py:from __future__ import annotations
+backend/models_source.py:from datetime import datetime, timezone
+backend/models_source.py:from typing import Any, Optional, Literal
+backend/models_source.py:from pydantic import BaseModel, ConfigDict, Field
+backend/models_category.py:from datetime import datetime, timezone
+backend/models_category.py:from typing import Optional, Literal
+backend/models_category.py:from pydantic import BaseModel, ConfigDict, Field

@@ -70,6 +70,12 @@ class RealtimeBroker:
         # user_id → {"last_seen": iso, "connections": int}
         self._presence: dict[str, dict] = {}
         self._lock = asyncio.Lock()
+        # simple counters for observability (non-sensitive)
+        self._counters = {
+            "published": 0,
+            "delivered": 0,
+            "dropped": 0,
+        }
 
     # ---------------- Public API ----------------
     async def publish(self, user_id: Optional[str], event_type: str, data: dict) -> int:
@@ -80,13 +86,18 @@ class RealtimeBroker:
         try:
             queues = list(self._subs.get(user_id, ()))
             payload = _sse_format(event_type, data)
+            self._counters["published"] += 1
+            delivered = 0
             for q in queues:
                 try:
                     q.put_nowait(payload)
+                    delivered += 1
                 except asyncio.QueueFull:
                     # Slow consumer: drop and continue. Client will resync on reconnect.
+                    self._counters["dropped"] += 1
                     logger.warning("realtime: queue full for user %s — dropping event", user_id)
-            return len(queues)
+            self._counters["delivered"] += delivered
+            return delivered
         except Exception as e:
             logger.warning("realtime.publish soft-fail: %s", e)
             return 0
@@ -137,6 +148,8 @@ class RealtimeBroker:
                 else:
                     self._presence[user_id]["connections"] = remaining
             logger.info("realtime: unsubscribe user=%s remaining_tabs=%d", user_id, remaining)
+            # Note: we keep presence.last_seen for a while; purging of stale
+            # presence entries is handled in `presence()` based on timestamps.
 
     async def touch(self, user_id: str) -> None:
         """Fallback presence heartbeat for clients that can't (or don't) hold SSE."""
@@ -173,6 +186,7 @@ class RealtimeBroker:
         return {
             "subscribers": {uid: len(qs) for uid, qs in self._subs.items()},
             "presence_tracked": len(self._presence),
+            "counters": dict(self._counters),
         }
 
 

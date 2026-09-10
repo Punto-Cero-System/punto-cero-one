@@ -88,10 +88,20 @@ async def upload_profile_slot(
     url = await _save_profile_media(user["id"], slot, file)
     # Map slot → stored field name on the user document.
     field = "picture" if slot == "picture" else "cover_url"
-    await request.app.state.db.users.update_one(
-        {"id": user["id"]},
-        {"$set": {field: url, "updated_at": _now_iso()}},
-    )
+    db = request.app.state.db
+    try:
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {field: url, "updated_at": _now_iso()}},
+        )
+    except Exception as e:
+        # Attempt a best-effort cleanup of the stored object to avoid orphans.
+        try:
+            path = url.replace('/api/community/users/media/', '', 1)
+            get_storage().delete(path)
+        except Exception:
+            logger.exception("cleanup of orphaned profile media failed")
+        raise HTTPException(status_code=502, detail="No se pudo actualizar el perfil") from e
     return {"ok": True, "slot": slot, "url": url}
 
 

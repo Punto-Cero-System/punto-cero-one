@@ -46,8 +46,12 @@ async def load_user_signals(db, user: Optional[dict]) -> FeedSignals:
     async for f in db.company_follows.find({"user_id": user_id}, {"_id": 0, "company_id": 1}):
         followed_company_ids.add(f["company_id"])
     if followed_company_ids:
+        # company_follows historically stored either the numeric `id` or the
+        # human-friendly `slug`. Query companies by both `id` and `slug` so
+        # follows are resolved regardless of which form was persisted.
+        ids_list = list(followed_company_ids)
         async for c in db.companies.find(
-            {"id": {"$in": list(followed_company_ids)}},
+            {"$or": [{"id": {"$in": ids_list}}, {"slug": {"$in": ids_list}}]},
             {"_id": 0, "owner_id": 1, "vertical": 1, "hashtags": 1, "tags": 1, "country": 1},
         ):
             if c.get("owner_id"):

@@ -1,0 +1,845 @@
+frontend/src/contexts/UIPreferencesContext.jsx:import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+frontend/src/contexts/UIPreferencesContext.jsx:import { profileService } from '../services/profileService';
+frontend/src/contexts/UIPreferencesContext.jsx:import { useCommunityAuth } from './CommunityAuthContext';
+frontend/src/contexts/CommunityAuthContext.jsx:import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+frontend/src/contexts/CommunityAuthContext.jsx:import { authService } from '../services/authService';
+frontend/src/contexts/WorkspaceContext.jsx:import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
+frontend/src/contexts/WorkspaceContext.jsx:import { workspaceService } from '../services/workspaceService';
+frontend/src/contexts/WorkspaceContext.jsx:import { buildPayloadFromPreset, getPreset } from '../services/workspacePresets';
+frontend/src/contexts/WorkspaceContext.jsx:import { useCommunityAuth } from './CommunityAuthContext';
+frontend/src/contexts/RealtimeContext.jsx:import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
+frontend/src/contexts/RealtimeContext.jsx:import { useCommunityAuth } from './CommunityAuthContext';
+frontend/src/contexts/AuthContext.jsx:import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+frontend/src/lib/utils.js:import { clsx } from "clsx";
+frontend/src/lib/utils.js:import { twMerge } from "tailwind-merge"
+frontend/src/services/workspacePresets.js:import {
+frontend/src/services/workspaceRegistry.jsx:import React from 'react';
+frontend/src/services/workspaceRegistry.jsx:import {
+frontend/src/services/workspaceRegistry.jsx:import {
+frontend/src/services/workspaceRegistry.jsx:import ProfileCardWidget from '../components/community/workspace/ProfileCardWidget';
+frontend/src/services/workspaceRegistry.jsx:import ActivityWidget from '../components/community/workspace/ActivityWidget';
+frontend/src/services/workspaceRegistry.jsx:import GroupsWidget from '../components/community/workspace/GroupsWidget';
+frontend/src/services/workspaceRegistry.jsx:import QuickLinksWidget from '../components/community/workspace/QuickLinksWidget';
+frontend/src/services/workspaceRegistry.jsx:import NuestraHistoriaWidget from '../components/community/workspace/NuestraHistoriaWidget';
+frontend/src/services/workspaceRegistry.jsx:import WelcomeBandWidget from '../components/community/workspace/WelcomeBandWidget';
+frontend/src/services/workspaceRegistry.jsx:import FeedWidget from '../components/community/workspace/FeedWidget';
+frontend/src/services/workspaceRegistry.jsx:import TrendingWidget from '../components/community/workspace/TrendingWidget';
+frontend/src/services/workspaceRegistry.jsx:import TrendingEditorialWidget from '../components/community/workspace/TrendingEditorialWidget';
+frontend/src/services/workspaceRegistry.jsx:import EventsWidget from '../components/community/workspace/EventsWidget';
+frontend/src/services/workspaceRegistry.jsx:import CompaniesWidget from '../components/community/workspace/CompaniesWidget';
+frontend/src/services/workspaceRegistry.jsx:import InvestorCenterWidget from '../components/community/workspace/InvestorCenterWidget';
+frontend/src/services/workspaceRegistry.jsx:import AiToolsWidget from '../components/community/workspace/AiToolsWidget';
+frontend/src/services/workspaceRegistry.jsx:import SuggestedPeopleWidget from '../components/community/workspace/SuggestedPeopleWidget';
+frontend/src/services/workspaceRegistry.jsx:import CapitalCtaWidget from '../components/community/workspace/CapitalCtaWidget';
+frontend/src/services/workspaceRegistry.jsx:import MessagesWidget from '../components/community/workspace/MessagesWidget';
+frontend/src/services/workspaceRegistry.jsx:import DiscoverEntitiesWidget from '../components/community/workspace/DiscoverEntitiesWidget';
+frontend/src/services/workspaceRegistry.jsx:import TrendingCompaniesWidget from '../components/community/workspace/TrendingCompaniesWidget';
+frontend/src/components/ProtectedInvestorRoute.jsx:import React from 'react';
+frontend/src/components/ProtectedInvestorRoute.jsx:import { Navigate, useLocation } from 'react-router-dom';
+frontend/src/components/ProtectedInvestorRoute.jsx:import { useAuth } from '../contexts/AuthContext';
+frontend/src/components/CircularCore.jsx:import React, { useRef, useState } from 'react';
+frontend/src/components/CircularCore.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/CircularCore.jsx:import { Brain, Database, Lock, Zap, FileText, Users, BarChart, CreditCard } from 'lucide-react';
+frontend/src/components/ui/alert.jsx:import * as React from "react"
+frontend/src/components/ui/alert.jsx:import { cva } from "class-variance-authority";
+frontend/src/components/ui/alert.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/menubar.jsx:import * as React from "react"
+frontend/src/components/ui/menubar.jsx:import * as MenubarPrimitive from "@radix-ui/react-menubar"
+frontend/src/components/ui/menubar.jsx:import { Check, ChevronRight, Circle } from "lucide-react"
+frontend/src/components/ui/menubar.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/textarea.jsx:import * as React from "react"
+frontend/src/components/ui/textarea.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/input.jsx:import * as React from "react"
+frontend/src/components/ui/input.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/separator.jsx:import * as React from "react"
+frontend/src/components/ui/separator.jsx:import * as SeparatorPrimitive from "@radix-ui/react-separator"
+frontend/src/components/ui/separator.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/context-menu.jsx:import * as React from "react"
+frontend/src/components/ui/context-menu.jsx:import * as ContextMenuPrimitive from "@radix-ui/react-context-menu"
+frontend/src/components/ui/context-menu.jsx:import { Check, ChevronRight, Circle } from "lucide-react"
+frontend/src/components/ui/context-menu.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/card.jsx:import * as React from "react"
+frontend/src/components/ui/card.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/popover.jsx:import * as React from "react"
+frontend/src/components/ui/popover.jsx:import * as PopoverPrimitive from "@radix-ui/react-popover"
+frontend/src/components/ui/popover.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/navigation-menu.jsx:import * as React from "react"
+frontend/src/components/ui/navigation-menu.jsx:import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
+frontend/src/components/ui/navigation-menu.jsx:import { cva } from "class-variance-authority"
+frontend/src/components/ui/navigation-menu.jsx:import { ChevronDown } from "lucide-react"
+frontend/src/components/ui/navigation-menu.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/toaster.jsx:import { useToast } from "@/hooks/use-toast"
+frontend/src/components/ui/toaster.jsx:import {
+frontend/src/components/ui/badge.jsx:import * as React from "react"
+frontend/src/components/ui/badge.jsx:import { cva } from "class-variance-authority";
+frontend/src/components/ui/badge.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/resizable.jsx:import { GripVertical } from "lucide-react"
+frontend/src/components/ui/resizable.jsx:import * as ResizablePrimitive from "react-resizable-panels"
+frontend/src/components/ui/resizable.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/carousel.jsx:import * as React from "react"
+frontend/src/components/ui/carousel.jsx:import useEmblaCarousel from "embla-carousel-react";
+frontend/src/components/ui/carousel.jsx:import { ArrowLeft, ArrowRight } from "lucide-react"
+frontend/src/components/ui/carousel.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/carousel.jsx:import { Button } from "@/components/ui/button"
+frontend/src/components/ui/radio-group.jsx:import * as React from "react"
+frontend/src/components/ui/radio-group.jsx:import * as RadioGroupPrimitive from "@radix-ui/react-radio-group"
+frontend/src/components/ui/radio-group.jsx:import { Circle } from "lucide-react"
+frontend/src/components/ui/radio-group.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/command.jsx:import * as React from "react"
+frontend/src/components/ui/command.jsx:import { Command as CommandPrimitive } from "cmdk"
+frontend/src/components/ui/command.jsx:import { Search } from "lucide-react"
+frontend/src/components/ui/command.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/command.jsx:import { Dialog, DialogContent } from "@/components/ui/dialog"
+frontend/src/components/ui/progress.jsx:import * as React from "react"
+frontend/src/components/ui/progress.jsx:import * as ProgressPrimitive from "@radix-ui/react-progress"
+frontend/src/components/ui/progress.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/breadcrumb.jsx:import * as React from "react"
+frontend/src/components/ui/breadcrumb.jsx:import { Slot } from "@radix-ui/react-slot"
+frontend/src/components/ui/breadcrumb.jsx:import { ChevronRight, MoreHorizontal } from "lucide-react"
+frontend/src/components/ui/breadcrumb.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/collapsible.jsx:import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"
+frontend/src/components/ui/dropdown-menu.jsx:import * as React from "react"
+frontend/src/components/ui/dropdown-menu.jsx:import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
+frontend/src/components/ui/dropdown-menu.jsx:import { Check, ChevronRight, Circle } from "lucide-react"
+frontend/src/components/ui/dropdown-menu.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/tooltip.jsx:import * as React from "react"
+frontend/src/components/ui/tooltip.jsx:import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+frontend/src/components/ui/tooltip.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/pagination.jsx:import * as React from "react"
+frontend/src/components/ui/pagination.jsx:import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
+frontend/src/components/ui/pagination.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/pagination.jsx:import { buttonVariants } from "@/components/ui/button";
+frontend/src/components/ui/table.jsx:import * as React from "react"
+frontend/src/components/ui/table.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/slider.jsx:import * as React from "react"
+frontend/src/components/ui/slider.jsx:import * as SliderPrimitive from "@radix-ui/react-slider"
+frontend/src/components/ui/slider.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/switch.jsx:import * as React from "react"
+frontend/src/components/ui/switch.jsx:import * as SwitchPrimitives from "@radix-ui/react-switch"
+frontend/src/components/ui/switch.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/drawer.jsx:import * as React from "react"
+frontend/src/components/ui/drawer.jsx:import { Drawer as DrawerPrimitive } from "vaul"
+frontend/src/components/ui/drawer.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/scroll-area.jsx:import * as React from "react"
+frontend/src/components/ui/scroll-area.jsx:import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
+frontend/src/components/ui/scroll-area.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/toast.jsx:import * as React from "react"
+frontend/src/components/ui/toast.jsx:import * as ToastPrimitives from "@radix-ui/react-toast"
+frontend/src/components/ui/toast.jsx:import { cva } from "class-variance-authority";
+frontend/src/components/ui/toast.jsx:import { X } from "lucide-react"
+frontend/src/components/ui/toast.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/aspect-ratio.jsx:import * as AspectRatioPrimitive from "@radix-ui/react-aspect-ratio"
+frontend/src/components/ui/button.jsx:import * as React from "react"
+frontend/src/components/ui/button.jsx:import { Slot } from "@radix-ui/react-slot"
+frontend/src/components/ui/button.jsx:import { cva } from "class-variance-authority";
+frontend/src/components/ui/button.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/checkbox.jsx:import * as React from "react"
+frontend/src/components/ui/checkbox.jsx:import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
+frontend/src/components/ui/checkbox.jsx:import { Check } from "lucide-react"
+frontend/src/components/ui/checkbox.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/calendar.jsx:import * as React from "react"
+frontend/src/components/ui/calendar.jsx:import { ChevronLeft, ChevronRight } from "lucide-react"
+frontend/src/components/ui/calendar.jsx:import { DayPicker } from "react-day-picker"
+frontend/src/components/ui/calendar.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/calendar.jsx:import { buttonVariants } from "@/components/ui/button"
+frontend/src/components/ui/accordion.jsx:import * as React from "react"
+frontend/src/components/ui/accordion.jsx:import * as AccordionPrimitive from "@radix-ui/react-accordion"
+frontend/src/components/ui/accordion.jsx:import { ChevronDown } from "lucide-react"
+frontend/src/components/ui/accordion.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/dialog.jsx:import * as React from "react"
+frontend/src/components/ui/dialog.jsx:import * as DialogPrimitive from "@radix-ui/react-dialog"
+frontend/src/components/ui/dialog.jsx:import { X } from "lucide-react"
+frontend/src/components/ui/dialog.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/hover-card.jsx:import * as React from "react"
+frontend/src/components/ui/hover-card.jsx:import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
+frontend/src/components/ui/hover-card.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/select.jsx:import * as React from "react"
+frontend/src/components/ui/select.jsx:import * as SelectPrimitive from "@radix-ui/react-select"
+frontend/src/components/ui/select.jsx:import { Check, ChevronDown, ChevronUp } from "lucide-react"
+frontend/src/components/ui/select.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/avatar.jsx:import * as React from "react"
+frontend/src/components/ui/avatar.jsx:import * as AvatarPrimitive from "@radix-ui/react-avatar"
+frontend/src/components/ui/avatar.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/toggle-group.jsx:import * as React from "react"
+frontend/src/components/ui/toggle-group.jsx:import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
+frontend/src/components/ui/toggle-group.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/toggle-group.jsx:import { toggleVariants } from "@/components/ui/toggle"
+frontend/src/components/ui/skeleton.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/form.jsx:import * as React from "react"
+frontend/src/components/ui/form.jsx:import { Slot } from "@radix-ui/react-slot"
+frontend/src/components/ui/form.jsx:import { Controller, FormProvider, useFormContext } from "react-hook-form";
+frontend/src/components/ui/form.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/form.jsx:import { Label } from "@/components/ui/label"
+frontend/src/components/ui/input-otp.jsx:import * as React from "react"
+frontend/src/components/ui/input-otp.jsx:import { OTPInput, OTPInputContext } from "input-otp"
+frontend/src/components/ui/input-otp.jsx:import { Minus } from "lucide-react"
+frontend/src/components/ui/input-otp.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/sonner.jsx:import { useTheme } from "next-themes"
+frontend/src/components/ui/sonner.jsx:import { Toaster as Sonner, toast } from "sonner"
+frontend/src/components/ui/sheet.jsx:import * as React from "react"
+frontend/src/components/ui/sheet.jsx:import * as SheetPrimitive from "@radix-ui/react-dialog"
+frontend/src/components/ui/sheet.jsx:import { cva } from "class-variance-authority";
+frontend/src/components/ui/sheet.jsx:import { X } from "lucide-react"
+frontend/src/components/ui/sheet.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/tabs.jsx:import * as React from "react"
+frontend/src/components/ui/tabs.jsx:import * as TabsPrimitive from "@radix-ui/react-tabs"
+frontend/src/components/ui/tabs.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/label.jsx:import * as React from "react"
+frontend/src/components/ui/label.jsx:import * as LabelPrimitive from "@radix-ui/react-label"
+frontend/src/components/ui/label.jsx:import { cva } from "class-variance-authority";
+frontend/src/components/ui/label.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/toggle.jsx:import * as React from "react"
+frontend/src/components/ui/toggle.jsx:import * as TogglePrimitive from "@radix-ui/react-toggle"
+frontend/src/components/ui/toggle.jsx:import { cva } from "class-variance-authority";
+frontend/src/components/ui/toggle.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/alert-dialog.jsx:import * as React from "react"
+frontend/src/components/ui/alert-dialog.jsx:import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
+frontend/src/components/ui/alert-dialog.jsx:import { cn } from "@/lib/utils"
+frontend/src/components/ui/alert-dialog.jsx:import { buttonVariants } from "@/components/ui/button"
+frontend/src/components/VisionSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/VisionSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/CategoryPage.jsx:import React from 'react';
+frontend/src/components/CategoryPage.jsx:import { motion } from 'framer-motion';
+frontend/src/components/CategoryPage.jsx:import Header from './Header';
+frontend/src/components/CategoryPage.jsx:import Footer from './Footer';
+frontend/src/components/CategoryPage.jsx:import CustomCursor from './CustomCursor';
+frontend/src/components/CategoryPage.jsx:import CommunityLayout from './community/CommunityLayout';
+frontend/src/components/CategoryPage.jsx:import LeftSidebar from './community/LeftSidebar';
+frontend/src/components/CategoryPage.jsx:import RightWidgets from './community/RightWidgets';
+frontend/src/components/CategoryPage.jsx:import AppIcon from './community/AppIcon';
+frontend/src/components/business/CompanyMediaManager.jsx:import React, { useCallback, useRef, useState } from 'react';
+frontend/src/components/business/CompanyMediaManager.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/components/business/CompanyMediaManager.jsx:import { UploadCloud, Trash2, ImagePlus, Loader2, AlertCircle } from 'lucide-react';
+frontend/src/components/business/CompanyCreateModal.jsx:import React, { useState } from 'react';
+frontend/src/components/business/CompanyCreateModal.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/components/business/CompanyCreateModal.jsx:import { X } from 'lucide-react';
+frontend/src/components/business/CompanyCreateModal.jsx:import { companyService } from '../../services/platformService';
+frontend/src/components/business/CompanyRelated.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/components/business/CompanyRelated.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/business/CompanyRelated.jsx:import { Loader, ExternalLink, Star, GitFork, Youtube, Newspaper, Briefcase, Calendar, Building2, Users, Hash } from 'lucide-react';
+frontend/src/components/business/CompanyRelated.jsx:import { discoveryService } from '../../services/platformService';
+frontend/src/components/SlideCarousel.jsx:import React, { useEffect, useRef, useState, useCallback } from 'react';
+frontend/src/components/SlideCarousel.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/components/SlideCarousel.jsx:import { ChevronLeft, ChevronRight } from 'lucide-react';
+frontend/src/components/ProtectedAdminRoute.jsx:import React from 'react';
+frontend/src/components/ProtectedAdminRoute.jsx:import { Navigate, useLocation } from 'react-router-dom';
+frontend/src/components/ProtectedAdminRoute.jsx:import { useAuth } from '../contexts/AuthContext';
+frontend/src/components/HeroSection.jsx:import React, { useEffect, useRef } from 'react';
+frontend/src/components/HeroSection.jsx:import { motion } from 'framer-motion';
+frontend/src/components/HeroSection.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/HeroSection.jsx:import { ArrowDown } from 'lucide-react';
+frontend/src/components/CareersSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/CareersSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/CareersSection.jsx:import { Rocket, Code, Palette, TrendingUp, Users, Briefcase } from 'lucide-react';
+frontend/src/components/LatinAmericaBlock.jsx:import React, { useRef, useState, useEffect } from 'react';
+frontend/src/components/LatinAmericaBlock.jsx:import { motion, useInView, AnimatePresence } from 'framer-motion';
+frontend/src/components/PitchDeckPreview.jsx:import React, { useRef } from 'react';
+frontend/src/components/PitchDeckPreview.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/PitchDeckPreview.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/PitchDeckPreview.jsx:import { ArrowRight, Layers } from 'lucide-react';
+frontend/src/components/CoreSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/CoreSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/CoreSection.jsx:import { Brain, Database, Lock, Zap, FileText, Users, BarChart, CreditCard } from 'lucide-react';
+frontend/src/components/CustomCursor.jsx:import React, { useState, useEffect } from 'react';
+frontend/src/components/CustomCursor.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/components/Footer.jsx:import React from 'react';
+frontend/src/components/Footer.jsx:import { motion } from 'framer-motion';
+frontend/src/components/Footer.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/Footer.jsx:import { Instagram, Music, Youtube, Facebook, Mail, MessageCircle, Twitter, Linkedin, Globe } from 'lucide-react';
+frontend/src/components/CommunitySection.jsx:import React, { useRef } from 'react';
+frontend/src/components/CommunitySection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/CommunitySection.jsx:import { Users, Briefcase, GraduationCap, Heart } from 'lucide-react';
+frontend/src/components/LatinAmericaSection.jsx:import React, { useRef, useState } from 'react';
+frontend/src/components/LatinAmericaSection.jsx:import { motion, useInView, AnimatePresence } from 'framer-motion';
+frontend/src/components/LatinAmericaSection.jsx:import { Globe, TrendingUp, Users, Zap } from 'lucide-react';
+frontend/src/components/ManifestoSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/ManifestoSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/ManifestoSection.jsx:import { ArrowRight } from 'lucide-react';
+frontend/src/components/PressSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/PressSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/PressSection.jsx:import { Newspaper, Download, Image as ImageIcon, Video } from 'lucide-react';
+frontend/src/components/PeopleSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/PeopleSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/OrbitalEcosystem.jsx:import React, { useRef, useState } from 'react';
+frontend/src/components/OrbitalEcosystem.jsx:import { motion, useInView, AnimatePresence } from 'framer-motion';
+frontend/src/components/OrbitalEcosystem.jsx:import { Scale, Stethoscope, ShoppingCart, Calculator, Building2, Home, Shield, Plane, GraduationCap, Users, Hotel, Truck, HardHat, Sprout, Heart } from 'lucide-react';
+frontend/src/components/PartnersSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/PartnersSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/PartnersSection.jsx:import { Handshake, Zap, Globe, Code } from 'lucide-react';
+frontend/src/components/BrandMark.jsx:import React from 'react';
+frontend/src/components/BrandMark.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/EcosystemSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/EcosystemSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/EcosystemSection.jsx:import { Scale, CheckCircle, Clock, Lightbulb } from 'lucide-react';
+frontend/src/components/ZeroMoment.jsx:import React, { useRef, useState, useEffect } from 'react';
+frontend/src/components/ZeroMoment.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/HumanImpactSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/HumanImpactSection.jsx:import { motion, useInView, useScroll, useTransform } from 'framer-motion';
+frontend/src/components/PuntoCeroLegalSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/PuntoCeroLegalSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/PuntoCeroLegalSection.jsx:import { Scale, CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
+frontend/src/components/community/FeedPostCard.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/components/community/FeedPostCard.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/components/community/FeedPostCard.jsx:import { Heart, MessageCircle, Share2, Bookmark, Send, MoreHorizontal, Lightbulb, Trophy, HandHeart, HelpCircle, Info, Copy, Flag, UserPlus, Building2 } from 'lucide-react';
+frontend/src/components/community/FeedPostCard.jsx:import PresenceDot from './PresenceDot';
+frontend/src/components/community/FeedPostCard.jsx:import UserHoverCard from './UserHoverCard';
+frontend/src/components/community/FeedPostCard.jsx:import { feedService, getViewSessionId } from '../../services/feedService';
+frontend/src/components/community/FeedPostCard.jsx:import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
+frontend/src/components/community/LiveWidgets.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/components/community/LiveWidgets.jsx:import { Bitcoin, CloudSun, DollarSign, Newspaper, Youtube, RefreshCw } from 'lucide-react';
+frontend/src/components/community/LiveWidgets.jsx:import AppIcon from './AppIcon';
+frontend/src/components/community/LiveWidgets.jsx:import { widgetsService } from '../../services/widgetsService';
+frontend/src/components/community/LeftSidebar.jsx:import React, { useState } from 'react';
+frontend/src/components/community/LeftSidebar.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/LeftSidebar.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/components/community/LeftSidebar.jsx:import { Sparkles, ArrowRight, Compass, Users, Building2, Scale, Gauge, TrendingUp, ChevronDown } from 'lucide-react';
+frontend/src/components/community/LeftSidebar.jsx:import AppIcon from './AppIcon';
+frontend/src/components/community/LeftSidebar.jsx:import { WeatherWidget, CalendarWidget, PodcastWidget, CompaniesShoutout } from './Widgets';
+frontend/src/components/community/LeftSidebar.jsx:import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
+frontend/src/components/community/MobileBottomNav.jsx:import React from 'react';
+frontend/src/components/community/MobileBottomNav.jsx:import { NavLink } from 'react-router-dom';
+frontend/src/components/community/MobileBottomNav.jsx:import AppIcon from './AppIcon';
+frontend/src/components/community/NotificationsBell.jsx:import React, { useState, useEffect, useCallback } from 'react';
+frontend/src/components/community/NotificationsBell.jsx:import { useNavigate } from 'react-router-dom';
+frontend/src/components/community/NotificationsBell.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/components/community/NotificationsBell.jsx:import { Bell, Check, X } from 'lucide-react';
+frontend/src/components/community/NotificationsBell.jsx:import { notificationService } from '../../services/coreServices';
+frontend/src/components/community/NotificationsBell.jsx:import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
+frontend/src/components/community/NotificationsBell.jsx:import { useRealtime } from '../../contexts/RealtimeContext';
+frontend/src/components/community/IntelligentFeed.jsx:import React, { useEffect, useRef, useState, useCallback } from 'react';
+frontend/src/components/community/IntelligentFeed.jsx:import { Loader, RefreshCw, MapPin, Sparkles, ChevronDown } from 'lucide-react';
+frontend/src/components/community/IntelligentFeed.jsx:import { contentSourcesService } from '../../services/feedService';
+frontend/src/components/community/IntelligentFeed.jsx:import ContentCard from './cards/ContentCard';
+frontend/src/components/community/WelcomeModal.jsx:import React, { useEffect, useState, useRef } from 'react';
+frontend/src/components/community/WelcomeModal.jsx:import { useNavigate } from 'react-router-dom';
+frontend/src/components/community/WelcomeModal.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/components/community/WelcomeModal.jsx:import { X, Sparkles, ArrowRight } from 'lucide-react';
+frontend/src/components/community/WelcomeModal.jsx:import confetti from 'canvas-confetti';
+frontend/src/components/community/WelcomeModal.jsx:import useCommunityStats, { formatCount } from '../../hooks/useCommunityStats';
+frontend/src/components/community/WelcomeModal.jsx:import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
+frontend/src/components/community/WelcomeModal.jsx:import { WELCOME_STORAGE_KEY as STORAGE_KEY, armWelcome } from './welcomeArm';
+frontend/src/components/community/AppIcon.jsx:import React from 'react';
+frontend/src/components/community/PresenceDot.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/components/community/PresenceDot.jsx:import { useRealtime } from '../../contexts/RealtimeContext';
+frontend/src/components/community/LiveFeed.jsx:import React, { useCallback, useEffect, useRef, useState } from 'react';
+frontend/src/components/community/LiveFeed.jsx:import { motion } from 'framer-motion';
+frontend/src/components/community/LiveFeed.jsx:import { Loader, Filter, Sparkles } from 'lucide-react';
+frontend/src/components/community/LiveFeed.jsx:import { feedService, categoryService, growthService } from '../../services/feedService';
+frontend/src/components/community/LiveFeed.jsx:import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
+frontend/src/components/community/LiveFeed.jsx:import FeedPostCard from './FeedPostCard';
+frontend/src/components/community/LiveFeed.jsx:import FeedComposer from './FeedComposer';
+frontend/src/components/community/LiveFeed.jsx:import IntelligentFeed from './IntelligentFeed';
+frontend/src/components/community/CommunityLayout.jsx:import React from 'react';
+frontend/src/components/community/HeaderSearchBar.jsx:import React, { useEffect, useRef, useState } from 'react';
+frontend/src/components/community/HeaderSearchBar.jsx:import { useNavigate } from 'react-router-dom';
+frontend/src/components/community/HeaderSearchBar.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/components/community/HeaderSearchBar.jsx:import { Search, X } from 'lucide-react';
+frontend/src/components/community/HeaderSearchBar.jsx:import { searchService } from '../../services/coreServices';
+frontend/src/components/community/FollowButton.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/components/community/FollowButton.jsx:import { motion } from 'framer-motion';
+frontend/src/components/community/FollowButton.jsx:import { Check, Plus, Loader2 } from 'lucide-react';
+frontend/src/components/community/FollowButton.jsx:import { followsService } from '../../services/followsService';
+frontend/src/components/community/FollowButton.jsx:import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
+frontend/src/components/community/RightWidgets.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/components/community/RightWidgets.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/RightWidgets.jsx:import { motion } from 'framer-motion';
+frontend/src/components/community/RightWidgets.jsx:import { ArrowUpRight, TrendingUp, Users } from 'lucide-react';
+frontend/src/components/community/RightWidgets.jsx:import AppIcon from './AppIcon';
+frontend/src/components/community/RightWidgets.jsx:import {
+frontend/src/components/community/RightWidgets.jsx:import {
+frontend/src/components/community/RightWidgets.jsx:import PresenceDot from './PresenceDot';
+frontend/src/components/community/RightWidgets.jsx:import { feedService } from '../../services/feedService';
+frontend/src/components/community/RightWidgets.jsx:import { useRealtime } from '../../contexts/RealtimeContext';
+frontend/src/components/community/ShareButton.jsx:import React, { useState, useRef, useEffect } from 'react';
+frontend/src/components/community/ShareButton.jsx:import { Share2, Copy, Check, Linkedin, Facebook, MessageCircle, Send, X as XIcon } from 'lucide-react';
+frontend/src/components/community/ExternalSourcesSection.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/components/community/ExternalSourcesSection.jsx:import { Compass } from 'lucide-react';
+frontend/src/components/community/ExternalSourcesSection.jsx:import { contentSourcesService } from '../../services/feedService';
+frontend/src/components/community/ExternalSourcesSection.jsx:import ContentCard from './cards/ContentCard';
+frontend/src/components/community/FeedComposer.jsx:import React, { useState } from 'react';
+frontend/src/components/community/FeedComposer.jsx:import { motion } from 'framer-motion';
+frontend/src/components/community/FeedComposer.jsx:import { Image, Send, X } from 'lucide-react';
+frontend/src/components/community/FeedComposer.jsx:import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
+frontend/src/components/community/cards/RepoCard.jsx:import React from 'react';
+frontend/src/components/community/cards/RepoCard.jsx:import { Github, Star, GitFork } from 'lucide-react';
+frontend/src/components/community/cards/RepoCard.jsx:import BaseCard, { CardCTA, CardMeta } from './BaseCard';
+frontend/src/components/community/cards/BaseCard.jsx:import React from 'react';
+frontend/src/components/community/cards/BaseCard.jsx:import { motion } from 'framer-motion';
+frontend/src/components/community/cards/BaseCard.jsx:import { ExternalLink } from 'lucide-react';
+frontend/src/components/community/cards/ContentCard.jsx:import React from 'react';
+frontend/src/components/community/cards/ContentCard.jsx:import NewsCard from './NewsCard';
+frontend/src/components/community/cards/ContentCard.jsx:import JobCard from './JobCard';
+frontend/src/components/community/cards/ContentCard.jsx:import EventCard from './EventCard';
+frontend/src/components/community/cards/ContentCard.jsx:import VideoCard from './VideoCard';
+frontend/src/components/community/cards/ContentCard.jsx:import CompanyCard from './CompanyCard';
+frontend/src/components/community/cards/ContentCard.jsx:import CommunityCard from './CommunityCard';
+frontend/src/components/community/cards/ContentCard.jsx:import MarketplaceCard from './MarketplaceCard';
+frontend/src/components/community/cards/ContentCard.jsx:import RepoCard from './RepoCard';
+frontend/src/components/community/cards/ContentCard.jsx:import DatasetCard from './DatasetCard';
+frontend/src/components/community/cards/ContentCard.jsx:import AiToolCard from './AiToolCard';
+frontend/src/components/community/cards/ContentCard.jsx:import PreviewCard from './PreviewCard';
+frontend/src/components/community/cards/ContentCard.jsx:import BaseCard from './BaseCard';
+frontend/src/components/community/cards/ContentCard.jsx:import FeedPostCard from '../FeedPostCard';
+frontend/src/components/community/cards/PreviewCard.jsx:import React from 'react';
+frontend/src/components/community/cards/PreviewCard.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/cards/PreviewCard.jsx:import {
+frontend/src/components/community/cards/EventCard.jsx:import React from 'react';
+frontend/src/components/community/cards/EventCard.jsx:import { CalendarDays, MapPin, Ticket, Clock } from 'lucide-react';
+frontend/src/components/community/cards/EventCard.jsx:import BaseCard, { CardCTA, CardMeta } from './BaseCard';
+frontend/src/components/community/cards/JobCard.jsx:import React from 'react';
+frontend/src/components/community/cards/JobCard.jsx:import { Briefcase, MapPin, Building2 } from 'lucide-react';
+frontend/src/components/community/cards/JobCard.jsx:import BaseCard, { CardCTA, CardMeta } from './BaseCard';
+frontend/src/components/community/cards/CompanyCard.jsx:import React from 'react';
+frontend/src/components/community/cards/CompanyCard.jsx:import { Building2, MapPin, Users, TrendingUp } from 'lucide-react';
+frontend/src/components/community/cards/CompanyCard.jsx:import BaseCard, { CardCTA, CardMeta } from './BaseCard';
+frontend/src/components/community/cards/AiToolCard.jsx:import React from 'react';
+frontend/src/components/community/cards/AiToolCard.jsx:import { Sparkles, ExternalLink } from 'lucide-react';
+frontend/src/components/community/cards/AiToolCard.jsx:import BaseCard, { CardCTA, CardMeta } from './BaseCard';
+frontend/src/components/community/cards/MarketplaceCard.jsx:import React from 'react';
+frontend/src/components/community/cards/MarketplaceCard.jsx:import { ShoppingBag, Tag } from 'lucide-react';
+frontend/src/components/community/cards/MarketplaceCard.jsx:import BaseCard, { CardCTA, CardMeta } from './BaseCard';
+frontend/src/components/community/cards/DatasetCard.jsx:import React from 'react';
+frontend/src/components/community/cards/DatasetCard.jsx:import { Database, Globe } from 'lucide-react';
+frontend/src/components/community/cards/DatasetCard.jsx:import BaseCard, { CardCTA, CardMeta } from './BaseCard';
+frontend/src/components/community/cards/VideoCard.jsx:import React from 'react';
+frontend/src/components/community/cards/VideoCard.jsx:import { Play, Video, Clock } from 'lucide-react';
+frontend/src/components/community/cards/VideoCard.jsx:import BaseCard, { CardCTA, CardMeta } from './BaseCard';
+frontend/src/components/community/cards/CommunityCard.jsx:import React from 'react';
+frontend/src/components/community/cards/CommunityCard.jsx:import { Users, Clock } from 'lucide-react';
+frontend/src/components/community/cards/CommunityCard.jsx:import BaseCard, { CardCTA, CardMeta } from './BaseCard';
+frontend/src/components/community/cards/NewsCard.jsx:import React from 'react';
+frontend/src/components/community/cards/NewsCard.jsx:import { Newspaper, MapPin, Share2, Bookmark, Copy, Clock } from 'lucide-react';
+frontend/src/components/community/cards/NewsCard.jsx:import BaseCard, { CardCTA, CardGhostCTA, CardMeta } from './BaseCard';
+frontend/src/components/community/workspace/MessagesWidget.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/components/community/workspace/MessagesWidget.jsx:import { Link, useNavigate } from 'react-router-dom';
+frontend/src/components/community/workspace/MessagesWidget.jsx:import { MessageCircle, ArrowUpRight } from 'lucide-react';
+frontend/src/components/community/workspace/MessagesWidget.jsx:import { RightCard } from './rightBlocks';
+frontend/src/components/community/workspace/MessagesWidget.jsx:import PresenceDot from '../PresenceDot';
+frontend/src/components/community/workspace/MessagesWidget.jsx:import { messagingService } from '../../../services/coreServices';
+frontend/src/components/community/workspace/MessagesWidget.jsx:import { useCommunityAuth } from '../../../contexts/CommunityAuthContext';
+frontend/src/components/community/workspace/MessagesWidget.jsx:import { useRealtime } from '../../../contexts/RealtimeContext';
+frontend/src/components/community/workspace/EventsWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/EventsWidget.jsx:import { RightCard, EventRow } from './rightBlocks';
+frontend/src/components/community/workspace/TrendingCompaniesWidget.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/components/community/workspace/TrendingCompaniesWidget.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/workspace/TrendingCompaniesWidget.jsx:import { Flame } from 'lucide-react';
+frontend/src/components/community/workspace/TrendingCompaniesWidget.jsx:import { RightCard } from './rightBlocks';
+frontend/src/components/community/workspace/TrendingCompaniesWidget.jsx:import { discoveryService } from '../../../services/platformService';
+frontend/src/components/community/workspace/TrendingCompaniesWidget.jsx:import FollowButton from '../FollowButton';
+frontend/src/components/community/workspace/TrendingWidget.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/components/community/workspace/TrendingWidget.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/workspace/TrendingWidget.jsx:import { RightCard } from './rightBlocks';
+frontend/src/components/community/workspace/TrendingWidget.jsx:import { feedService } from '../../../services/feedService';
+frontend/src/components/community/workspace/GroupsWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/GroupsWidget.jsx:import { SidebarBlock, GroupRow } from './blocks';
+frontend/src/components/community/workspace/ProfileCardWidget.jsx:import React, { useState, useEffect } from 'react';
+frontend/src/components/community/workspace/ProfileCardWidget.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/workspace/ProfileCardWidget.jsx:import { motion } from 'framer-motion';
+frontend/src/components/community/workspace/ProfileCardWidget.jsx:import { Sparkles, ArrowRight, Users, Globe2, ChevronDown, Copy, Check, Gift } from 'lucide-react';
+frontend/src/components/community/workspace/ProfileCardWidget.jsx:import { useCommunityAuth } from '../../../contexts/CommunityAuthContext';
+frontend/src/components/community/workspace/ProfileCardWidget.jsx:import useCommunityStats, { formatCount } from '../../../hooks/useCommunityStats';
+frontend/src/components/community/workspace/ProfileCardWidget.jsx:import useUserRegion, { LATAM_COUNTRIES } from '../../../hooks/useUserRegion';
+frontend/src/components/community/workspace/ProfileCardWidget.jsx:import ShareButton from '../ShareButton';
+frontend/src/components/community/workspace/QuickLinksWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/QuickLinksWidget.jsx:import { SidebarBlock, QuickLink } from './blocks';
+frontend/src/components/community/workspace/WelcomeBandWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/WelcomeBandWidget.jsx:import { motion } from 'framer-motion';
+frontend/src/components/community/workspace/NuestraHistoriaWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/NuestraHistoriaWidget.jsx:import { NuestraHistoriaCard } from './ProfileCardWidget';
+frontend/src/components/community/workspace/InvestorCenterWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/InvestorCenterWidget.jsx:import { RightCard, CompanyRow } from './rightBlocks';
+frontend/src/components/community/workspace/blocks.jsx:import React from 'react';
+frontend/src/components/community/workspace/blocks.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/workspace/blocks.jsx:import { motion } from 'framer-motion';
+frontend/src/components/community/workspace/blocks.jsx:import AppIcon from '../AppIcon';
+frontend/src/components/community/workspace/CompaniesWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/CompaniesWidget.jsx:import { RightCard, CompanyRow } from './rightBlocks';
+frontend/src/components/community/workspace/DiscoverEntitiesWidget.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/components/community/workspace/DiscoverEntitiesWidget.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/workspace/DiscoverEntitiesWidget.jsx:import { Sparkles } from 'lucide-react';
+frontend/src/components/community/workspace/DiscoverEntitiesWidget.jsx:import { RightCard } from './rightBlocks';
+frontend/src/components/community/workspace/DiscoverEntitiesWidget.jsx:import { discoveryService } from '../../../services/platformService';
+frontend/src/components/community/workspace/DiscoverEntitiesWidget.jsx:import FollowButton from '../FollowButton';
+frontend/src/components/community/workspace/MobileWorkspaceDrawer.jsx:import React, { useState } from 'react';
+frontend/src/components/community/workspace/MobileWorkspaceDrawer.jsx:import { AnimatePresence, motion } from 'framer-motion';
+frontend/src/components/community/workspace/MobileWorkspaceDrawer.jsx:import { X, LayoutGrid, Menu, Settings } from 'lucide-react';
+frontend/src/components/community/workspace/MobileWorkspaceDrawer.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/workspace/MobileWorkspaceDrawer.jsx:import WorkspacePanel from './WorkspacePanel';
+frontend/src/components/community/workspace/MobileWorkspaceDrawer.jsx:import { useCommunityAuth } from '../../../contexts/CommunityAuthContext';
+frontend/src/components/community/workspace/WorkspaceWidgetShell.jsx:import React from 'react';
+frontend/src/components/community/workspace/WorkspaceWidgetShell.jsx:import { motion } from 'framer-motion';
+frontend/src/components/community/workspace/WorkspaceWidgetShell.jsx:import { EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
+frontend/src/components/community/workspace/rightBlocks.jsx:import React from 'react';
+frontend/src/components/community/workspace/rightBlocks.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/workspace/rightBlocks.jsx:import { TrendingUp } from 'lucide-react';
+frontend/src/components/community/workspace/rightBlocks.jsx:import AppIcon from '../AppIcon';
+frontend/src/components/community/workspace/ActivityWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/ActivityWidget.jsx:import { SidebarBlock, ActivityRow } from './blocks';
+frontend/src/components/community/workspace/WorkspacePanel.jsx:import React from 'react';
+frontend/src/components/community/workspace/WorkspacePanel.jsx:import { useDroppable } from '@dnd-kit/core';
+frontend/src/components/community/workspace/WorkspacePanel.jsx:import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+frontend/src/components/community/workspace/WorkspacePanel.jsx:import { CSS } from '@dnd-kit/utilities';
+frontend/src/components/community/workspace/WorkspacePanel.jsx:import { GripVertical } from 'lucide-react';
+frontend/src/components/community/workspace/WorkspacePanel.jsx:import { getWidget } from '../../../services/workspaceRegistry';
+frontend/src/components/community/workspace/WorkspacePanel.jsx:import { useWorkspace } from '../../../contexts/WorkspaceContext';
+frontend/src/components/community/workspace/WorkspacePanel.jsx:import Shell from './WorkspaceWidgetShell';
+frontend/src/components/community/workspace/TrendingEditorialWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/TrendingEditorialWidget.jsx:import { RightCard, TrendRow } from './rightBlocks';
+frontend/src/components/community/workspace/CapitalCtaWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/CapitalCtaWidget.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/workspace/CapitalCtaWidget.jsx:import { motion } from 'framer-motion';
+frontend/src/components/community/workspace/CapitalCtaWidget.jsx:import { ArrowUpRight } from 'lucide-react';
+frontend/src/components/community/workspace/CapitalCtaWidget.jsx:import AppIcon from '../AppIcon';
+frontend/src/components/community/workspace/WorkspaceDndProvider.jsx:import React, { useState } from 'react';
+frontend/src/components/community/workspace/WorkspaceDndProvider.jsx:import {
+frontend/src/components/community/workspace/WorkspaceDndProvider.jsx:import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+frontend/src/components/community/workspace/WorkspaceDndProvider.jsx:import { useWorkspace } from '../../../contexts/WorkspaceContext';
+frontend/src/components/community/workspace/WorkspaceDndProvider.jsx:import { getWidget } from '../../../services/workspaceRegistry';
+frontend/src/components/community/workspace/FeedWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/FeedWidget.jsx:import LiveFeed from '../LiveFeed';
+frontend/src/components/community/workspace/AiToolsWidget.jsx:import React from 'react';
+frontend/src/components/community/workspace/AiToolsWidget.jsx:import { RightCard, ToolRow } from './rightBlocks';
+frontend/src/components/community/workspace/SuggestedPeopleWidget.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/components/community/workspace/SuggestedPeopleWidget.jsx:import { RightCard } from './rightBlocks';
+frontend/src/components/community/workspace/SuggestedPeopleWidget.jsx:import PresenceDot from '../PresenceDot';
+frontend/src/components/community/workspace/SuggestedPeopleWidget.jsx:import { useRealtime } from '../../../contexts/RealtimeContext';
+frontend/src/components/community/Widgets.jsx:import React from 'react';
+frontend/src/components/community/Widgets.jsx:import { motion } from 'framer-motion';
+frontend/src/components/community/Widgets.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/community/Widgets.jsx:import { CloudSun, TrendingUp, TrendingDown, Play, ArrowUpRight, Sparkles, Calendar } from 'lucide-react';
+frontend/src/components/community/Widgets.jsx:import AppIcon from './AppIcon';
+frontend/src/components/community/UserHoverCard.jsx:import React, { useEffect, useRef, useState } from 'react';
+frontend/src/components/community/UserHoverCard.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/components/community/UserHoverCard.jsx:import { UserPlus, MessageCircle, ExternalLink, Building2, MapPin } from 'lucide-react';
+frontend/src/components/community/UserHoverCard.jsx:import PresenceDot from './PresenceDot';
+frontend/src/components/community/UserHoverCard.jsx:import FollowButton from './FollowButton';
+frontend/src/components/FoundersSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/FoundersSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/FoundersSection.jsx:import { Compass, Cpu, Globe, Briefcase, ArrowRight } from 'lucide-react';
+frontend/src/components/SoundToggle.jsx:import React from 'react';
+frontend/src/components/SoundToggle.jsx:import { motion } from 'framer-motion';
+frontend/src/components/SoundToggle.jsx:import { Volume2, VolumeX } from 'lucide-react';
+frontend/src/components/Header.jsx:import React, { useState } from 'react';
+frontend/src/components/Header.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/components/Header.jsx:import { Link, useLocation, useNavigate } from 'react-router-dom';
+frontend/src/components/Header.jsx:import { Menu, X, Search, ChevronDown, LogIn, LogOut } from 'lucide-react';
+frontend/src/components/Header.jsx:import BrandMark from './BrandMark';
+frontend/src/components/Header.jsx:import AppIcon from './community/AppIcon';
+frontend/src/components/Header.jsx:import HeaderSearchBar from './community/HeaderSearchBar';
+frontend/src/components/Header.jsx:import NotificationsBell from './community/NotificationsBell';
+frontend/src/components/Header.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/components/AuthCallback.jsx:import React, { useEffect, useRef, useState } from 'react';
+frontend/src/components/AuthCallback.jsx:import { useLocation, useNavigate } from 'react-router-dom';
+frontend/src/components/AuthCallback.jsx:import { authService } from '../services/authService';
+frontend/src/components/AuthCallback.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/components/AuthCallback.jsx:import BrandMark from './BrandMark';
+frontend/src/components/PrimarySlides.jsx:import React from 'react';
+frontend/src/components/PrimarySlides.jsx:import { motion } from 'framer-motion';
+frontend/src/components/PrimarySlides.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/PrimarySlides.jsx:import { ArrowRight, ExternalLink, Sparkles, Globe, Layers, Rocket, Users } from 'lucide-react';
+frontend/src/components/PrimarySlides.jsx:import AppIcon from './community/AppIcon';
+frontend/src/components/InvestorContactBlock.jsx:import React, { useRef } from 'react';
+frontend/src/components/InvestorContactBlock.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/InvestorContactBlock.jsx:import { Link } from 'react-router-dom';
+frontend/src/components/InvestorContactBlock.jsx:import { Mail, MessageCircle, ArrowRight, Instagram, Music, Youtube, Share2, Facebook, Lock, Eye } from 'lucide-react';
+frontend/src/components/MarqueeSection.jsx:import React from 'react';
+frontend/src/components/MarqueeSection.jsx:import { motion } from 'framer-motion';
+frontend/src/components/ContactSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/ContactSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/ContactSection.jsx:import { Mail, MessageCircle, Instagram, Music, Youtube, Share2, Facebook } from 'lucide-react';
+frontend/src/components/LatinAmericaLiving.jsx:import React, { useRef, useState, useEffect } from 'react';
+frontend/src/components/LatinAmericaLiving.jsx:import { motion, useInView, AnimatePresence } from 'framer-motion';
+frontend/src/components/common/LogoImage.jsx:import React, { useState } from 'react';
+frontend/src/components/InvestorsSection.jsx:import React, { useRef } from 'react';
+frontend/src/components/InvestorsSection.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/components/InvestorsSection.jsx:import { TrendingUp, Target, Rocket, Shield, ArrowRight } from 'lucide-react';
+frontend/src/index.js:import React from "react";
+frontend/src/index.js:import ReactDOM from "react-dom/client";
+frontend/src/index.js:import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+frontend/src/index.js:import "@/index.css";
+frontend/src/index.js:import App from "@/App";
+frontend/src/pages/EventsPage.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/pages/EventsPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/EventsPage.jsx:import { MapPin, Calendar, Check } from 'lucide-react';
+frontend/src/pages/EventsPage.jsx:import CategoryPage, { NAVY } from '../components/CategoryPage';
+frontend/src/pages/EventsPage.jsx:import { eventService } from '../services/platformService';
+frontend/src/pages/EventsPage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/EventsPage.jsx:import ExternalSourcesSection from '../components/community/ExternalSourcesSection';
+frontend/src/pages/VerifyEmailPage.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/pages/VerifyEmailPage.jsx:import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+frontend/src/pages/VerifyEmailPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/VerifyEmailPage.jsx:import { CheckCircle2, XCircle, Loader2, ArrowLeft, Mail } from 'lucide-react';
+frontend/src/pages/VerifyEmailPage.jsx:import BrandMark from '../components/BrandMark';
+frontend/src/pages/VerifyEmailPage.jsx:import { authService } from '../services/authService';
+frontend/src/pages/VerifyEmailPage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/InvestorPitchDeckPage.jsx:import React, { useEffect, useRef } from 'react';
+frontend/src/pages/InvestorPitchDeckPage.jsx:import { motion, useInView, useScroll, useTransform } from 'framer-motion';
+frontend/src/pages/InvestorPitchDeckPage.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/InvestorPitchDeckPage.jsx:import {
+frontend/src/pages/CapitalHubPage.jsx:import React from 'react';
+frontend/src/pages/CapitalHubPage.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/CapitalHubPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/CapitalHubPage.jsx:import { ArrowUpRight, Lock } from 'lucide-react';
+frontend/src/pages/CapitalHubPage.jsx:import Header from '../components/Header';
+frontend/src/pages/CapitalHubPage.jsx:import Footer from '../components/Footer';
+frontend/src/pages/CapitalHubPage.jsx:import AppIcon from '../components/community/AppIcon';
+frontend/src/pages/ExecutiveSummaryPage.jsx:import React, { useEffect, useMemo, useRef, useState } from 'react';
+frontend/src/pages/ExecutiveSummaryPage.jsx:import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+frontend/src/pages/ExecutiveSummaryPage.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/ExecutiveSummaryPage.jsx:import {
+frontend/src/pages/NewsPage.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/pages/NewsPage.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/pages/NewsPage.jsx:import { Bookmark, Share2, ExternalLink, Newspaper, Rss, Sparkles, Clock } from 'lucide-react';
+frontend/src/pages/NewsPage.jsx:import CategoryPage, { NAVY } from '../components/CategoryPage';
+frontend/src/pages/NewsPage.jsx:import { widgetsService } from '../services/widgetsService';
+frontend/src/pages/ProfileCustomizePage.jsx:import React, { useEffect, useRef, useState } from 'react';
+frontend/src/pages/ProfileCustomizePage.jsx:import { useNavigate } from 'react-router-dom';
+frontend/src/pages/ProfileCustomizePage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/ProfileCustomizePage.jsx:import {
+frontend/src/pages/ProfileCustomizePage.jsx:import Header from '../components/Header';
+frontend/src/pages/ProfileCustomizePage.jsx:import Footer from '../components/Footer';
+frontend/src/pages/ProfileCustomizePage.jsx:import { profileService } from '../services/profileService';
+frontend/src/pages/ProfileCustomizePage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/ProfileCustomizePage.jsx:import { useUIPreferences } from '../contexts/UIPreferencesContext';
+frontend/src/pages/CapitalStrategyPage.jsx:import React, { useEffect, useMemo, useState, useCallback } from 'react';
+frontend/src/pages/CapitalStrategyPage.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/pages/CapitalStrategyPage.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/CapitalStrategyPage.jsx:import {
+frontend/src/pages/AdminPlatformPage.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/pages/AdminPlatformPage.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/AdminPlatformPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/AdminPlatformPage.jsx:import { ArrowLeft, Users, Building2, MessagesSquare, Briefcase, Calendar, Flag, Activity, BarChart3, ShieldAlert, Radio } from 'lucide-react';
+frontend/src/pages/AdminPlatformPage.jsx:import { useAuth } from '../contexts/AuthContext';
+frontend/src/pages/AdminPlatformPage.jsx:import { adminPlatformService } from '../services/coreServices';
+frontend/src/pages/AdminPlatformPage.jsx:import AdminSourcesTab from './AdminSourcesTab';
+frontend/src/pages/InvestorPortalPage.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/pages/InvestorPortalPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/InvestorPortalPage.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/InvestorPortalPage.jsx:import {
+frontend/src/pages/InvestorPortalPage.jsx:import { useAuth } from '../contexts/AuthContext';
+frontend/src/pages/NotificationsPage.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/pages/NotificationsPage.jsx:import { Navigate } from 'react-router-dom';
+frontend/src/pages/NotificationsPage.jsx:import { Check, Trash2 } from 'lucide-react';
+frontend/src/pages/NotificationsPage.jsx:import CategoryPage, { NAVY } from '../components/CategoryPage';
+frontend/src/pages/NotificationsPage.jsx:import { notificationService } from '../services/coreServices';
+frontend/src/pages/NotificationsPage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/InvestorRequestPage.jsx:import React, { useState } from 'react';
+frontend/src/pages/InvestorRequestPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/InvestorRequestPage.jsx:import { Link, useNavigate } from 'react-router-dom';
+frontend/src/pages/InvestorRequestPage.jsx:import { ArrowLeft, ArrowRight, Lock, CheckCircle, Shield } from 'lucide-react';
+frontend/src/pages/AiPage.jsx:import React, { useEffect, useMemo, useState } from 'react';
+frontend/src/pages/AiPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/AiPage.jsx:import { Sparkles } from 'lucide-react';
+frontend/src/pages/AiPage.jsx:import CategoryPage, { NAVY } from '../components/CategoryPage';
+frontend/src/pages/AiPage.jsx:import { contentSourcesService } from '../services/feedService';
+frontend/src/pages/AiPage.jsx:import AiToolCard from '../components/community/cards/AiToolCard';
+frontend/src/pages/ResetPasswordPage.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/pages/ResetPasswordPage.jsx:import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+frontend/src/pages/ResetPasswordPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/ResetPasswordPage.jsx:import { ArrowLeft, Lock, Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
+frontend/src/pages/ResetPasswordPage.jsx:import BrandMark from '../components/BrandMark';
+frontend/src/pages/ResetPasswordPage.jsx:import { authService } from '../services/authService';
+frontend/src/pages/ResetPasswordPage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/AdminDashboardPage.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/pages/AdminDashboardPage.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/pages/AdminDashboardPage.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/AdminDashboardPage.jsx:import {
+frontend/src/pages/AdminDashboardPage.jsx:import { useAuth } from '../contexts/AuthContext';
+frontend/src/pages/VideosPage.jsx:import React from 'react';
+frontend/src/pages/VideosPage.jsx:import CategoryPage from '../components/CategoryPage';
+frontend/src/pages/VideosPage.jsx:import ExternalSourcesSection from '../components/community/ExternalSourcesSection';
+frontend/src/pages/AdminSourcesTab.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/pages/AdminSourcesTab.jsx:import {
+frontend/src/pages/AdminSourcesTab.jsx:import { adminSourcesService } from '../services/coreServices';
+frontend/src/pages/CommunityPage.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/pages/CommunityPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/CommunityPage.jsx:import { Users, Plus, X, Send, Shield, Check } from 'lucide-react';
+frontend/src/pages/CommunityPage.jsx:import CategoryPage, { NAVY } from '../components/CategoryPage';
+frontend/src/pages/CommunityPage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/CommunityPage.jsx:import { groupsService } from '../services/feedService';
+frontend/src/pages/JoinPage.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/pages/JoinPage.jsx:import { Link, useNavigate } from 'react-router-dom';
+frontend/src/pages/JoinPage.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/pages/JoinPage.jsx:import { Mail, ArrowLeft, Sparkles, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+frontend/src/pages/JoinPage.jsx:import BrandMark from '../components/BrandMark';
+frontend/src/pages/JoinPage.jsx:import { AUTH_PROVIDERS, authService } from '../services/authService';
+frontend/src/pages/JoinPage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/JoinPage.jsx:import { armWelcome } from '../components/community/welcomeArm';
+frontend/src/pages/AdminLoginPage.jsx:import React, { useState } from 'react';
+frontend/src/pages/AdminLoginPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/AdminLoginPage.jsx:import { Link, useNavigate, useLocation } from 'react-router-dom';
+frontend/src/pages/AdminLoginPage.jsx:import { Lock, ArrowRight, ArrowLeft, Shield, AlertCircle } from 'lucide-react';
+frontend/src/pages/AdminLoginPage.jsx:import { useAuth } from '../contexts/AuthContext';
+frontend/src/pages/NuestraHistoriaPage.jsx:import React, { useRef } from 'react';
+frontend/src/pages/NuestraHistoriaPage.jsx:import { motion, useInView } from 'framer-motion';
+frontend/src/pages/NuestraHistoriaPage.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/NuestraHistoriaPage.jsx:import { ArrowLeft, Compass, Target, Flag, Users, Sparkles, Rocket, Heart, Shield, Zap } from 'lucide-react';
+frontend/src/pages/NuestraHistoriaPage.jsx:import Header from '../components/Header';
+frontend/src/pages/NuestraHistoriaPage.jsx:import Footer from '../components/Footer';
+frontend/src/pages/NuestraHistoriaPage.jsx:import FoundersSection from '../components/FoundersSection';
+frontend/src/pages/HashtagPage.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/pages/HashtagPage.jsx:import { Link, useParams } from 'react-router-dom';
+frontend/src/pages/HashtagPage.jsx:import { ArrowLeft, Hash, TrendingUp } from 'lucide-react';
+frontend/src/pages/HashtagPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/HashtagPage.jsx:import Header from '../components/Header';
+frontend/src/pages/HashtagPage.jsx:import Footer from '../components/Footer';
+frontend/src/pages/HashtagPage.jsx:import FollowButton from '../components/community/FollowButton';
+frontend/src/pages/HashtagPage.jsx:import FeedPostCard from '../components/community/FeedPostCard';
+frontend/src/pages/HashtagPage.jsx:import { followsService } from '../services/followsService';
+frontend/src/pages/HashtagPage.jsx:import { feedService } from '../services/feedService';
+frontend/src/pages/AdminDocumentsPage.jsx:import React, { useCallback, useEffect, useRef, useState } from 'react';
+frontend/src/pages/AdminDocumentsPage.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/AdminDocumentsPage.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/pages/AdminDocumentsPage.jsx:import { ArrowLeft, Upload, Trash2, Download, FileText, RefreshCcw, Shield, CheckCircle } from 'lucide-react';
+frontend/src/pages/AdminDocumentsPage.jsx:import { useAuth } from '../contexts/AuthContext';
+frontend/src/pages/HomePage.jsx:import React, { useState } from 'react';
+frontend/src/pages/HomePage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/HomePage.jsx:import { LayoutGrid, Check } from 'lucide-react';
+frontend/src/pages/HomePage.jsx:import Header from '../components/Header';
+frontend/src/pages/HomePage.jsx:import Footer from '../components/Footer';
+frontend/src/pages/HomePage.jsx:import CustomCursor from '../components/CustomCursor';
+frontend/src/pages/HomePage.jsx:import CommunityLayout from '../components/community/CommunityLayout';
+frontend/src/pages/HomePage.jsx:import WorkspacePanel from '../components/community/workspace/WorkspacePanel';
+frontend/src/pages/HomePage.jsx:import MobileWorkspaceDrawer from '../components/community/workspace/MobileWorkspaceDrawer';
+frontend/src/pages/HomePage.jsx:import WorkspaceDndProvider from '../components/community/workspace/WorkspaceDndProvider';
+frontend/src/pages/HomePage.jsx:import SlideCarousel from '../components/SlideCarousel';
+frontend/src/pages/HomePage.jsx:import { PRIMARY_SLIDES } from '../components/PrimarySlides';
+frontend/src/pages/HomePage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/HomePage.jsx:import { useWorkspace } from '../contexts/WorkspaceContext';
+frontend/src/pages/InvestorRoomPreview.jsx:import React from 'react';
+frontend/src/pages/InvestorRoomPreview.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/InvestorRoomPreview.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/InvestorRoomPreview.jsx:import { 
+frontend/src/pages/MiEspacioConfigPage.jsx:import React from 'react';
+frontend/src/pages/MiEspacioConfigPage.jsx:import { Link, useNavigate } from 'react-router-dom';
+frontend/src/pages/MiEspacioConfigPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/MiEspacioConfigPage.jsx:import { ArrowUp, ArrowDown, RotateCcw, EyeOff, Eye, ChevronUp, ChevronDown } from 'lucide-react';
+frontend/src/pages/MiEspacioConfigPage.jsx:import Header from '../components/Header';
+frontend/src/pages/MiEspacioConfigPage.jsx:import Footer from '../components/Footer';
+frontend/src/pages/MiEspacioConfigPage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/MiEspacioConfigPage.jsx:import { useWorkspace } from '../contexts/WorkspaceContext';
+frontend/src/pages/MiEspacioConfigPage.jsx:import { WORKSPACE_WIDGETS, getWidget, workspaceCategories } from '../services/workspaceRegistry';
+frontend/src/pages/MiEspacioConfigPage.jsx:import { WORKSPACE_PRESETS } from '../services/workspacePresets';
+frontend/src/pages/CompanyProfilePage.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/pages/CompanyProfilePage.jsx:import { Link, useNavigate, useParams } from 'react-router-dom';
+frontend/src/pages/CompanyProfilePage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/CompanyProfilePage.jsx:import {
+frontend/src/pages/CompanyProfilePage.jsx:import Header from '../components/Header';
+frontend/src/pages/CompanyProfilePage.jsx:import Footer from '../components/Footer';
+frontend/src/pages/CompanyProfilePage.jsx:import CompanyMediaManager from '../components/business/CompanyMediaManager';
+frontend/src/pages/CompanyProfilePage.jsx:import CompanyRelated from '../components/business/CompanyRelated';
+frontend/src/pages/CompanyProfilePage.jsx:import FollowButton from '../components/community/FollowButton';
+frontend/src/pages/CompanyProfilePage.jsx:import { companyService } from '../services/platformService';
+frontend/src/pages/CompanyProfilePage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/ProfilePage.jsx:import React, { useEffect, useState, useCallback, useRef } from 'react';
+frontend/src/pages/ProfilePage.jsx:import { Navigate } from 'react-router-dom';
+frontend/src/pages/ProfilePage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/ProfilePage.jsx:import { Mail, Globe2, Award, Edit3, Save, X, Camera, ImageIcon, Trash2, ShieldCheck, TrendingUp, Star, BadgeCheck } from 'lucide-react';
+frontend/src/pages/ProfilePage.jsx:import CategoryPage, { NAVY } from '../components/CategoryPage';
+frontend/src/pages/ProfilePage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/ProfilePage.jsx:import { profileService } from '../services/platformService';
+frontend/src/pages/PublicProfilePage.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/pages/PublicProfilePage.jsx:import { useParams, Link, useNavigate } from 'react-router-dom';
+frontend/src/pages/PublicProfilePage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/PublicProfilePage.jsx:import {
+frontend/src/pages/PublicProfilePage.jsx:import Header from '../components/Header';
+frontend/src/pages/PublicProfilePage.jsx:import Footer from '../components/Footer';
+frontend/src/pages/PublicProfilePage.jsx:import FeedPostCard from '../components/community/FeedPostCard';
+frontend/src/pages/PublicProfilePage.jsx:import { profileService } from '../services/profileService';
+frontend/src/pages/PublicProfilePage.jsx:import { feedService } from '../services/feedService';
+frontend/src/pages/PublicProfilePage.jsx:import { followsService } from '../services/followsService';
+frontend/src/pages/PublicProfilePage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/MarketplacePage.jsx:import React, { useEffect, useMemo, useState } from 'react';
+frontend/src/pages/MarketplacePage.jsx:import { Link, useParams, useNavigate } from 'react-router-dom';
+frontend/src/pages/MarketplacePage.jsx:import { motion, AnimatePresence } from 'framer-motion';
+frontend/src/pages/MarketplacePage.jsx:import { ArrowLeft, Building2, Users, Briefcase, Calendar, MapPin, ExternalLink } from 'lucide-react';
+frontend/src/pages/MarketplacePage.jsx:import Header from '../components/Header';
+frontend/src/pages/MarketplacePage.jsx:import Footer from '../components/Footer';
+frontend/src/pages/MarketplacePage.jsx:import FollowButton from '../components/community/FollowButton';
+frontend/src/pages/MarketplacePage.jsx:import { companyService, jobService, eventService } from '../services/platformService';
+frontend/src/pages/JobsPage.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/pages/JobsPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/JobsPage.jsx:import { MapPin, Briefcase, Send, Check, Bookmark } from 'lucide-react';
+frontend/src/pages/JobsPage.jsx:import CategoryPage, { NAVY } from '../components/CategoryPage';
+frontend/src/pages/JobsPage.jsx:import { jobService } from '../services/platformService';
+frontend/src/pages/JobsPage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/JobsPage.jsx:import ExternalSourcesSection from '../components/community/ExternalSourcesSection';
+frontend/src/pages/LegalPages.jsx:import React from 'react';
+frontend/src/pages/LegalPages.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/LegalPages.jsx:import { ArrowLeft } from 'lucide-react';
+frontend/src/pages/LegalPages.jsx:import Header from '../components/Header';
+frontend/src/pages/LegalPages.jsx:import Footer from '../components/Footer';
+frontend/src/pages/MessagesPage.jsx:import React, { useCallback, useEffect, useState } from 'react';
+frontend/src/pages/MessagesPage.jsx:import { Navigate, useLocation } from 'react-router-dom';
+frontend/src/pages/MessagesPage.jsx:import { Send } from 'lucide-react';
+frontend/src/pages/MessagesPage.jsx:import CategoryPage, { NAVY } from '../components/CategoryPage';
+frontend/src/pages/MessagesPage.jsx:import { messagingService } from '../services/coreServices';
+frontend/src/pages/MessagesPage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/MessagesPage.jsx:import { useRealtime } from '../contexts/RealtimeContext';
+frontend/src/pages/MessagesPage.jsx:import PresenceDot from '../components/community/PresenceDot';
+frontend/src/pages/InvestorSetupPage.jsx:import React, { useEffect, useState } from 'react';
+frontend/src/pages/InvestorSetupPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/InvestorSetupPage.jsx:import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+frontend/src/pages/InvestorSetupPage.jsx:import { ArrowLeft, ArrowRight, Lock, Sparkles, CheckCircle, AlertCircle, Shield } from 'lucide-react';
+frontend/src/pages/InvestorSetupPage.jsx:import { useAuth } from '../contexts/AuthContext';
+frontend/src/pages/CompaniesPage.jsx:import React, { useEffect, useState, useCallback } from 'react';
+frontend/src/pages/CompaniesPage.jsx:import { Link } from 'react-router-dom';
+frontend/src/pages/CompaniesPage.jsx:import { motion } from 'framer-motion';
+frontend/src/pages/CompaniesPage.jsx:import { ExternalLink, Globe2, Plus, Check, MapPin, ShieldCheck, ImagePlus, X } from 'lucide-react';
+frontend/src/pages/CompaniesPage.jsx:import CategoryPage, { NAVY } from '../components/CategoryPage';
+frontend/src/pages/CompaniesPage.jsx:import { companyService } from '../services/platformService';
+frontend/src/pages/CompaniesPage.jsx:import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+frontend/src/pages/CompaniesPage.jsx:import CompanyCreateModal from '../components/business/CompanyCreateModal';
+frontend/src/pages/CompaniesPage.jsx:import CompanyMediaManager from '../components/business/CompanyMediaManager';
+frontend/src/pages/CompaniesPage.jsx:import LogoImage from '../components/common/LogoImage';
+frontend/src/App.js:import React, { useEffect } from 'react';
+frontend/src/App.js:import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+frontend/src/App.js:import Lenis from '@studio-freight/lenis';
+frontend/src/App.js:import './App.css';
+frontend/src/App.js:import HomePage from './pages/HomePage';
+frontend/src/App.js:import InvestorRequestPage from './pages/InvestorRequestPage';
+frontend/src/App.js:import InvestorRoomPreview from './pages/InvestorRoomPreview';
+frontend/src/App.js:import InvestorPitchDeckPage from './pages/InvestorPitchDeckPage';
+frontend/src/App.js:import ExecutiveSummaryPage from './pages/ExecutiveSummaryPage';
+frontend/src/App.js:import CapitalStrategyPage from './pages/CapitalStrategyPage';
+frontend/src/App.js:import CapitalHubPage from './pages/CapitalHubPage';
+frontend/src/App.js:import JoinPage from './pages/JoinPage';
+frontend/src/App.js:import ResetPasswordPage from './pages/ResetPasswordPage';
+frontend/src/App.js:import VerifyEmailPage from './pages/VerifyEmailPage';
+frontend/src/App.js:import PublicProfilePage from './pages/PublicProfilePage';
+frontend/src/App.js:import InvestorSetupPage from './pages/InvestorSetupPage';
+frontend/src/App.js:import InvestorPortalPage from './pages/InvestorPortalPage';
+frontend/src/App.js:import AdminLoginPage from './pages/AdminLoginPage';
+frontend/src/App.js:import AdminDashboardPage from './pages/AdminDashboardPage';
+frontend/src/App.js:import AdminDocumentsPage from './pages/AdminDocumentsPage';
+frontend/src/App.js:import ProtectedAdminRoute from './components/ProtectedAdminRoute';
+frontend/src/App.js:import ProtectedInvestorRoute from './components/ProtectedInvestorRoute';
+frontend/src/App.js:import AuthCallback from './components/AuthCallback';
+frontend/src/App.js:import NewsPage from './pages/NewsPage';
+frontend/src/App.js:import VideosPage from './pages/VideosPage';
+frontend/src/App.js:import JobsPage from './pages/JobsPage';
+frontend/src/App.js:import CompaniesPage from './pages/CompaniesPage';
+frontend/src/App.js:import EventsPage from './pages/EventsPage';
+frontend/src/App.js:import AiPage from './pages/AiPage';
+frontend/src/App.js:import CommunityPage from './pages/CommunityPage';
+frontend/src/App.js:import ProfilePage from './pages/ProfilePage';
+frontend/src/App.js:import NotificationsPage from './pages/NotificationsPage';
+frontend/src/App.js:import MessagesPage from './pages/MessagesPage';
+frontend/src/App.js:import AdminPlatformPage from './pages/AdminPlatformPage';
+frontend/src/App.js:import NuestraHistoriaPage from './pages/NuestraHistoriaPage';
+frontend/src/App.js:import { PrivacyPage, CookiesPage, TermsPage, ProfessionalAgreementPage } from './pages/LegalPages';
+frontend/src/App.js:import MarketplacePage from './pages/MarketplacePage';
+frontend/src/App.js:import CompanyProfilePage from './pages/CompanyProfilePage';
+frontend/src/App.js:import HashtagPage from './pages/HashtagPage';
+frontend/src/App.js:import MiEspacioConfigPage from './pages/MiEspacioConfigPage';
+frontend/src/App.js:import ProfileCustomizePage from './pages/ProfileCustomizePage';
+frontend/src/App.js:import MobileBottomNav from './components/community/MobileBottomNav';
+frontend/src/App.js:import { AuthProvider } from './contexts/AuthContext';
+frontend/src/App.js:import { CommunityAuthProvider } from './contexts/CommunityAuthContext';
+frontend/src/App.js:import { RealtimeProvider } from './contexts/RealtimeContext';
+frontend/src/App.js:import { WorkspaceProvider } from './contexts/WorkspaceContext';
+frontend/src/App.js:import { UIPreferencesProvider } from './contexts/UIPreferencesContext';
+frontend/src/hooks/useCommunityStats.js:import { useCallback, useEffect, useRef, useState } from 'react';
+frontend/src/hooks/use-toast.js:import * as React from "react"
+frontend/src/hooks/useUserRegion.js:import { useCallback, useEffect, useState } from 'react';
+frontend/src/hooks/useUserRegion.js:import { useCommunityAuth } from '../contexts/CommunityAuthContext';

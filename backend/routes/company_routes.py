@@ -215,6 +215,11 @@ async def toggle_follow(
     if existing:
         await db.company_follows.delete_one({"company_id": doc["id"], "user_id": user["id"]})
         await db.companies.update_one({"id": doc["id"]}, {"$inc": {"followers_count": -1}})
+        # Mirror legacy company follow into the unified `follows` collection
+        try:
+            await db.follows.delete_one({"user_id": user["id"], "entity_type": "company", "entity_id": doc["id"]})
+        except Exception:
+            pass
         await record_event(db, "company.unfollowed",
                            actor_id=user["id"], subject_type="company", subject_id=doc["id"])
         return {"following": False}
@@ -225,6 +230,18 @@ async def toggle_follow(
         "created_at": _now(),
     })
     await db.companies.update_one({"id": doc["id"]}, {"$inc": {"followers_count": 1}})
+    # Mirror legacy company follow into the unified `follows` collection so
+    # other systems that read `follows` (Discovery suggested, feed signals)
+    # see the relationship regardless of whether the client used the old
+    # company endpoint or the unified /api/follows one.
+    try:
+        await db.follows.update_one(
+            {"user_id": user["id"], "entity_type": "company", "entity_id": doc["id"]},
+            {"$setOnInsert": {"user_id": user["id"], "entity_type": "company", "entity_id": doc["id"], "created_at": _now()}},
+            upsert=True,
+        )
+    except Exception:
+        pass
     await record_event(db, "company.followed",
                        actor_id=user["id"], subject_type="company", subject_id=doc["id"])
     # Notify company owner

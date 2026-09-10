@@ -1,0 +1,223 @@
+backend
+├── .env
+├── __pycache__
+│   ├── auth.cpython-311.pyc
+│   ├── models.cpython-311.pyc
+│   ├── models_business.cpython-311.pyc
+│   ├── models_category.cpython-311.pyc
+│   ├── models_feed.cpython-311.pyc
+│   ├── models_profile.cpython-311.pyc
+│   ├── models_source.cpython-311.pyc
+│   └── server.cpython-311.pyc
+├── auth.py
+├── data
+│   └── countries_sources.json
+├── models.py
+├── models_business.py
+├── models_category.py
+├── models_feed.py
+├── models_profile.py
+├── models_source.py
+├── pytest.ini
+├── requirements.txt
+├── routes
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── admin_platform_routes.cpython-311.pyc
+│   │   ├── analytics_routes.cpython-311.pyc
+│   │   ├── auth_routes.cpython-311.pyc
+│   │   ├── category_routes.cpython-311.pyc
+│   │   ├── community_auth_routes.cpython-311.pyc
+│   │   ├── community_stats_routes.cpython-311.pyc
+│   │   ├── company_media_routes.cpython-311.pyc
+│   │   ├── company_routes.cpython-311.pyc
+│   │   ├── content_sources_routes.cpython-311.pyc
+│   │   ├── discovery_routes.cpython-311.pyc
+│   │   ├── document_routes.cpython-311.pyc
+│   │   ├── email_routes.cpython-311.pyc
+│   │   ├── event_routes.cpython-311.pyc
+│   │   ├── feed_routes.cpython-311.pyc
+│   │   ├── follows_routes.cpython-311.pyc
+│   │   ├── groups_routes.cpython-311.pyc
+│   │   ├── growth_routes.cpython-311.pyc
+│   │   ├── investor_routes.cpython-311.pyc
+│   │   ├── job_routes.cpython-311.pyc
+│   │   ├── messaging_routes.cpython-311.pyc
+│   │   ├── notification_routes.cpython-311.pyc
+│   │   ├── pitch_deck_routes.cpython-311.pyc
+│   │   ├── profile_media_routes.cpython-311.pyc
+│   │   ├── profile_routes.cpython-311.pyc
+│   │   ├── realtime_routes.cpython-311.pyc
+│   │   ├── search_routes.cpython-311.pyc
+│   │   ├── seo_routes.cpython-311.pyc
+│   │   ├── sources_admin_routes.cpython-311.pyc
+│   │   ├── widget_routes.cpython-311.pyc
+│   │   └── workspace_routes.cpython-311.pyc
+│   ├── admin_platform_routes.py
+│   ├── analytics_routes.py
+│   ├── auth_routes.py
+│   ├── category_routes.py
+│   ├── community_auth_routes.py
+│   ├── community_stats_routes.py
+│   ├── company_media_routes.py
+│   ├── company_routes.py
+│   ├── content_sources_routes.py
+│   ├── discovery_routes.py
+│   ├── document_routes.py
+│   ├── email_routes.py
+│   ├── event_routes.py
+│   ├── feed_routes.py
+│   ├── follows_routes.py
+│   ├── groups_routes.py
+│   ├── growth_routes.py
+│   ├── investor_routes.py
+│   ├── job_routes.py
+│   ├── messaging_routes.py
+│   ├── notification_routes.py
+│   ├── pitch_deck_routes.py
+│   ├── profile_media_routes.py
+│   ├── profile_routes.py
+│   ├── realtime_routes.py
+│   ├── search_routes.py
+│   ├── seo_routes.py
+│   ├── sources_admin_routes.py
+│   ├── widget_routes.py
+│   └── workspace_routes.py
+├── server.py
+├── services
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── analytics.cpython-311.pyc
+│   │   ├── community_auth.cpython-311.pyc
+│   │   ├── community_deps.cpython-311.pyc
+│   │   ├── email.cpython-311.pyc
+│   │   ├── notifications.cpython-311.pyc
+│   │   ├── object_storage.cpython-311.pyc
+│   │   ├── pdf_service.cpython-311.pyc
+│   │   └── realtime.cpython-311.pyc
+│   ├── analytics.py
+│   ├── community_auth.py
+│   ├── community_deps.py
+│   ├── content_sources
+│   │   ├── __init__.py
+│   │   └── __pycache__
+│   │       └── __init__.cpython-311.pyc
+│   ├── discovery
+│   │   ├── __pycache__
+│   │   │   ├── autotag.cpython-311.pyc
+│   │   │   ├── regional.cpython-311.pyc
+│   │   │   ├── resolver.cpython-311.pyc
+│   │   │   ├── seeder.cpython-311.pyc
+│   │   │   └── seeds.cpython-311.pyc
+│   │   ├── autotag.py
+│   │   ├── regional.py
+│   │   ├── resolver.py
+│   │   ├── seeder.py
+│   │   └── seeds.py
+│   ├── email.py
+│   ├── feed_engine
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── base.cpython-311.pyc
+│   │   │   ├── engine.cpython-311.pyc
+│   │   │   └── providers.cpython-311.pyc
+│   │   ├── base.py
+│   │   ├── engine.py
+│   │   └── providers.py
+│   ├── growth
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── aggregator.cpython-311.pyc
+│   │   │   ├── classifier.cpython-311.pyc
+│   │   │   ├── normalizer.cpython-311.pyc
+│   │   │   ├── providers.cpython-311.pyc
+│   │   │   ├── recommender.cpython-311.pyc
+│   │   │   ├── scheduler.cpython-311.pyc
+│   │   │   └── sources.cpython-311.pyc
+│   │   ├── aggregator.py
+│   │   ├── classifier.py
+│   │   ├── connectors
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   │   ├── __init__.cpython-311.pyc
+│   │   │   │   ├── ckan.cpython-311.pyc
+│   │   │   │   └── registry.cpython-311.pyc
+│   │   │   ├── ckan.py
+│   │   │   └── registry.py
+│   │   ├── normalizer.py
+│   │   ├── providers.py
+│   │   ├── recommender.py
+│   │   ├── scheduler.py
+│   │   └── sources.py
+│   ├── integrations
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── base.cpython-311.pyc
+│   │   │   ├── crypto.cpython-311.pyc
+│   │   │   ├── fx.cpython-311.pyc
+│   │   │   ├── rss.cpython-311.pyc
+│   │   │   ├── weather.cpython-311.pyc
+│   │   │   └── youtube.cpython-311.pyc
+│   │   ├── base.py
+│   │   ├── crypto.py
+│   │   ├── fx.py
+│   │   ├── rss.py
+│   │   ├── weather.py
+│   │   └── youtube.py
+│   ├── notifications.py
+│   ├── object_storage.py
+│   ├── pdf_service.py
+│   ├── realtime.py
+│   └── sources_center
+│       ├── __init__.py
+│       ├── __pycache__
+│       │   ├── __init__.cpython-311.pyc
+│       │   └── engine.cpython-311.pyc
+│       └── engine.py
+└── tests
+    ├── conftest.py
+    ├── test_auth.py
+    ├── test_community_auth.py
+    ├── test_discovery.py
+    ├── test_documents.py
+    ├── test_editorial_composer.py
+    ├── test_executive_summary_fields.py
+    ├── test_feed_categories.py
+    ├── test_growth.py
+    ├── test_health.py
+    ├── test_investor_requests.py
+    ├── test_iter34_feed_filter.py
+    ├── test_pitch_deck.py
+    ├── test_sources_center.py
+    ├── test_wave11_1_growth.py
+    ├── test_wave11_connectors.py
+    ├── test_wave12_content_sources.py
+    ├── test_wave12_final.py
+    ├── test_wave12_groups_ext.py
+    ├── test_wave12_photo_fix.py
+    ├── test_wave12_ux.py
+    ├── test_wave25_core.py
+    ├── test_wave2_business.py
+    ├── test_wave3_email.py
+    ├── test_wave3_foryou.py
+    ├── test_wave3_integrations.py
+    ├── test_wave3_media.py
+    ├── test_wave3_realtime.py
+    ├── test_wave4_follows.py
+    ├── test_wave4_workspace.py
+    ├── test_wave6_auth_email.py
+    ├── test_wave6_extended.py
+    ├── test_wave7_growth.py
+    ├── test_wave8a_ecosystem.py
+    ├── test_wave8b_prodready.py
+    ├── test_wave9_1_region_detect.py
+    ├── test_wave9_2_hyperlocal.py
+    ├── test_wave9_regional.py
+    └── test_wave_ux_community_stats.py
+
+22 directories, 199 files

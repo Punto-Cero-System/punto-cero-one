@@ -64,6 +64,7 @@ async def _sync_rss_like(db, source: dict, *, target_collection: str,
     auto_tagged = 0
     now = datetime.now(timezone.utc).isoformat()
     aliases = await get_company_aliases(db)
+    processed_ids: list[str] = []
     for e in entries[:40]:
         item = normalize_entry(src_shape, e)
         if not item:
@@ -89,12 +90,16 @@ async def _sync_rss_like(db, source: dict, *, target_collection: str,
             },
             upsert=True,
         )
+        # Track every processed item id for callers who may want to mirror
+        # into another native collection (jobs/events). We append even when
+        # nothing changed to keep parity with the feed's universe.
+        processed_ids.append(item["id"])
         if res.upserted_id:
             ingested += 1
         elif res.modified_count:
             updated += 1
     return {"ingested": ingested, "updated": updated, "errors": [],
-            "auto_tagged": auto_tagged}
+            "auto_tagged": auto_tagged, "processed_ids": processed_ids}
 
 
 async def sync_rss(db, source: dict) -> dict:
@@ -108,8 +113,56 @@ async def sync_jobs_feed(db, source: dict) -> dict:
 
 
 async def sync_events_feed(db, source: dict) -> dict:
-    return await _sync_rss_like(db, source, target_collection="growth_items",
+    # Ingest into growth_items first (canonical store) then mirror into
+    # the native `events` collection so the existing Events API and the
+    # Discovery resolver (which reads `events`) see them.
+    res = await _sync_rss_like(db, source, target_collection="growth_items",
                                 extra_defaults={"vertical": "eventos", "kind": "event"})
+
+    # Best-effort per-item projection into `events`. Must be idempotent
+    # and tolerant of individual failures.
+    ids = res.get("processed_ids") or []
+    now = datetime.now(timezone.utc).isoformat()
+    for gid in ids:
+        try:
+            g = await db.growth_items.find_one({"id": gid}, {"_id": 0})
+            if not g:
+                continue
+            # Map growth_item -> events document. Keep it conservative
+            # to avoid destructive writes to existing events.
+            ev = {
+                "id": g["id"],
+                "title": g.get("title"),
+                "description": g.get("summary"),
+                "starts_at": g.get("published_at"),
+                "ends_at": None,
+                "timezone": None,
+                "location": None,
+                "country": g.get("country"),
+                "city": g.get("city"),
+                "tags": g.get("tags") or [],
+                "organizer_id": "system-discovery",
+                "is_public": True,
+                "attendees_count": 0,
+                "interested_count": 0,
+                "is_deleted": False,
+                "source_id": g.get("source_id"),
+                "source_name": g.get("source_name"),
+                "external_url": g.get("url"),
+                "created_at": g.get("ingested_at") or now,
+                "updated_at": now,
+            }
+            await db.events.update_one(
+                {"id": ev["id"]},
+                {"$setOnInsert": {"id": ev["id"], "created_at": ev["created_at"], "is_deleted": False},
+                 "$set": {k: v for k, v in ev.items() if k not in ("id", "created_at")}},
+                upsert=True,
+            )
+        except Exception as e:
+            logger.warning("events mirror failed for growth_id=%s: %s", gid, e)
+            # continue with other items; mirror errors are non-fatal to ingestion
+            continue
+    return res
 
 
 async def sync_youtube_channel(db, source: dict) -> dict:

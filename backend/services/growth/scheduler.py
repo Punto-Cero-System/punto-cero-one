@@ -11,11 +11,13 @@ import logging
 import os
 
 from .aggregator import run_once
+from datetime import datetime, timezone
 
 
 logger = logging.getLogger("punto-cero-api.growth.scheduler")
 
 DEFAULT_INTERVAL = 60 * 30  # 30 minutes
+DEFAULT_TIMEOUT = 60 * 5  # 5 minutes
 
 
 async def _process_admin_sources(db):
@@ -72,20 +74,50 @@ class GrowthScheduler:
 
         async def loop():
             db = app.state.db
-            # kick off an immediate run
-            try:
-                await run_once(db)
-                await _process_admin_sources(db)
-                await _process_connectors(db)
-                # One-shot backfill of items ingested before the inline tagger.
+            timeout = int(os.environ.get("GROWTH_RUN_TIMEOUT_SECONDS", DEFAULT_TIMEOUT))
+
+            async def _record_run(started_at, result: dict | None, errors: list[str] | None):
                 try:
-                    from services.discovery.autotag import backfill_autotag
-                    tagged = await backfill_autotag(db, limit=2000)
-                    logger.info("initial autotag backfill tagged=%d", tagged)
+                    finished_at = datetime.now(timezone.utc).isoformat()
+                    doc = {
+                        "started_at": started_at,
+                        "finished_at": finished_at,
+                        "result": result or {},
+                        "errors": errors or [],
+                    }
+                    await db.growth_runs.insert_one(doc)
+                    # Upsert a singleton status for quick inspection
+                    status = {
+                        "last_run_at": finished_at,
+                        "last_success_at": finished_at if (errors is None or len(errors) == 0) else None,
+                        "last_result": result or {},
+                    }
+                    await db.growth_status.update_one({"_id": "singleton"}, {"$set": status}, upsert=True)
+                except Exception:
+                    logger.exception("failed to record growth run to DB")
+
+            # kick off an immediate run (surrounded by safe guards and recording)
+            started = datetime.now(timezone.utc).isoformat()
+            errors: list[str] = []
+            result = None
+            try:
+                result = await asyncio.wait_for(run_once(db), timeout=timeout)
+                try:
+                    await _process_admin_sources(db)
                 except Exception as e:
-                    logger.warning("initial autotag backfill failed: %s", e)
+                    logger.warning("_process_admin_sources failed: %s", e)
+                try:
+                    await _process_connectors(db)
+                except Exception as e:
+                    logger.warning("_process_connectors failed: %s", e)
+            except asyncio.TimeoutError:
+                errors.append("growth run timed out")
+                logger.warning("initial growth run timed out after %ds", timeout)
             except Exception as e:
+                errors.append(str(e))
                 logger.warning("initial growth run failed: %s", e)
+            await _record_run(started, result, errors)
+
             while not self._stop.is_set():
                 try:
                     await asyncio.wait_for(self._stop.wait(), timeout=interval)
@@ -93,12 +125,26 @@ class GrowthScheduler:
                     pass
                 if self._stop.is_set():
                     break
+                started = datetime.now(timezone.utc).isoformat()
+                errors = []
+                result = None
                 try:
-                    await run_once(db)
-                    await _process_admin_sources(db)
-                    await _process_connectors(db)
+                    result = await asyncio.wait_for(run_once(db), timeout=timeout)
+                    try:
+                        await _process_admin_sources(db)
+                    except Exception as e:
+                        logger.warning("_process_admin_sources failed: %s", e)
+                    try:
+                        await _process_connectors(db)
+                    except Exception as e:
+                        logger.warning("_process_connectors failed: %s", e)
+                except asyncio.TimeoutError:
+                    errors.append("growth run timed out")
+                    logger.warning("growth run timed out after %ds", timeout)
                 except Exception as e:
+                    errors.append(str(e))
                     logger.warning("growth run failed: %s", e)
+                await _record_run(started, result, errors)
 
         self._task = asyncio.create_task(loop(), name="growth-scheduler")
         logger.info("growth scheduler started (interval=%ds)", interval)

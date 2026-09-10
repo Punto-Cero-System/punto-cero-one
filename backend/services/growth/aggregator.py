@@ -37,7 +37,7 @@ async def run_once(db) -> dict[str, Any]:
     """
     sources = await active_sources(db)
     if not sources:
-        return {"sources": 0, "ingested": 0, "updated": 0}
+        return {"sources": 0, "ingested": 0, "updated": 0, "fetched": 0, "skipped": 0, "errors": 0}
 
     fetched = await fetch_all(sources)
     now = datetime.now(timezone.utc).isoformat()
@@ -45,48 +45,80 @@ async def run_once(db) -> dict[str, Any]:
     ingested = 0
     updated = 0
     tagged = 0
+    total_fetched = 0
+    total_processed = 0
+    total_errors = 0
+    per_source: dict[str, dict] = {}
     for src, entries in fetched:
-        for e in entries[:30]:  # cap per-source to keep DB compact
-            item = normalize_entry(src, e)
-            if not item:
-                continue
-            # Inline auto-tag — every new item is instantly discoverable via
-            # the Company Discovery ficha the moment it lands.
-            auto = autotag_item_payload(
-                item.get("title"), item.get("summary"), aliases,
-                existing_tags=item.get("tags") or [],
-            )
-            if auto:
-                item["related_companies"] = auto["related_companies"]
-                item["tags"] = auto["tags"]
-                tagged += 1
-            res = await db.growth_items.update_one(
-                {"id": item["id"]},
-                {
-                    "$setOnInsert": {
-                        "id": item["id"], "ingested_at": item["ingested_at"],
+        src_id = src.get("id")
+        per_source[src_id] = {"fetched": len(entries or []), "ingested": 0, "updated": 0, "skipped": 0, "errors": 0}
+        total_fetched += len(entries or [])
+        for e in (entries or [])[:30]:  # cap per-source to keep DB compact
+            total_processed += 1
+            try:
+                item = normalize_entry(src, e)
+                if not item:
+                    per_source[src_id]["skipped"] += 1
+                    continue
+                # Inline auto-tag — every new item is instantly discoverable via
+                # the Company Discovery ficha the moment it lands.
+                auto = autotag_item_payload(
+                    item.get("title"), item.get("summary"), aliases,
+                    existing_tags=item.get("tags") or [],
+                )
+                if auto:
+                    item["related_companies"] = auto["related_companies"]
+                    item["tags"] = auto["tags"]
+                    tagged += 1
+                res = await db.growth_items.update_one(
+                    {"id": item["id"]},
+                    {
+                        "$setOnInsert": {
+                            "id": item["id"], "ingested_at": item["ingested_at"],
+                        },
+                        "$set": {
+                            **{k: v for k, v in item.items() if k not in {"id", "ingested_at"}},
+                            "last_seen_at": now,
+                        },
                     },
-                    "$set": {
-                        **{k: v for k, v in item.items() if k not in {"id", "ingested_at"}},
-                        "last_seen_at": now,
-                    },
-                },
-                upsert=True,
-            )
-            if res.upserted_id:
-                ingested += 1
-            elif res.modified_count:
-                updated += 1
+                    upsert=True,
+                )
+                if res.upserted_id:
+                    ingested += 1
+                    per_source[src_id]["ingested"] += 1
+                elif res.modified_count:
+                    updated += 1
+                    per_source[src_id]["updated"] += 1
+                else:
+                    # neither inserted nor modified -> considered skipped (duplicate/no-change)
+                    per_source[src_id]["skipped"] += 1
+            except Exception as e:
+                logger.warning("normalize/upsert failed src=%s err=%s", src_id, e)
+                per_source[src_id]["errors"] += 1
+                total_errors += 1
     # Best-effort backfill for legacy items that predated the inline tagger.
     try:
         legacy_tagged = await backfill_autotag(db, limit=500)
     except Exception as e:
         logger.warning("backfill autotag failed: %s", e)
         legacy_tagged = 0
-    logger.info("growth run sources=%d ingested=%d updated=%d tagged=%d backfill=%d",
-                len(sources), ingested, updated, tagged, legacy_tagged)
-    return {"sources": len(sources), "ingested": ingested, "updated": updated,
-            "auto_tagged": tagged, "backfilled": legacy_tagged}
+    logger.info(
+        "growth run sources=%d fetched=%d processed=%d ingested=%d updated=%d skipped=%d tagged=%d backfill=%d errors=%d",
+        len(sources), total_fetched, total_processed, ingested, updated,
+        sum(p.get("skipped", 0) for p in per_source.values()), tagged, legacy_tagged, total_errors,
+    )
+    return {
+        "sources": len(sources),
+        "fetched": total_fetched,
+        "processed": total_processed,
+        "ingested": ingested,
+        "updated": updated,
+        "skipped": sum(p.get("skipped", 0) for p in per_source.values()),
+        "errors": total_errors,
+        "per_source": per_source,
+        "auto_tagged": tagged,
+        "backfilled": legacy_tagged,
+    }
 
 
 async def latest_items(

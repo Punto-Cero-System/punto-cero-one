@@ -112,10 +112,19 @@ async def upload_media_slot(
     company = await _owned_company(request, company_id, user)
     url = await _save_media(company["id"], slot, file)
     field = f"{slot}_url"
-    await request.app.state.db.companies.update_one(
-        {"id": company["id"]},
-        {"$set": {field: url, "updated_at": _now_iso()}},
-    )
+    db = request.app.state.db
+    try:
+        await db.companies.update_one(
+            {"id": company["id"]},
+            {"$set": {field: url, "updated_at": _now_iso()}},
+        )
+    except Exception as e:
+        try:
+            path = url.replace('/api/companies/media/', '', 1)
+            get_storage().delete(path)
+        except Exception:
+            logger.exception("cleanup of orphaned company media failed")
+        raise HTTPException(status_code=502, detail="No se pudo actualizar la empresa") from e
     return {"ok": True, "slot": slot, "url": url}
 
 
@@ -150,10 +159,19 @@ async def add_gallery_image(
     if len(current) >= MAX_GALLERY_ITEMS:
         raise HTTPException(status_code=400, detail=f"Galería llena (máx {MAX_GALLERY_ITEMS})")
     url = await _save_media(company["id"], "gallery", file)
-    await request.app.state.db.companies.update_one(
-        {"id": company["id"]},
-        {"$push": {"gallery": url}, "$set": {"updated_at": _now_iso()}},
-    )
+    db = request.app.state.db
+    try:
+        await db.companies.update_one(
+            {"id": company["id"]},
+            {"$push": {"gallery": url}, "$set": {"updated_at": _now_iso()}},
+        )
+    except Exception as e:
+        try:
+            path = url.replace('/api/companies/media/', '', 1)
+            get_storage().delete(path)
+        except Exception:
+            logger.exception("cleanup of orphaned gallery media failed")
+        raise HTTPException(status_code=502, detail="No se pudo actualizar la empresa") from e
     return {"ok": True, "url": url, "count": len(current) + 1}
 
 

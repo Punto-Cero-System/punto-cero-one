@@ -357,6 +357,18 @@ async def _startup():
         from services.object_storage import get_storage
         s = get_storage()
         logger.info(f"Storage backend ready: {s.backend_name}")
+        # Opt-in guard for production deployments: fail fast if local storage
+        # is explicitly disallowed via env var and persistence is unverified.
+        disallow = os.environ.get("DISALLOW_LOCAL_STORAGE_IN_PRODUCTION", "").strip()
+        if disallow.lower() in ("1", "true", "yes"):
+            from services.object_storage import enforce_production_storage
+
+            try:
+                enforce_production_storage(True)
+            except Exception as e:
+                # Raising here prevents the app from finishing startup.
+                logger.error("Storage configuration guard failed: %s", e)
+                raise
     except Exception as e:
         logger.warning(f"Storage backend init warning (non-fatal): {e}")
     logger.info("Punto Cero System API ready.")

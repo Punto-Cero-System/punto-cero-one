@@ -47,6 +47,9 @@ class BaseObjectStorage(ABC):
     @abstractmethod
     def get(self, path: str) -> Tuple[bytes, str]: ...
 
+    @abstractmethod
+    def delete(self, path: str) -> None: ...
+
     def exists(self, path: str) -> bool:  # optional override
         try:
             self.get(path)
@@ -92,6 +95,17 @@ class LocalObjectStorage(BaseObjectStorage):
         except OSError as e:
             raise ObjectStorageError(f"No se pudo leer el archivo: {e}") from e
         return data, ct
+
+    def delete(self, path: str) -> None:
+        target = self._resolve(path)
+        try:
+            if target.exists():
+                target.unlink()
+            ct_file = target.parent / f".{target.name}.ct"
+            if ct_file.exists():
+                ct_file.unlink()
+        except OSError as e:
+            raise ObjectStorageError(f"No se pudo borrar el archivo: {e}") from e
 
 
 # ---------------------------------------------------------------------------
@@ -150,6 +164,23 @@ class EmergentObjectStorage(BaseObjectStorage):
             raise ObjectStorageError(f"get falló: {e}") from e
         return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
+    def delete(self, path: str) -> None:
+        key = self._init()
+        try:
+            resp = requests.delete(
+                f"{self.STORAGE_URL}/objects/{path}",
+                headers={"X-Storage-Key": key},
+                timeout=30,
+            )
+            # Treat 2xx as success; treat 404 as success for idempotence.
+            if resp.status_code >= 200 and resp.status_code < 300:
+                return
+            if resp.status_code == 404:
+                return
+            raise ObjectStorageError(f"delete falló: {resp.status_code} {resp.text[:200]}")
+        except requests.RequestException as e:
+            raise ObjectStorageError(f"delete falló: {e}") from e
+
 
 # ---------------------------------------------------------------------------
 # Factory
@@ -189,3 +220,77 @@ def get_storage() -> BaseObjectStorage:
 def app_prefix() -> str:
     """Namespaced prefix for all objects. Keeps the shared bucket collision-free."""
     return os.environ.get("OBJECT_STORAGE_APP", "punto-cero-system")
+
+
+def storage_status() -> dict:
+    """Return a small diagnostic dict about the configured storage backend.
+
+    This is intended for non-fatal, code-level verification in tests and
+    startup checks. It performs a best-effort writable check when the
+    configured backend is local. It does NOT expose any secrets.
+    """
+    preferred = os.environ.get("OBJECT_STORAGE_BACKEND", "").lower()
+    emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
+    status: dict = {"preferred": preferred or None, "emergent_key_set": bool(emergent_key)}
+    try:
+        backend = get_storage()
+        status["backend_name"] = getattr(backend, "backend_name", None)
+    except Exception as e:
+        status["backend_name"] = None
+        status["init_error"] = str(e)
+        return status
+
+    if getattr(backend, "backend_name", "") == "local":
+        # Try a non-destructive writable check in the local root.
+        try:
+            root = getattr(backend, "root", None)
+            status["local_root"] = str(root) if root is not None else None
+            ok = False
+            if root is not None:
+                root.mkdir(parents=True, exist_ok=True)
+                test_path = root / ".punto_cero_storage_check"
+                try:
+                    test_path.write_text("ok")
+                    if test_path.exists():
+                        ok = True
+                finally:
+                    try:
+                        test_path.unlink()
+                    except Exception:
+                        pass
+            status["local_writable"] = bool(ok)
+            # We cannot reliably determine mount persistence from within the
+            # process; mark persistence as NOT_VERIFIED.
+            status["deployment_persistence_verified"] = False
+        except Exception as e:
+            status["local_writable"] = False
+            status["local_check_error"] = str(e)
+
+    return status
+
+
+def enforce_production_storage(disallow_local: bool) -> None:
+    """Enforce that local storage is not used in production when opt-in flag set.
+
+    If `disallow_local` is True and the configured backend resolves to local
+    and deployment persistence is not verified, raise a RuntimeError with a
+    clear configuration message. This function is safe to call at startup
+    for a fast-fail check and uses `storage_status()` for evaluation.
+    """
+    if not disallow_local:
+        return
+    status = storage_status()
+    backend = status.get("backend_name")
+    # If we couldn't determine backend_name due to init error, fail safe.
+    if backend is None:
+        raise RuntimeError(
+            "DISALLOW_LOCAL_STORAGE_IN_PRODUCTION enabled but storage backend could not be initialized."
+        )
+    if backend == "local":
+        # If the deployment persistence has not been explicitly verified,
+        # refuse to start to avoid accidental ephemeral storage in prod.
+        if not status.get("deployment_persistence_verified", False):
+            raise RuntimeError(
+                "DISALLOW_LOCAL_STORAGE_IN_PRODUCTION is enabled and the configured storage backend is local. "
+                "Deployment persistence is NOT VERIFIED. Set up a persistent object store or disable the flag."
+            )

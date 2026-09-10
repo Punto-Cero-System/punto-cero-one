@@ -99,8 +99,16 @@ def _set_session_cookie(response: Response, token: str) -> None:
 
 
 def _clear_session_cookie(response: Response) -> None:
+    # Ensure deletion matches the same flags used when setting the cookie so
+    # browsers reliably remove it (Some browsers consider Secure/HttpOnly/SameSite).
     flags = _cookie_flags()
-    response.delete_cookie(key=COOKIE_NAME, path=flags["path"], samesite=flags["samesite"])
+    response.delete_cookie(
+        key=COOKIE_NAME,
+        path=flags.get("path", "/"),
+        samesite=flags.get("samesite"),
+        secure=flags.get("secure", True),
+        httponly=flags.get("httponly", True),
+    )
 
 
 def _extract_token(cookie_val: Optional[str], auth_header: Optional[str]) -> Optional[str]:
@@ -784,7 +792,7 @@ async def oauth_start(provider_key: str, request: Request):
         "provider": provider_key,
         "redirect_uri": redirect_uri,
         "created_at": now.isoformat(),
-        "expires_at": now + timedelta(minutes=_oauth_state_ttl_min()),
+        "expires_at": (now + timedelta(minutes=_oauth_state_ttl_min())).isoformat(),
     })
     return RedirectResponse(provider.authorize_endpoint(redirect_uri, state))
 
@@ -813,6 +821,14 @@ async def oauth_callback(
     rec = await db.oauth_states.find_one_and_delete(
         {"state": state, "provider": provider_key})
     if not rec:
+        raise HTTPException(status_code=400, detail="State inválido o expirado")
+
+    # Enforce TTL: ensure stored expires_at hasn't passed. Stored as ISO str.
+    try:
+        expires_at = parse_expires_at(rec.get("expires_at"))
+        if expires_at < datetime.now(timezone.utc):
+            raise HTTPException(status_code=400, detail="State inválido o expirado")
+    except AuthProviderError:
         raise HTTPException(status_code=400, detail="State inválido o expirado")
 
     try:
