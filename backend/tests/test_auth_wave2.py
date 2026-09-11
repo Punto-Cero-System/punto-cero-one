@@ -45,7 +45,6 @@ def test_registry_enabled_list_returns_list():
     lst = registry.enabled_list()
     assert isinstance(lst, list)
 import re
-from datetime import datetime, timezone
 
 from fastapi import Response
 
@@ -67,7 +66,7 @@ def test_provider_identity_public_dict():
     assert public["provider"] == "google"
 
 
-def test_new_session_token_format():
+def test_new_session_token_format_via_service():
     t = ca.new_session_token()
     assert isinstance(t, str)
     assert t.startswith("cs_")

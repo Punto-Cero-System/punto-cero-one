@@ -643,3 +643,17 @@ El Discovery Engine ahora **adapta automáticamente el contenido según el país
 ### UX Directive
 - User explicitly froze new feature/refactor work — focus on stability, bug fixes and UX polish through end of Wave 12.
 
+
+
+---
+
+## 2026-08-08 — Auditoría Maestra de Fusión Ecosistema (sin cambios de código)
+
+### Entregable
+- **NEW** `/app/ECOSYSTEM_FUSION_MASTER_AUDIT.md` — documento único que consolida y reemplaza a `CORE_FUSION_AUDIT.md` + `ONE_CORE_FUSION_AUDIT.md`. Contiene: inventario completo del Proyecto B (3 mecanismos de auth, campos de perfil, campos generados por registro social, las 49 colecciones MongoDB con conteos reales, sesiones, Mi Espacio), tabla de duplicidades A vs B por módulo (canónico + reutilizar/migrar/eliminar/sincronizar), flujo de usuario Landing → Registro → Comunidad → Perfil → Launcher → Vertical → Workspace, análisis del login social y su consumo por el Core sin duplicar usuarios, matriz de header global por rol (visitante/member/profesional/empresa/admin), arquitectura definitiva (qué queda en Emergent vs Core vs APIs) y roadmap de fusión en 8 fases (0-7) con prioridades y riesgos.
+
+### Hallazgos registrados (para futuras fases)
+- Formatos de id heterogéneos en `users` (`user_<hex12>` vs `uuid4` del seed admin) y de `session_token` (`cs_*` actual vs `sess_*` legacy) — relevante para migración de identidad.
+- `user_sessions` (1003 docs) sin TTL index — no se purgan solas.
+- Mensajería construida pero sin uso (`conversations`/`chat_messages` en 0) — decisión pendiente con equipo Core.
+- Sin código modificado: solo el fix de lint previo en `backend/tests/test_auth_wave2.py` (F811, 9/9 tests verdes).

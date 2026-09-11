@@ -1030,3 +1030,20 @@ Convertir el feed en una experiencia profesional tipo LinkedIn — jerarquía vi
 - (P1) Recorrido UX manual pantalla-por-pantalla de perfiles, comunidades, empresas, empleos, eventos, videos y notificaciones para detectar textos superpuestos y botones muertos residuales (opcional — el testing agent no reportó bugs graves en estas rutas).
 - (P0) Validación end-to-end de estabilidad en producción antes del soft-launch.
 
+
+
+---
+
+## Fusión Ecosistema — Auditoría Maestra (8-Aug-2026)
+
+**Documento canónico:** `/app/ECOSYSTEM_FUSION_MASTER_AUDIT.md` (consolida y reemplaza `CORE_FUSION_AUDIT.md` y `ONE_CORE_FUSION_AUDIT.md`).
+
+### Marco acordado con el usuario
+- **Proyecto A (Core, VS Code):** Identity Core, JWT, Auth, MongoDB, Universal Launcher, Workspaces (Professional, Firm, Medical, Legal), Admin, Agents, Darwin IA, Billing, Vertical Registry.
+- **Proyecto B (este repo, Emergent):** Landing, comunidad, feed, noticias, networking, perfiles, empleos, login social (Google/Facebook/LinkedIn), mensajería, notificaciones, object storage.
+- **Modelo objetivo:** Identity Core + Community One + Verticales por subdominio, con SSO cookie `Domain=.puntocerosystem.com`. B aporta comunidad/feed/contenido/grafo social/SEO/marketing; el Core aporta identidad/auth/verticales/launcher/billing/admin/storage.
+
+### Estado
+- Auditoría ENTREGADA en modo read-only (inventario real: 805 users, 49 colecciones, 3 mecanismos de auth, Mi Espacio).
+- **Nada de la fusión está implementado.** Pendiente de decisión del usuario: 5 preguntas abiertas en §8 del documento (Mi Espacio vs Workspaces, mensajería canónica, formato del token SSO, dominio final de la landing, empleos/eventos).
+- NO implementar cambios arquitectónicos sin orden explícita del usuario.
