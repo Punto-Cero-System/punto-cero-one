@@ -657,3 +657,8 @@ El Discovery Engine ahora **adapta automáticamente el contenido según el país
 - `user_sessions` (1003 docs) sin TTL index — no se purgan solas.
 - Mensajería construida pero sin uso (`conversations`/`chat_messages` en 0) — decisión pendiente con equipo Core.
 - Sin código modificado: solo el fix de lint previo en `backend/tests/test_auth_wave2.py` (F811, 9/9 tests verdes).
+
+## 2026-08-08 — FASE 1 TAREA 014: Resumen Ejecutivo de Integración (read-only)
+
+- **NEW** `/app/EMERGENT_TO_SYSTEM_INTEGRATION_SUMMARY.md` — resumen ejecutivo (máx. 4 páginas) para la fusión con Punto Cero System (Core). Responde: (1) datos exactos guardados por registro social Google/Facebook/LinkedIn/Correo (campos, IDs, colecciones), (2) composición de Mi Espacio y qué permanece, (3) los 11 módulos de la comunidad, (4) los 14 componentes de Emergent que deben conectarse al Core (solo enumeración), (5) los 5 riesgos principales de la fusión.
+- Sin código, componentes, refactor, build, deploy ni commit. Confirmado con git: solo el documento nuevo.

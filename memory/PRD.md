@@ -1047,3 +1047,6 @@ Convertir el feed en una experiencia profesional tipo LinkedIn — jerarquía vi
 - Auditoría ENTREGADA en modo read-only (inventario real: 805 users, 49 colecciones, 3 mecanismos de auth, Mi Espacio).
 - **Nada de la fusión está implementado.** Pendiente de decisión del usuario: 5 preguntas abiertas en §8 del documento (Mi Espacio vs Workspaces, mensajería canónica, formato del token SSO, dominio final de la landing, empleos/eventos).
 - NO implementar cambios arquitectónicos sin orden explícita del usuario.
+
+### TAREA 014 (8-Aug-2026)
+- Entregado `/app/EMERGENT_TO_SYSTEM_INTEGRATION_SUMMARY.md` (resumen ejecutivo de integración, read-only, máx. 4 págs). Complementa a la auditoría maestra; ambos documentos quedan como base para la fusión con el Core. Sigue vigente: NO implementar cambios de fusión sin orden explícita del usuario.
