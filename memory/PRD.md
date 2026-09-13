@@ -1050,3 +1050,6 @@ Convertir el feed en una experiencia profesional tipo LinkedIn — jerarquía vi
 
 ### TAREA 014 (8-Aug-2026)
 - Entregado `/app/EMERGENT_TO_SYSTEM_INTEGRATION_SUMMARY.md` (resumen ejecutivo de integración, read-only, máx. 4 págs). Complementa a la auditoría maestra; ambos documentos quedan como base para la fusión con el Core. Sigue vigente: NO implementar cambios de fusión sin orden explícita del usuario.
+
+### LoginCardOne (8-Aug-2026)
+- Componente portable `frontend/src/components/LoginCardOne.jsx` listo para copiar al Core (Punto Cero System): visual del login de One + consumo del AuthContext existente (JWT) + `navigate('/one')` tras login. Pendiente: el usuario lo integra en la página principal de System (VS Code) siguiendo el docstring del archivo.

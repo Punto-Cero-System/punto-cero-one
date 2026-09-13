@@ -662,3 +662,9 @@ El Discovery Engine ahora **adapta automáticamente el contenido según el país
 
 - **NEW** `/app/EMERGENT_TO_SYSTEM_INTEGRATION_SUMMARY.md` — resumen ejecutivo (máx. 4 páginas) para la fusión con Punto Cero System (Core). Responde: (1) datos exactos guardados por registro social Google/Facebook/LinkedIn/Correo (campos, IDs, colecciones), (2) composición de Mi Espacio y qué permanece, (3) los 11 módulos de la comunidad, (4) los 14 componentes de Emergent que deben conectarse al Core (solo enumeración), (5) los 5 riesgos principales de la fusión.
 - Sin código, componentes, refactor, build, deploy ni commit. Confirmado con git: solo el documento nuevo.
+
+## 2026-08-08 — LoginCardOne portable (FASE 1 · integración Core)
+
+- **NEW** `frontend/src/components/LoginCardOne.jsx` — tarjeta de login portable con el diseño visual de Punto Cero One (glass card navy, tabs Social/Correo, botones Google/LinkedIn/Facebook, gradiente esmeralda). NO crea auth nueva: consume el `AuthContext` existente (`login(email, password)` → POST /api/auth/login → JWT) y tras éxito ejecuta `navigate('/one')` (donde el Core resolverá `GET /api/auth/system-context` → workspace automático). Doble export: default conectado (AuthContext + router) y `LoginCardOneView` puro (100 % props, para el Core). Estado de sesión activa integrado (avatar + "Entrar a One"). Props: `redirectTo`, `onSuccess`, `onSocialLogin`, `onForgotPassword`, `brand`, `title`, `subtitle`, `maxWidth`, `initialTab`. Cero URLs hardcodeadas, sin iframe. Instrucciones de importación en el docstring del archivo.
+- **NEW** `frontend/src/components/__tests__/LoginCardOne.test.jsx` — 6 tests (render visual, submit → login + navigate('/one'), error, redirectTo custom, sesión activa, export puro). **6/6 verdes**.
+- NO se modificaron páginas, rutas, backend ni AuthContext. Confirmado con git: solo 2 archivos nuevos, ninguno importado aún por páginas.
