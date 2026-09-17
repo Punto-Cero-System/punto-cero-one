@@ -16,6 +16,9 @@ import PublicProfilePage from './pages/PublicProfilePage';
 import InvestorSetupPage from './pages/InvestorSetupPage';
 import InvestorPortalPage from './pages/InvestorPortalPage';
 import AdminLoginPage from './pages/AdminLoginPage';
+import LoginPage from './pages/LoginPage';
+import WorkspaceGatewayPage from './pages/WorkspaceGatewayPage';
+import WorkspaceSpacePlaceholderPage from './pages/WorkspaceSpacePlaceholderPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminDocumentsPage from './pages/AdminDocumentsPage';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
@@ -146,6 +149,13 @@ function AppRouter() {
       <Route path="/empresas/:id" element={<CompanyProfilePage />} />
       <Route path="/h/:tag" element={<HashtagPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/workspace" element={<WorkspaceGatewayPage />} />
+      {/* Workspace Gateway — espacios del ecosistema (estructura inicial, sin backend).
+          Mismo componente reutilizado; el espacio se resuelve por `spaceKey`. */}
+      <Route path="/workspace/legal" element={<WorkspaceSpacePlaceholderPage spaceKey="legal" />} />
+      <Route path="/workspace/medical" element={<WorkspaceSpacePlaceholderPage spaceKey="medical" />} />
+      <Route path="/workspace/empresa" element={<WorkspaceSpacePlaceholderPage spaceKey="empresa" />} />
       <Route path="/investor/setup" element={<InvestorSetupPage />} />
       <Route
         path="/investor-portal"
