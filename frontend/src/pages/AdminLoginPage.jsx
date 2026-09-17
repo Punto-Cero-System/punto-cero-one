@@ -109,7 +109,7 @@ const AdminLoginPage = () => {
         >
           <Shield size={12} color="#D4AF37" />
           <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#D4AF37', letterSpacing: '0.2em' }}>
-            PANEL ADMINISTRATIVO
+            Acceso Workspace Punto Cero System
           </span>
         </div>
 
