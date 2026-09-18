@@ -79,7 +79,7 @@ export const UIPreferencesProvider = ({ children }) => {
     }
     load();
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user]);
 
   // Debounced autosave whenever prefs change (only if authenticated).
   useEffect(() => {
@@ -89,7 +89,7 @@ export const UIPreferencesProvider = ({ children }) => {
       setSavingTick((n) => n + 1);
     }, 700);
     return () => clearTimeout(t);
-  }, [prefs, ready, user?.id]);
+  }, [prefs, ready, user]);
 
   const update = useCallback((patch) => {
     setPrefs((prev) => {

@@ -34,7 +34,9 @@ const CompaniesPage = () => {
     } catch (e) { /* silent */ } finally { setLoading(false); }
   }, [cursor, vertical]);
 
-  useEffect(() => { setCursor(null); setHasMore(true); load(true); /* eslint-disable-next-line */ }, [vertical]);
+  // The reset effect intentionally runs only when the filter changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setCursor(null); setHasMore(true); load(true); }, [vertical]);
 
   const onFollow = async (id) => {
     const r = await companyService.follow(id);

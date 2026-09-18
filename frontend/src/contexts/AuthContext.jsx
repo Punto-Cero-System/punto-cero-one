@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
-const API = process.env.REACT_APP_BACKEND_URL;
-const TOKEN_KEY = 'pcs_admin_token';
+const AUTH_API = process.env.REACT_APP_AUTH_BACKEND_URL || process.env.REACT_APP_BACKEND_URL;
+const TOKEN_KEY = 'pcl_token';
+const USER_KEY = 'pcl_user';
 
 const AuthContext = createContext(null);
 
@@ -9,34 +10,68 @@ export const AuthProvider = ({ children }) => {
   // null = checking, false = unauthenticated, object = authenticated user
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
+  const [systemContext, setSystemContext] = useState(null);
 
   const fetchMe = useCallback(async (t) => {
     if (!t) {
       setUser(false);
+      localStorage.removeItem(USER_KEY);
       return null;
     }
     try {
-      const res = await fetch(`${API}/api/auth/me`, {
+      const res = await fetch(`${AUTH_API}/api/auth/me`, {
         headers: { Authorization: `Bearer ${t}` },
       });
       if (!res.ok) throw new Error('unauth');
       const data = await res.json();
+      localStorage.setItem(USER_KEY, JSON.stringify(data));
       setUser(data);
       return data;
     } catch (e) {
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
       setToken(null);
       setUser(false);
+      setSystemContext(null);
       return null;
     }
   }, []);
 
+  const fetchSystemContext = useCallback(async (t) => {
+    if (!t) {
+      setSystemContext(null);
+      return null;
+    }
+    const res = await fetch(`${AUTH_API}/api/auth/system-context`, {
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail?.message || data?.detail || 'No se pudo resolver el contexto del sistema');
+    setSystemContext(data);
+    return data;
+  }, []);
+
   useEffect(() => {
-    fetchMe(token);
-  }, [token, fetchMe]);
+    let active = true;
+    if (!token) {
+      setUser(false);
+      setSystemContext(null);
+      return () => { active = false; };
+    }
+    (async () => {
+      const currentUser = await fetchMe(token);
+      if (!active || !currentUser) return;
+      try {
+        await fetchSystemContext(token);
+      } catch {
+        if (active) setSystemContext(null);
+      }
+    })();
+    return () => { active = false; };
+  }, [token, fetchMe, fetchSystemContext]);
 
   const login = async (email, password) => {
-    const res = await fetch(`${API}/api/auth/login`, {
+    const res = await fetch(`${AUTH_API}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -49,16 +84,33 @@ export const AuthProvider = ({ children }) => {
         : (detail || 'Error de autenticación');
       throw new Error(msg);
     }
-    localStorage.setItem(TOKEN_KEY, data.access_token);
-    setToken(data.access_token);
-    setUser(data.user);
-    return data.user;
+
+    const nextToken = data.access_token;
+    localStorage.setItem(TOKEN_KEY, nextToken);
+    const verifiedUser = await fetchMe(nextToken);
+    if (!verifiedUser) throw new Error('No se pudo validar la sesión');
+
+    try {
+      const context = await fetchSystemContext(nextToken);
+      setToken(nextToken);
+      setUser(verifiedUser);
+      return { ...verifiedUser, systemContext: context };
+    } catch (error) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      setToken(null);
+      setUser(false);
+      setSystemContext(null);
+      throw error;
+    }
   };
 
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
     setToken(null);
     setUser(false);
+    setSystemContext(null);
   };
 
   const authFetch = useCallback(
@@ -76,7 +128,7 @@ export const AuthProvider = ({ children }) => {
   );
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, authFetch }}>
+    <AuthContext.Provider value={{ user, token, systemContext, login, logout, fetchMe, fetchSystemContext, authFetch }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,14 +3,15 @@ import { motion } from 'framer-motion';
 import LoginCardOne from '../components/LoginCardOne';
 
 /**
- * LoginPage — Puerta de entrada del Workspace System (Punto Cero System).
+ * LoginPage — Puerta de entrada de Punto Cero System.
  *
  * Esta página utiliza el componente portable LoginCardOne, que consume
- * el AuthContext existente (JWT admin) y tras login exitoso navega a
- * /workspace (WorkspaceGatewayPage).
+ * exclusivamente la identidad del núcleo Legal y navega al espacio que
+ * devuelve `/api/auth/system-context`.
  *
  * Ruta: /login
- * Auth: AuthContext (JWT) — POST /api/auth/login → localStorage["pcs_admin_token"]
+ * Auth: AuthContext — login → `pcl_token`/`pcl_user` → `/api/auth/me` →
+ * `/api/auth/system-context`
  */
 const LoginPage = () => {
   return (
@@ -51,9 +52,8 @@ const LoginPage = () => {
         style={{ width: '100%', maxWidth: '440px', position: 'relative' }}
       >
         <LoginCardOne
-          redirectTo="/workspace"
-          title="Acceso Workspace Punto Cero System"
-          subtitle="Ingresa con tu cuenta para acceder al Workspace."
+          title="Acceso Punto Cero System"
+          subtitle="Ingresa con tu cuenta para continuar."
         />
       </motion.div>
     </div>

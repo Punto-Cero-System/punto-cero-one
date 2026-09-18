@@ -37,7 +37,7 @@ const FollowButton = ({
       .catch(() => {})
       .finally(() => { if (!cancelled) setReady(true); });
     return () => { cancelled = true; };
-  }, [user?.id, entityType, entityId, initialFollowing]);
+  }, [user, entityType, entityId, initialFollowing]);
 
   const toggle = async (e) => {
     e?.stopPropagation();

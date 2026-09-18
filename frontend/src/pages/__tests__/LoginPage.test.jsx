@@ -23,16 +23,19 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-describe('LoginPage (/login — Workspace Gateway)', () => {
-  it('renders the Workspace gateway using LoginCardOne and the System title', () => {
+describe('LoginPage (/login — Login Universal)', () => {
+  it('renders LoginCardOne with the System title', () => {
     render(<LoginPage />);
     expect(screen.getByTestId('workspace-login-page')).toBeInTheDocument();
     expect(screen.getByTestId('login-card-one')).toBeInTheDocument();
-    expect(screen.getByText('Acceso Workspace Punto Cero System')).toBeInTheDocument();
+    expect(screen.getByText('Acceso Punto Cero System')).toBeInTheDocument();
   });
 
-  it('logs in through AuthContext and redirects to /workspace', async () => {
-    mockLogin.mockResolvedValue({ id: 'u1', email: 'ana@b.com', name: 'Ana', role: 'admin' });
+  it('logs in through AuthContext and redirects to the Legal workspace resolved by the core', async () => {
+    mockLogin.mockResolvedValue({
+      id: 'u1', email: 'ana@b.com', name: 'Ana', role: 'admin',
+      systemContext: { workspaces: { recommended: 'legal' } },
+    });
     render(<LoginPage />);
 
     fireEvent.click(screen.getByTestId('login-card-one-tab-email'));
@@ -42,7 +45,7 @@ describe('LoginPage (/login — Workspace Gateway)', () => {
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith('ana@b.com', 'secret123');
-      expect(mockNavigate).toHaveBeenCalledWith('/workspace', { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith('/workspace/legal', { replace: true });
     });
   });
 

@@ -68,18 +68,11 @@ export const authService = {
     return res.json().catch(() => ({}));
   },
 
-  // Native email / password
+  // Registration remains available for the existing social/community flow.
   async registerEmail({ email, password, name, invite_code }) {
     return asJsonOrThrow(await authFetch('/api/community/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, name, invite_code }),
-    }));
-  },
-
-  async loginEmail({ email, password }) {
-    return asJsonOrThrow(await authFetch('/api/community/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
     }));
   },
 

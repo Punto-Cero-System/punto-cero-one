@@ -32,8 +32,11 @@ describe('LoginCardOne (connected)', () => {
     expect(screen.getByTestId('login-card-one-facebook')).toBeInTheDocument();
   });
 
-  it('submits credentials through AuthContext.login and navigates to /one', async () => {
-    mockLogin.mockResolvedValue({ id: 'u1', email: 'a@b.com', name: 'Ana', role: 'member' });
+  it('submits credentials through AuthContext.login and navigates to the resolved One space', async () => {
+    mockLogin.mockResolvedValue({
+      id: 'u1', email: 'a@b.com', name: 'Ana', role: 'member',
+      systemContext: { workspaces: { recommended: 'comunidad' } },
+    });
     render(<LoginCardOne />);
 
     fireEvent.click(screen.getByTestId('login-card-one-tab-email'));
@@ -43,7 +46,7 @@ describe('LoginCardOne (connected)', () => {
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith('ana@b.com', 'secret123');
-      expect(mockNavigate).toHaveBeenCalledWith('/one', { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
     });
   });
 
@@ -73,11 +76,15 @@ describe('LoginCardOne (connected)', () => {
   });
 
   it('shows the active-session state and enters One without re-asking credentials', () => {
-    mockAuthValue = { user: { id: 'u1', email: 'a@b.com', name: 'Ana' }, login: mockLogin };
+    mockAuthValue = {
+      user: { id: 'u1', email: 'a@b.com', name: 'Ana' },
+      systemContext: { workspaces: { recommended: 'legal' } },
+      login: mockLogin,
+    };
     render(<LoginCardOne />);
     expect(screen.getByTestId('login-card-one-session')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('login-card-one-enter'));
-    expect(mockNavigate).toHaveBeenCalledWith('/one');
+    expect(mockNavigate).toHaveBeenCalledWith('/workspace/legal');
     expect(mockLogin).not.toHaveBeenCalled();
   });
 });

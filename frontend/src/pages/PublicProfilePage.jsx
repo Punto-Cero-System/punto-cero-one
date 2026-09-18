@@ -83,14 +83,14 @@ const PublicProfilePage = () => {
     feedService.listPosts({ author_id: profile.id, limit: 20 })
       .then((d) => setPosts(d.items || []))
       .catch(() => setPosts([]));
-  }, [profile?.id]);
+  }, [profile]);
 
   useEffect(() => {
     if (!profile || !viewer || typeof viewer !== 'object' || isSelf) return;
     followsService.bulkStatus('user', [profile.id])
       .then((r) => setFollowing(!!r?.following?.[profile.id]))
       .catch(() => setFollowing(false));
-  }, [profile?.id, viewer?.id, isSelf]);
+  }, [profile, viewer, isSelf]);
 
   const toggleFollow = async () => {
     if (!viewer || typeof viewer !== 'object') return navigate('/join');

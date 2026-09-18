@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Lenis from '@studio-freight/lenis';
 import './App.css';
 import HomePage from './pages/HomePage';
@@ -150,7 +150,10 @@ function AppRouter() {
       <Route path="/h/:tag" element={<HashtagPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/workspace" element={<WorkspaceGatewayPage />} />
+      {/* Workspace Gateway FUERA DE USO (oculto, no eliminado):
+          /workspace continúa hacia el flujo original del sistema.
+          El componente WorkspaceGatewayPage queda intacto para reactivarse. */}
+      <Route path="/workspace" element={<Navigate to="/" replace />} />
       {/* Workspace Gateway — espacios del ecosistema (estructura inicial, sin backend).
           Mismo componente reutilizado; el espacio se resuelve por `spaceKey`. */}
       <Route path="/workspace/legal" element={<WorkspaceSpacePlaceholderPage spaceKey="legal" />} />

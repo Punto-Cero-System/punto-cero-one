@@ -21,7 +21,9 @@ const NotificationsPage = () => {
     } catch { /* noop */ } finally { setLoading(false); }
   }, [cursor]);
 
-  useEffect(() => { if (user) load(true); /* eslint-disable-next-line */ }, [user]);
+  // Reload when authentication resolves or changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (user) load(true); }, [user]);
 
   if (user === undefined) return null;
   if (!user) return <Navigate to="/join" replace />;

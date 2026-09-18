@@ -9,10 +9,9 @@ import { useAuth } from '../contexts/AuthContext';
  *
  * Pensada para vivir embebida (esquina superior derecha) en la página principal
  * de Punto Cero System. NO crea autenticación nueva: consume el AuthContext
- * existente (Identity Core, JWT) y, tras un login exitoso, navega a '/one'
- * donde el sistema resuelve GET /api/auth/system-context y el workspace
- * automático. Sin iframes, sin URLs hardcodeadas (el endpoint lo resuelve el
- * AuthContext del sistema anfitrión).
+ * existente (Identity Core, JWT) y, tras un login exitoso, navega al espacio
+ * recomendado por GET /api/auth/system-context. Sin iframes, sin URLs de
+ * autenticación hardcodeadas (el endpoint lo resuelve el AuthContext).
  *
  * ── INSTRUCCIONES DE IMPORTACIÓN (en Punto Cero System) ──────────────────
  * 1. Copiar este archivo a `src/components/LoginCardOne.jsx` del Core.
@@ -26,9 +25,10 @@ import { useAuth } from '../contexts/AuthContext';
  *        <LoginCardOne />
  *      </div>
  * 4. Flujo garantizado: formulario → AuthContext.login(email, password) →
- *    POST /auth/login → JWT → navigate('/one') → system-context → workspace.
- * 5. Opcional: <LoginCardOne redirectTo="/one" onSuccess={(u) => ...} />
- *    para prefetch de '/api/auth/system-context' antes de navegar.
+ *    POST /api/auth/login → pcl_token → /api/auth/me → /api/auth/system-context
+ *    → espacio recomendado.
+ * 5. Opcional: <LoginCardOne redirectTo="/" onSuccess={(u) => ...} /> para
+ *    forzar un destino existente.
  * 6. Si el Core NO quiere depender de este AuthContext, usar el export
  *    nombrado puro: <LoginCardOneView onSubmitCredentials={fn} onEnter={fn} />
  * ──────────────────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ export const LoginCardOneView = ({
     setBusy(true); setError('');
     try {
       await onSubmitCredentials(email.trim().toLowerCase(), password);
-      // La navegación a '/one' la ejecuta el wrapper conectado (onSuccess).
+      // La navegación al espacio resuelto la ejecuta el wrapper conectado.
     } catch (err) {
       setError(err?.message || 'No se pudo iniciar sesión');
       setBusy(false);
@@ -312,21 +312,29 @@ export const LoginCardOneView = ({
 
 /**
  * LoginCardOne (default) — versión CONECTADA: consume el AuthContext existente
- * (login → JWT) y react-router. Tras login exitoso ejecuta navigate(redirectTo)
- * — por defecto '/one', donde el sistema carga el workspace automático.
+ * (login → JWT) y react-router. Tras login exitoso navega al espacio resuelto
+ * por el contexto del núcleo, salvo que se proporcione `redirectTo`.
  *
  * Props opcionales: redirectTo, onSuccess(user), onSocialLogin, onForgotPassword,
  * brand, title, subtitle, maxWidth, initialTab.
  */
-const LoginCardOne = ({ redirectTo = '/one', onSuccess, ...viewProps }) => {
-  const { user, login } = useAuth();
+const LoginCardOne = ({ redirectTo, onSuccess, ...viewProps }) => {
+  const { user, login, systemContext } = useAuth();
   const navigate = useNavigate();
 
+  const destinationFor = (context) => {
+    if (redirectTo) return redirectTo;
+    const recommended = context?.workspaces?.recommended;
+    if (recommended === 'legal') return '/workspace/legal';
+    if (recommended === 'medical') return '/workspace/medical';
+    return '/';
+  };
+
   const handleSubmit = async (email, password) => {
-    const u = await login(email, password); // POST /auth/login → JWT (AuthContext del sistema)
-    if (typeof onSuccess === 'function') await onSuccess(u);
-    navigate(redirectTo, { replace: true }); // → /one → system-context → workspace automático
-    return u;
+    const result = await login(email, password);
+    if (typeof onSuccess === 'function') await onSuccess(result);
+    navigate(destinationFor(result?.systemContext), { replace: true });
+    return result;
   };
 
   return (
@@ -334,7 +342,7 @@ const LoginCardOne = ({ redirectTo = '/one', onSuccess, ...viewProps }) => {
       {...viewProps}
       user={user && typeof user === 'object' ? user : null}
       onSubmitCredentials={handleSubmit}
-      onEnter={() => navigate(redirectTo)}
+      onEnter={() => navigate(destinationFor(systemContext))}
     />
   );
 };

@@ -49,7 +49,7 @@ export const searchService = {
 };
 
 const authHeaders = () => {
-  const t = typeof localStorage !== 'undefined' ? localStorage.getItem('pcs_admin_token') : null;
+  const t = typeof localStorage !== 'undefined' ? localStorage.getItem('pcl_token') : null;
   return t ? { Authorization: `Bearer ${t}` } : {};
 };
 

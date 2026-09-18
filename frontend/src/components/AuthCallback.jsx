@@ -57,7 +57,7 @@ const AuthCallback = () => {
         setError(e.message || 'No pudimos completar el ingreso.');
       }
     })();
-  }, [location.hash, navigate, setUserFromCallback]);
+  }, [location.hash, navigate, refresh, setUserFromCallback]);
 
   return (
     <main

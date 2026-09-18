@@ -23,7 +23,9 @@ const EventsPage = () => {
     } catch (e) { /* silent */ } finally { setLoading(false); }
   }, [cursor]);
 
-  useEffect(() => { load(true); /* eslint-disable-next-line */ }, []);
+  // The initial load intentionally runs once on mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(true); }, []);
 
   const rsvp = async (event, status) => {
     if (!isAuthed) { window.location.assign('/join'); return; }

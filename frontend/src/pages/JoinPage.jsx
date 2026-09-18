@@ -5,6 +5,7 @@ import { Mail, ArrowLeft, Sparkles, Lock, Eye, EyeOff, Loader2 } from 'lucide-re
 import BrandMark from '../components/BrandMark';
 import { AUTH_PROVIDERS, authService } from '../services/authService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { armWelcome } from '../components/community/welcomeArm';
 
 const NAVY = '#0B1F3A';
@@ -60,6 +61,7 @@ const JoinPage = () => {
   const [enabledProviders, setEnabledProviders] = useState(['google']); // fallback
   const navigate = useNavigate();
   const { user, refresh } = useCommunityAuth();
+  const { login } = useAuth();
 
   useEffect(() => {
     if (user && typeof user === 'object') navigate('/', { replace: true });
@@ -103,9 +105,11 @@ const JoinPage = () => {
         if (uid) armWelcome(uid);
         navigate('/', { replace: true });
       } else if (mode === 'login') {
-        await authService.loginEmail({ email: email.trim(), password });
-        await refresh();
-        navigate('/', { replace: true });
+        const authenticated = await login(email.trim().toLowerCase(), password);
+        const recommended = authenticated?.systemContext?.workspaces?.recommended;
+        if (recommended === 'legal') navigate('/workspace/legal', { replace: true });
+        else if (recommended === 'medical') navigate('/workspace/medical', { replace: true });
+        else navigate('/', { replace: true });
       } else if (mode === 'forgot') {
         const r = await authService.forgotPassword({ email: email.trim() });
         flash(r.message || 'Si el email existe, enviamos un enlace de recuperación.');

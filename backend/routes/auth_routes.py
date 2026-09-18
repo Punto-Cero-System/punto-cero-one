@@ -1,14 +1,20 @@
 """Authentication routes. Prefix: /api/auth"""
 import os
 from datetime import datetime, timezone
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from auth import (
     verify_password,
     create_access_token,
     get_current_user,
+    bearer_scheme,
+    decode_token,
 )
 from models import LoginInput, LoginResponse, UserPublic
+from services.community_deps import current_user_or_none
+from services.identity_core import IdentityConflictError, resolve_identity
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -109,3 +115,51 @@ async def me(user: dict = Depends(get_current_user)):
 async def logout(user: dict = Depends(get_current_user)):
     # Stateless JWT — client discards token. Endpoint exists for consistency.
     return {"ok": True, "message": "Sesión cerrada"}
+
+
+async def _optional_jwt_user(request: Request) -> Optional[dict]:
+    """Sesión A (JWT) opcional: None si no hay token o es inválido.
+
+    Reutiliza `bearer_scheme` / `decode_token` de auth.py SIN modificarlos:
+    no reemplaza `get_current_user`, solo añade resolución tolerante para el
+    contexto dual (JWT o comunidad, o ambos).
+    """
+    creds = await bearer_scheme(request)
+    token = creds.credentials if creds and creds.scheme.lower() == "bearer" else None
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+    except HTTPException:
+        return None
+    if payload.get("type") != "access":
+        return None
+    db = request.app.state.db
+    return await db.users.find_one({"id": payload["sub"]}, {"password_hash": 0, "_id": 0})
+
+
+@router.get("/system-context")
+async def system_context(request: Request):
+    """Identity Core V1 (F13.1) — contexto unificado de SOLO LECTURA.
+
+    Resuelve identidad desde las sesiones existentes (JWT y/o comunidad),
+    calcula account_type/verticales/organizaciones/espacios y no persiste
+    nada. No reemplaza /api/auth/me ni /api/community/auth/me.
+    """
+    db = request.app.state.db
+    jwt_user = await _optional_jwt_user(request)
+    community_user = await current_user_or_none(request)
+    if not jwt_user and not community_user:
+        raise HTTPException(status_code=401, detail="No autenticado")
+    try:
+        return await resolve_identity(db, jwt_user=jwt_user, community_user=community_user)
+    except IdentityConflictError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "identity_conflict",
+                "message": "Las sesiones JWT y comunidad pertenecen a usuarios distintos.",
+                "jwt_user_id": exc.jwt_user_id,
+                "community_user_id": exc.community_user_id,
+            },
+        )
