@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { CloudSun, TrendingUp, TrendingDown, Play, ArrowUpRight, Sparkles, Calendar } from 'lucide-react';
+import { CloudSun, TrendingUp, TrendingDown, Play, ArrowUpRight, Sparkles } from 'lucide-react';
 import AppIcon from './AppIcon';
 
 const NAVY = '#0B1F3A';

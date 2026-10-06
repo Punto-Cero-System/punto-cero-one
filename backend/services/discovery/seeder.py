@@ -6,9 +6,15 @@ Idempotently upserts the curated public entities into the existing
   • the existing CompanyProfilePage renders them,
   • the existing follow system lets users follow them.
 
-We mark them with `is_public_seed: True` + `verification: "official"` so
-the UI can distinguish "seeded public entity" from a member-created company
-if it wants to, but no code change is required to *see* them.
+We mark them with `is_public_seed: True` + `origin: "directory"` so the UI can
+distinguish "curated public directory entry" from a member-created company.
+
+NOTE: they are written with `verification: "unverified"` on purpose. Being in
+the directory is a statement about *provenance*, not about *identity*: nothing
+here checks the organisation against any official registry. `verification:
+"verified"` is reserved for that future check, and until it exists no
+directory entry may claim it. The previous code wrote "verified" and the
+frontend rendered a green shield, which read as a legal endorsement.
 """
 from __future__ import annotations
 
@@ -77,7 +83,9 @@ async def seed_public_entities(db) -> dict:
             "banner_url": None,
             "cover_url": None,
             "gallery": [],
-            "verification": "verified",
+            # Directory provenance, NOT a legal validation. See module docstring.
+            "origin": "directory",
+            "verification": "unverified",
             "owner_id": SYSTEM_OWNER,
             "is_public_seed": True,
             "is_deleted": False,

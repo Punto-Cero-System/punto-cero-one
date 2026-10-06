@@ -7,8 +7,7 @@
  * integrations are still awaiting API keys.
  */
 import React, { useEffect, useState } from 'react';
-import { Bitcoin, CloudSun, DollarSign, Newspaper, Youtube, RefreshCw } from 'lucide-react';
-import AppIcon from './AppIcon';
+import { Bitcoin, CloudSun, DollarSign, Newspaper, Youtube } from 'lucide-react';
 import { widgetsService } from '../../services/widgetsService';
 
 const NAVY = '#0B1F3A';
@@ -65,7 +64,6 @@ const useWidget = (loader) => {
   return state;
 };
 
-
 export const CryptoLiveWidget = () => {
   const { loading, resp } = useWidget(() => widgetsService.crypto());
   if (loading) return null;
@@ -80,7 +78,6 @@ export const CryptoLiveWidget = () => {
     </WidgetShell>
   );
 };
-
 
 export const FxLiveWidget = () => {
   const { loading, resp } = useWidget(() => widgetsService.fx({ targets: 'COP,MXN,ARS,CLP' }));
@@ -100,7 +97,6 @@ export const FxLiveWidget = () => {
     </WidgetShell>
   );
 };
-
 
 export const WeatherLiveWidget = ({ city = 'Bogota,CO' }) => {
   const { loading, resp } = useWidget(() => widgetsService.weather(city));
@@ -125,7 +121,6 @@ export const WeatherLiveWidget = ({ city = 'Bogota,CO' }) => {
     </WidgetShell>
   );
 };
-
 
 export const RssLiveWidget = ({ feedKey = 'noticias', title = 'Noticias en vivo' }) => {
   const { loading, resp } = useWidget(() => widgetsService.rss({ feed_key: feedKey, limit: 4 }));
@@ -166,7 +161,6 @@ export const RssLiveWidget = ({ feedKey = 'noticias', title = 'Noticias en vivo'
   );
 };
 
-
 export const YoutubeLiveWidget = () => {
   const { loading, resp } = useWidget(() => widgetsService.youtube());
   if (loading) return null;
@@ -200,7 +194,6 @@ export const YoutubeLiveWidget = () => {
     </WidgetShell>
   );
 };
-
 
 const Row = ({ label, value, testid }) => (
   <div data-testid={testid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',

@@ -1,0 +1,134 @@
+{
+  "projection_version": "D2.2-E",
+  "authority": "backend/services/workspace_registry.py",
+  "generator": "backend/scripts/generate_workspace_contract.py",
+  "note": "GENERADO desde WORKSPACE_REGISTRY. No editar a mano. Es una PROYECCION, no una fuente de verdad: para cambiar un workspace se edita el Registry y se regenera. Incluye location explícita; no incluye launchMode ni el flag de navegación external.",
+  "lifecycle": {
+    "statuses": [
+      "live",
+      "preview",
+      "declared",
+      "deprecated"
+    ],
+    "open": [
+      "live",
+      "preview"
+    ],
+    "closed": [
+      "declared",
+      "deprecated"
+    ],
+    "no_es_lifecycle": [
+      "available",
+      "coming_soon",
+      "developing",
+      "future",
+      "production",
+      "beta",
+      "alpha",
+      "internal"
+    ]
+  },
+  "workspaces": [
+    {
+      "space_key": "legal",
+      "status": "live",
+      "permission": "workspace.open.legal",
+      "route": "/workspace/legal",
+      "label": "Punto Cero Legal",
+      "core_id": "punto-cero-legal",
+      "location": "internal",
+      "availability": "open"
+    },
+    {
+      "space_key": "medical",
+      "status": "declared",
+      "permission": "workspace.open.medical",
+      "route": "/workspace/medical",
+      "label": "Punto Cero Medical",
+      "core_id": "punto-cero-legal",
+      "location": "internal",
+      "availability": "closed"
+    },
+    {
+      "space_key": "odontologia",
+      "status": "declared",
+      "permission": "workspace.open.odontologia",
+      "route": "/workspace/odontologia",
+      "label": "Odontología",
+      "core_id": "punto-cero-legal",
+      "location": "internal",
+      "availability": "closed"
+    },
+    {
+      "space_key": "psicologia",
+      "status": "declared",
+      "permission": "workspace.open.psicologia",
+      "route": "/workspace/psicologia",
+      "label": "Psicología",
+      "core_id": "punto-cero-legal",
+      "location": "internal",
+      "availability": "closed"
+    },
+    {
+      "space_key": "enfermeria",
+      "status": "declared",
+      "permission": "workspace.open.enfermeria",
+      "route": "/workspace/enfermeria",
+      "label": "Enfermería",
+      "core_id": "punto-cero-legal",
+      "location": "internal",
+      "availability": "closed"
+    },
+    {
+      "space_key": "finance",
+      "status": "declared",
+      "permission": "workspace.open.finance",
+      "route": "/workspace/finance",
+      "label": "Finanzas",
+      "core_id": "punto-cero-legal",
+      "location": "internal",
+      "availability": "closed"
+    },
+    {
+      "space_key": "accounting",
+      "status": "declared",
+      "permission": "workspace.open.accounting",
+      "route": "/workspace/accounting",
+      "label": "Contabilidad",
+      "core_id": "punto-cero-legal",
+      "location": "internal",
+      "availability": "closed"
+    },
+    {
+      "space_key": "inmobiliaria",
+      "status": "declared",
+      "permission": "workspace.open.inmobiliaria",
+      "route": "/workspace/inmobiliaria",
+      "label": "Inmobiliaria",
+      "core_id": "punto-cero-legal",
+      "location": "internal",
+      "availability": "closed"
+    },
+    {
+      "space_key": "empresa",
+      "status": "preview",
+      "permission": "workspace.open.empresa",
+      "route": "/workspace/empresa",
+      "label": "Punto Cero Empresa",
+      "core_id": "punto-cero-legal",
+      "location": "internal",
+      "availability": "open"
+    },
+    {
+      "space_key": "comunidad",
+      "status": "live",
+      "permission": "workspace.open.comunidad",
+      "route": "/",
+      "label": "Punto Cero One",
+      "core_id": "punto-cero-legal",
+      "location": "external",
+      "availability": "open"
+    }
+  ]
+}

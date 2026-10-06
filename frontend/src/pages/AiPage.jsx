@@ -60,13 +60,32 @@ const AiPage = () => {
         {visible.map((t) => <AiToolCard key={t.id} item={t} />)}
       </div>
 
-      {visible.length === 0 && (
-        <div style={{
-          padding: '2rem', textAlign: 'center', borderRadius: 14,
-          background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)',
-          color: 'rgba(11,31,58,0.6)',
-        }}>Cargando herramientas…</div>
-      )}
+            {visible.length === 0 && (
+              <div data-testid="ai-empty" style={{
+                padding: '2rem', textAlign: 'center', borderRadius: 14,
+                background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)',
+                color: 'rgba(11,31,58,0.6)',
+              }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: NAVY, marginBottom: '0.35rem' }}>
+                  No hay herramientas para este filtro
+                </div>
+                <div style={{ fontSize: '0.8rem', marginBottom: '0.85rem' }}>
+                  Quita los filtros activos o explora todo el catálogo de IA.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCategory(null)}
+                  data-testid="ai-empty-cta-reset"
+                  style={{
+                    display: 'inline-flex', padding: '0.45rem 0.95rem', borderRadius: 100,
+                    background: '#00C896', color: NAVY, border: 'none',
+                    fontSize: '0.76rem', fontWeight: 800, cursor: 'pointer',
+                  }}
+                >
+                  Ver todas las herramientas
+                </button>
+              </div>
+            )}
     </CategoryPage>
   );
 };

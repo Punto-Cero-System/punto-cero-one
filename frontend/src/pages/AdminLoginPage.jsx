@@ -3,9 +3,10 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Lock, ArrowRight, ArrowLeft, Shield, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { resolveEntryPath } from '../system/systemEntryRules';
 
 const AdminLoginPage = () => {
-  const { login, user } = useAuth();
+  const { login, user, systemContext } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname;
@@ -15,16 +16,16 @@ const AdminLoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const destinationFor = (u) => {
-    if (from) return from;
-    if (u?.role === 'admin') return '/admin';
-    if (u?.role === 'investor') return '/investor-portal';
-    return '/';
-  };
+  // Consola admin: conserva el destino explicito (`from`); el resto lo decide
+  // el Identity Core (systemEntryRules.js), incluida la entrada por rol.
+  const destinationFor = (context) => from || resolveEntryPath(context ?? systemContext, {
+    isAdmin: user?.role === 'admin',
+    isInvestor: user?.role === 'investor',
+  });
 
   // If already logged in, bounce to the right destination
   React.useEffect(() => {
-    if (user && user.role) navigate(destinationFor(user), { replace: true });
+    if (user && user.role) navigate(destinationFor(), { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate]);
 
@@ -34,7 +35,7 @@ const AdminLoginPage = () => {
     setLoading(true);
     try {
       const u = await login(email.trim().toLowerCase(), password);
-      navigate(destinationFor(u), { replace: true });
+      navigate(destinationFor(u?.systemContext), { replace: true });
     } catch (err) {
       setError(err.message || 'No se pudo iniciar sesión');
     } finally {

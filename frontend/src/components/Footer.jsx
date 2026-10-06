@@ -3,9 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Instagram, Music, Youtube, Facebook, Mail, MessageCircle, Twitter, Linkedin, Globe } from 'lucide-react';
 
-const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
-const GOLD = '#D4AF37';
 
 /**
  * Footer — PUNTO CERO ONE branded.

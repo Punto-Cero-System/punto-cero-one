@@ -1,0 +1,13 @@
+=== VERIFICACION DE RELEASE CANDIDATE · FASE OMEGA ===
+generado: 2026-10-01T03:49:37.364Z
+comando: node tools/omega/rc-verify.js --tests --build
+
+  OK     lint
+  OK     a11y
+  OK     import-graph
+  OK     tests
+  OK     build
+
+Evidencia detallada en test_reports/omega/: lint.txt, a11y.txt, import-graph.txt
+(informes de las herramientas) y lint.log, a11y.log, import-graph.log, tests.log,
+build.log (salida de consola de cada paso).

@@ -177,7 +177,7 @@ const CoverBand = ({ cover, onUpdate }) => {
           <ImageIcon size={12} /> {cover ? 'Cambiar portada' : 'Subir portada'}
         </button>
         {cover && (
-          <button onClick={clear} disabled={busy} data-testid="profile-cover-delete"
+          <button onClick={clear} disabled={busy} data-testid="profile-cover-delete" aria-label="Quitar portada"
             style={{
               display: 'inline-flex', alignItems: 'center',
               padding: '0.4rem 0.55rem', borderRadius: 100,
@@ -242,7 +242,7 @@ const AvatarWithUpload = ({ profile, onUpdate }) => {
           {(profile.name || profile.email || '0').charAt(0).toUpperCase()}
         </div>
       )}
-      <button onClick={pick} disabled={busy} data-testid="profile-picture-upload"
+      <button onClick={pick} disabled={busy} data-testid="profile-picture-upload" aria-label="Cambiar foto de perfil"
         style={{
           position: 'absolute', bottom: 4, right: 4,
           width: 34, height: 34, borderRadius: '50%',
@@ -401,7 +401,7 @@ const ProfileEditor = ({ initial, onCancel, onSaved }) => {
           <div style={{ fontSize: '0.65rem', letterSpacing: '0.2em', color: '#00A277', fontWeight: 700 }}>EDITAR PERFIL</div>
           <h2 style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.35rem', color: NAVY, margin: '0.15rem 0 0' }}>Actualiza tu identidad profesional</h2>
         </div>
-        <button type="button" onClick={onCancel} data-testid="profile-editor-cancel"
+        <button type="button" onClick={onCancel} data-testid="profile-editor-cancel" aria-label="Cancelar"
           style={{ padding: '0.4rem', borderRadius: 8, background: 'transparent', border: 'none', color: 'rgba(11,31,58,0.5)', cursor: 'pointer' }}>
           <X size={18} />
         </button>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import LoginCardOne from '../components/LoginCardOne';
 
 /**
@@ -14,6 +15,12 @@ import LoginCardOne from '../components/LoginCardOne';
  * `/api/auth/system-context`
  */
 const LoginPage = () => {
+  // Recovery lives on /join (the only surface with the forgot form). Deep-link
+  // there with ?modo=forgot so the user lands on the email form already open
+  // instead of guessing which of the two login doors recovers a password.
+  const navigate = useNavigate();
+  const goToForgotPassword = () => navigate('/join?modo=forgot');
+
   return (
     <div
       style={{
@@ -54,6 +61,7 @@ const LoginPage = () => {
         <LoginCardOne
           title="Acceso Punto Cero System"
           subtitle="Ingresa con tu cuenta para continuar."
+          onForgotPassword={goToForgotPassword}
         />
       </motion.div>
     </div>

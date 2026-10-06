@@ -7,6 +7,10 @@
  *     workspace,         // resolved workspace ({panels, widgets, theme})
  *     defaults,          // server-provided default template
  *     ready,             // boolean — true once initial load completes
+ *     identity,          // 'personal' | 'profesional' | 'empresa' | future
+ *     identityDef,       // full identity def (label, accent, copy, Icon)
+ *     applyIdentity,     // (key) => switch Mi Espacio to that recommended layout
+ *     selectIdentity,    // (key) => change identity only (copy/accent, no layout)
  *     isWidgetEnabled,   // (id) => bool
  *     isWidgetCollapsed, // (id) => bool
  *     toggleWidget,      // (id) => optimistic enabled toggle
@@ -22,7 +26,32 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { workspaceService } from '../services/workspaceService';
 import { buildPayloadFromPreset, getPreset } from '../services/workspacePresets';
+import { buildPayloadFromIdentity, getIdentity, resolveIdentity } from '../config/workspaceIdentity';
 import { useCommunityAuth } from './CommunityAuthContext';
+
+/**
+ * Identity of Mi Espacio is a UI preference (which recommended layout the
+ * user picked). It is namespaced and read once on mount. Widget *positions*
+ * are NOT stored here — those go through `/api/workspace/me` exactly as before.
+ * Trade-off (documented, not hidden): the identity choice is per-browser, it
+ * does not follow the user to another device. Promoting it to the backend is a
+ * one-field follow-up and was left out to avoid touching the API in this phase.
+ */
+const IDENTITY_STORAGE_KEY = 'pc.mi-espacio.identity';
+
+const readStoredIdentity = () => {
+  try {
+    return window.localStorage.getItem(IDENTITY_STORAGE_KEY) || null;
+  } catch {
+    return null;   // private mode / storage disabled — fall back to default
+  }
+};
+
+const storeIdentity = (key) => {
+  try {
+    window.localStorage.setItem(IDENTITY_STORAGE_KEY, key);
+  } catch { /* no-op: the workspace itself is still applied */ }
+};
 
 const DEFAULT_WORKSPACE = {
   layout_version: 1,
@@ -40,6 +69,7 @@ export const WorkspaceProvider = ({ children }) => {
   const [workspace, setWorkspace] = useState(DEFAULT_WORKSPACE);
   const [defaults, setDefaults] = useState(DEFAULT_WORKSPACE);
   const [ready, setReady] = useState(false);
+  const [identity, setIdentity] = useState(() => resolveIdentity({ choice: readStoredIdentity() }));
   const saveTimer = useRef(null);
   const skipNextSave = useRef(true); // skip save on initial hydration
 
@@ -166,13 +196,43 @@ export const WorkspaceProvider = ({ children }) => {
     return preset;
   }, [workspace.widgets]);
 
+  /**
+   * applyIdentity — switches Mi Espacio to the recommended layout of an
+   * identity (personal | profesional | empresa | future ones).
+   *
+   * It reuses the SAME state path as applyPreset: setWorkspace + the existing
+   * debounced autosave. It only changes the initial order and the recommended
+   * widgets; per-widget preferences (enabled/collapsed/size) are preserved.
+   * It NEVER registers, removes or hides a widget in workspaceRegistry.
+   */
+  const applyIdentity = useCallback((key) => {
+    const resolved = resolveIdentity({ choice: key });
+    const payload = buildPayloadFromIdentity(resolved, workspace.widgets);
+    setIdentity(resolved);
+    storeIdentity(resolved);
+    setWorkspace(payload);
+    return getIdentity(resolved);
+  }, [workspace.widgets]);
+
+  /** Cambiar identidad sin reescribir el layout actual (solo textos y acento). */
+  const selectIdentity = useCallback((key) => {
+    const resolved = resolveIdentity({ choice: key });
+    setIdentity(resolved);
+    storeIdentity(resolved);
+    return getIdentity(resolved);
+  }, []);
+
+  const identityDef = getIdentity(identity);
+
   const value = useMemo(() => ({
     workspace, defaults, ready,
+    identity, identityDef, applyIdentity, selectIdentity,
     isWidgetEnabled, isWidgetCollapsed,
     toggleWidget, toggleCollapse, setWidgetPref,
     moveWidget, reorderPanel,
     resetWorkspace, save, applyPreset,
-  }), [workspace, defaults, ready, isWidgetEnabled, isWidgetCollapsed,
+  }), [workspace, defaults, ready, identity, identityDef, applyIdentity, selectIdentity,
+       isWidgetEnabled, isWidgetCollapsed,
        toggleWidget, toggleCollapse, setWidgetPref, moveWidget, reorderPanel, resetWorkspace, save, applyPreset]);
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

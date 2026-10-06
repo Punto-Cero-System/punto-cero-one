@@ -1,12 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight, ArrowLeft, ExternalLink, Circle, Zap, Layers, Globe2, Users,
-  Cpu, Sparkles, Building2, Scale, HeartPulse, Stethoscope, ShoppingBag, Calculator,
-  Briefcase, Home, Shield, Plane, GraduationCap, UserCog, Utensils, Truck,
-  Hammer, Sprout, MapPin, Clock, TrendingUp, Wind, Compass, ChevronDown,
-} from 'lucide-react';
+import { ArrowRight, ArrowLeft, ExternalLink, Circle, Zap, Layers, Users, Cpu, Sparkles, Scale, HeartPulse, Stethoscope, ShoppingBag, Calculator, Briefcase, Home, Shield, Plane, GraduationCap, UserCog, Utensils, Truck, Hammer, Sprout, MapPin, TrendingUp, Wind, Compass, ChevronDown } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const NAVY = '#0B1F3A';

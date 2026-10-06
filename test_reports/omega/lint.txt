@@ -1,0 +1,10 @@
+=== AUDITORIA ESLINT · FASE OMEGA ===
+generado: 2026-10-05T17:57:39.758Z
+archivos analizados: 270
+archivos con incidencias: 0
+ERRORES: 0   AVISOS: 0
+
+--- reglas detectadas ---
+  (sin incidencias)
+
+--- detalle ---

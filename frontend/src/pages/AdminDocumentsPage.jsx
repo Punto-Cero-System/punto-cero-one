@@ -260,11 +260,11 @@ const AdminDocumentsPage = () => {
               <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)' }}>{VERTICALS.find(v => v.key === d.vertical)?.label || d.vertical}</div>
               <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)' }}>{new Date(d.created_at).toLocaleDateString('es-CO')}</div>
               <div style={{ display: 'flex', gap: '0.4rem' }}>
-                <button onClick={() => handleDownload(d)} data-testid={`document-download-${d.id}`}
+                <button onClick={() => handleDownload(d)} data-testid={`document-download-${d.id}`} aria-label="Descargar documento"
                   style={iconBtn}>
                   <Download size={14} />
                 </button>
-                <button onClick={() => handleDelete(d.id)} data-testid={`document-delete-${d.id}`}
+                <button onClick={() => handleDelete(d.id)} data-testid={`document-delete-${d.id}`} aria-label="Eliminar documento"
                   style={{ ...iconBtn, color: '#ff9a9a', borderColor: 'rgba(255,90,90,0.3)' }}>
                   <Trash2 size={14} />
                 </button>

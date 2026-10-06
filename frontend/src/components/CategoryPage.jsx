@@ -1,12 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import Header from './Header';
+import Header, { NAV_ITEMS } from './Header';
 import Footer from './Footer';
 import CustomCursor from './CustomCursor';
 import CommunityLayout from './community/CommunityLayout';
 import LeftSidebar from './community/LeftSidebar';
 import RightWidgets from './community/RightWidgets';
 import AppIcon from './community/AppIcon';
+import DiscoverySection from './community/DiscoverySection';
 
 const NAVY = '#0B1F3A';
 
@@ -25,6 +26,15 @@ const NAVY = '#0B1F3A';
  *   children:   center-column body.
  */
 const CategoryPage = ({ icon = 'community', eyebrow, title, subtitle, testid, children }) => {
+  // PUNTO 7 · Descubrimiento: cada vertical ofrece una salida hacia las demás.
+  //
+  // El módulo que se está viendo se deduce del `icon` que la página ya
+  // pasaba (news→news, video→video, jobs→jobs...) porque los iconos de
+  // NAV_ITEMS y los de las páginas comparten vocabulary. Con eso se evita que
+  // una página se enlace a sí misma sin tener que editar las 10 que usan este
+  // layout. Antes, /videos y /ia se quedaban con CERO salidas.
+  const currentKey = (NAV_ITEMS.find((i) => i.icon === icon) || {}).key || null;
+
   return (
     <>
       <CustomCursor />
@@ -36,7 +46,12 @@ const CategoryPage = ({ icon = 'community', eyebrow, title, subtitle, testid, ch
         <CommunityLayout
           top={<CategoryHero icon={icon} eyebrow={eyebrow} title={title} subtitle={subtitle} />}
           left={<LeftSidebar />}
-          center={<div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>{children}</div>}
+          center={
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {children}
+              <DiscoverySection compact currentKey={currentKey} />
+            </div>
+          }
           right={<RightWidgets />}
         />
       </main>

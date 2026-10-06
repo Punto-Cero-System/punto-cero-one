@@ -1,10 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { searchService } from '../../services/coreServices';
-
-const NAVY = '#0B1F3A';
 
 const TYPE_LABEL = {
   people: 'Persona', companies: 'Empresa', posts: 'Publicación',
@@ -69,7 +67,7 @@ const HeaderSearchBar = () => {
           style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#FFFFFF', fontSize: '0.82rem' }}
         />
         {q && (
-          <button onClick={() => { setQ(''); setOpen(false); }} data-testid="header-search-clear"
+          <button onClick={() => { setQ(''); setOpen(false); }} data-testid="header-search-clear" aria-label="Limpiar búsqueda"
             style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', padding: 0 }}>
             <X size={13} />
           </button>
@@ -87,11 +85,35 @@ const HeaderSearchBar = () => {
             {busy && flat.length === 0 && (
               <div style={{ padding: '1rem', textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: '0.8rem' }}>Buscando…</div>
             )}
-            {!busy && flat.length === 0 && (
-              <div data-testid="header-search-empty" style={{ padding: '1rem', textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: '0.8rem' }}>
-                Sin resultados para «{q}»
-              </div>
-            )}
+              {!busy && flat.length === 0 && (
+
+                <div data-testid="header-search-empty" style={{ padding: '1rem', textAlign: 'center' }}>
+
+                  <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)', marginBottom: '0.5rem' }}>
+
+                    Sin resultados para «{q}»
+
+                  </div>
+
+                  <div style={{ fontSize: '0.66rem', color: 'rgba(255,255,255,0.5)', marginBottom: '0.6rem' }}>
+
+                    Prueba con otro término o explora la comunidad.
+
+                  </div>
+
+                  <Link to="/comunidad" data-testid="header-search-empty-cta" style={{
+
+                    display: 'inline-flex', padding: '0.3rem 0.75rem', borderRadius: 100,
+
+                    background: 'rgba(255,255,255,0.14)', color: '#FFFFFF', textDecoration: 'none',
+
+                    fontSize: '0.7rem', fontWeight: 700,
+
+                  }}>Explorar la comunidad</Link>
+
+                </div>
+
+              )}
             {flat.map((r) => (
               <button key={`${r.type}-${r.id}`} onClick={() => goto(r)}
                 data-testid={`header-search-result-${r.type}-${r.id}`}

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
   MapPin, Briefcase, Globe2, Linkedin, Twitter, Github, ExternalLink,
   UserPlus, UserCheck, Award, Sparkles, ArrowLeft, Loader2,
@@ -345,10 +344,23 @@ const PublicProfilePage = () => {
                 style={{
                   background: '#FFFFFF', borderRadius: 16, padding: '2rem 1rem',
                   textAlign: 'center', color: 'rgba(11,31,58,0.55)',
-                  border: '1px solid rgba(11,31,58,0.06)',
+                  border: '1px dashed rgba(11,31,58,0.12)',
                 }}>
                 <Sparkles size={22} style={{ opacity: 0.5 }} />
-                <div style={{ marginTop: 8, fontSize: '0.9rem' }}>Sin publicaciones aún</div>
+                <div style={{ marginTop: 8, fontSize: '0.9rem', fontWeight: 700, color: NAVY }}>
+                  {isSelf ? 'Comparte tu primera publicación' : 'Aún no hay publicaciones'}
+                </div>
+                <div style={{ marginTop: 4, fontSize: '0.8rem' }}>
+                  {isSelf
+                    ? 'Cuéntale a la comunidad en qué estás trabajando.'
+                    : 'Sigue a esta persona para ver su actividad cuando publique.'}
+                </div>
+                {isSelf && (
+                  <Link to="/comunidad" data-testid="public-profile-empty-cta"
+                    style={{ display: 'inline-block', marginTop: '0.8rem', padding: '0.55rem 1rem', borderRadius: 100, background: NAVY, color: '#FFFFFF', fontWeight: 700, fontSize: '0.78rem', textDecoration: 'none' }}>
+                    Ir a la comunidad
+                  </Link>
+                )}
               </div>
             ) : posts.map((post) => (
               <FeedPostCard key={post.id} post={post} />

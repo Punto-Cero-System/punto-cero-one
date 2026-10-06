@@ -446,7 +446,7 @@ const Modal = ({ children, title, onClose, testid }) => (
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
         <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", sans-serif' }}>{title}</h3>
-        <button onClick={onClose} data-testid="sources-modal-close"
+        <button onClick={onClose} data-testid="sources-modal-close" aria-label="Cerrar"
           style={{ background: 'transparent', border: 'none', color: '#FFFFFF', cursor: 'pointer' }}>
           <X size={16} />
         </button>

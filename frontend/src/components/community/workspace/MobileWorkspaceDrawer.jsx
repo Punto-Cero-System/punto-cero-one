@@ -87,7 +87,7 @@ const MobileWorkspaceDrawer = ({ editing, onToggleEdit }) => {
                   {side === 'left' ? 'MENÚ · MI ESPACIO' : 'WIDGETS · PANEL DERECHO'}
                 </div>
                 <button onClick={() => setSide(null)}
-                  data-testid="workspace-mobile-drawer-close"
+                  data-testid="workspace-mobile-drawer-close" aria-label="Cerrar menú"
                   style={{
                     width: 32, height: 32, borderRadius: 8,
                     background: 'rgba(11,31,58,0.05)',

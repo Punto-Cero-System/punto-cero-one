@@ -57,7 +57,10 @@ from routes.discovery_routes import router as discovery_router
 from routes.sources_admin_routes import router as sources_admin_router
 from routes.content_sources_routes import router as content_sources_router
 from routes.groups_routes import router as groups_router
+from routes.activities_routes import router as activities_router
+from routes.access_bridge_routes import router as access_bridge_router
 from services.growth.scheduler import scheduler as growth_scheduler
+from services.system_identity import ensure_indexes as ensure_system_identity_indexes
 from services.discovery.seeder import seed_public_entities
 from models_category import DEFAULT_CATEGORIES
 
@@ -141,6 +144,8 @@ app.include_router(discovery_router)
 app.include_router(sources_admin_router)
 app.include_router(content_sources_router)
 app.include_router(groups_router)
+app.include_router(activities_router)
+app.include_router(access_bridge_router)
 
 
 # -------------------- CORS --------------------
@@ -243,6 +248,29 @@ async def ensure_indexes():
         await db.follows.create_index([("entity_type", 1), ("entity_id", 1)])
     except Exception as e:
         logger.warning(f"follows index warning: {e}")
+    # OMEGA F0.9.4 — social activity log (write-only, no consumers yet).
+    #
+    # No UNIQUE index on `activity_key` on purpose: activities records
+    # historical facts, and "user A follows group X" / "user A joins group X"
+    # are two different facts that must both survive. Dedupe belongs to the
+    # delivery layer (contract §3), not here.
+    try:
+        # TTL: expireAfterSeconds=0 means "expire at the stored expires_at",
+        # which services/activities.py writes as now + retention_days.
+        await db.activities.create_index("expires_at", expireAfterSeconds=0)
+        # Future consumers: feed by audience, user history, entity activity.
+        await db.activities.create_index(
+            [("audience.type", 1), ("audience.id", 1), ("created_at", -1)]
+        )
+        await db.activities.create_index([("actor_id", 1), ("created_at", -1)])
+        await db.activities.create_index(
+            [("subject_type", 1), ("subject_id", 1), ("created_at", -1)]
+        )
+        # Lookup for the future idempotent upsert in activities.record().
+        # Non-unique on purpose — see the note above.
+        await db.activities.create_index("activity_key")
+    except Exception as e:
+        logger.warning(f"activities index warning: {e}")
     # Wave 4B — Mi Espacio user workspaces
     try:
         await db.user_workspaces.create_index("user_id", unique=True)
@@ -295,6 +323,12 @@ async def ensure_indexes():
         await db.widget_cache.create_index("expires_at", expireAfterSeconds=0)
     except Exception as e:
         logger.warning(f"widget_cache index warning: {e}")
+    # System Identity (FASE 1.2) - indices de la capa canonica de identidad.
+    # Se invoca el metodo existente; no se declara ningun indice aqui.
+    try:
+        await ensure_system_identity_indexes(db)
+    except Exception as e:
+        logger.warning(f"system identity index warning: {e}")
 
 
 async def seed_admin():

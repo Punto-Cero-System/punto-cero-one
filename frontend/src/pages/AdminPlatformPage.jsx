@@ -1,12 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { ArrowLeft, Users, Building2, MessagesSquare, Briefcase, Calendar, Flag, Activity, BarChart3, ShieldAlert, Radio } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { adminPlatformService } from '../services/coreServices';
 import AdminSourcesTab from './AdminSourcesTab';
 
-const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
 const GOLD = '#D4AF37';
 

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Workspace Registry frontend projection row",
+  "description": "Safe contract fields projected from backend/services/workspace_registry.py. Location is declared independently from lifecycle, availability, and launchMode. Availability is derived and is not stored.",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "live",
+        "preview",
+        "declared",
+        "deprecated"
+      ]
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "route": {
+      "type": "string",
+      "minLength": 1
+    },
+    "location": {
+      "type": "string",
+      "enum": [
+        "internal",
+        "external"
+      ]
+    }
+  },
+  "required": [
+    "key",
+    "status",
+    "label",
+    "route",
+    "location"
+  ],
+  "additionalProperties": false
+}

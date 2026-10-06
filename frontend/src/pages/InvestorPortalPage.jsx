@@ -1,13 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight, ExternalLink, LogOut, Shield, Sparkles, FileText, LineChart,
-  Presentation, Scale, Rocket, Loader, Download,
-} from 'lucide-react';
+import { ArrowRight, ExternalLink, LogOut, Shield, Sparkles, FileText, Rocket, Loader, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
 const GOLD = '#D4AF37';
 

@@ -10,12 +10,19 @@ CRUD mínimo:
   POST   /api/groups/{id}/posts         → publicar en el grupo
   GET    /api/groups/{id}/posts         → posts del grupo
 
-Los posts del grupo reutilizan la colección `posts` con `group_id` +
-`visibility="group"`. La categoría se guarda como `category` (una de las
-10 iniciales).
+Los posts del grupo viven en la colección `group_posts` (NO en `posts`), con
+`{group_id, author_id, body, created_at}`. No tienen reacciones ni comentarios.
+La categoría se guarda como `category` (una de las 10 iniciales).
+
+OMEGA F0.8 — el control de privacidad de las lecturas vive centralizado en
+`services/group_permissions.py` (`load_visible_group`, `visible_filter`).
+Los grupos `public` —o sin campo `privacy`, por legacy— son visibles para
+todos; los `private` solo para miembros, el admin del grupo y el admin de
+plataforma. Unirse a un grupo privado devuelve 403.
 """
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, Literal
@@ -24,11 +31,17 @@ from fastapi import APIRouter, Cookie, Depends, File, Header, HTTPException, Que
 from pydantic import BaseModel, Field
 
 from services.community_deps import require_current_user
+from services.group_permissions import DENIED, load_visible_group, visible_filter
 from services.notifications import dispatch as dispatch_notif
+from services.notification_fanout import fanout_to_group_members
 from services.object_storage import get_storage, app_prefix, ObjectStorageError
+from services.activity_consumers import publish as publish_activity
+from services.activities import record as record_activity
 
 
 router = APIRouter(prefix="/api/groups", tags=["groups"])
+
+logger = logging.getLogger("punto-cero-api.groups")
 
 
 CATEGORIES = [
@@ -133,18 +146,14 @@ async def list_groups(request: Request,
                       session_token: Optional[str] = Cookie(default=None)):
     db = request.app.state.db
     viewer_id = await _viewer_id(request, session_token)
-    q = {}
+    # OMEGA F0.8 — public groups for everyone; private ones only for members.
+    vis, member_of = await visible_filter(db, viewer_id)
+    q = dict(vis)
     if category:
         q["category"] = category
     cur = db.groups.find(q, {"_id": 0}).sort("members_count", -1).limit(limit)
     docs = [d async for d in cur]
     if viewer_id and docs:
-        member_of = set()
-        async for m in db.group_members.find(
-            {"user_id": viewer_id, "group_id": {"$in": [d["id"] for d in docs]}},
-            {"_id": 0, "group_id": 1},
-        ):
-            member_of.add(m["group_id"])
         for d in docs:
             d["_is_member"] = d["id"] in member_of
     return {"items": [_serialize_group(d, viewer_id) for d in docs], "total": len(docs)}
@@ -154,26 +163,33 @@ async def list_groups(request: Request,
 async def get_group(group_id: str, request: Request,
                     session_token: Optional[str] = Cookie(default=None)):
     db = request.app.state.db
-    doc = await db.groups.find_one({"id": group_id}, {"_id": 0})
-    if not doc:
+    # OMEGA F0.8 — 404 if unknown, 403 if private and unrelated. Existence is
+    # deliberately not confirmed to a stranger, so both are distinct codes.
+    group, info = await load_visible_group(
+        db, group_id, {"id": viewer_id} if viewer_id else None)
+    if not group:
         raise HTTPException(status_code=404, detail="Grupo no encontrado")
-    viewer_id = await _viewer_id(request, session_token)
+    if info["access"] == DENIED:
+        raise HTTPException(status_code=403, detail="Este grupo es privado")
     if viewer_id:
-        m = await db.group_members.find_one({"group_id": group_id, "user_id": viewer_id}, {"_id": 0})
-        doc["_is_member"] = bool(m)
-    return _serialize_group(doc, viewer_id)
+        group["_is_member"] = info["is_member"]
+    return _serialize_group(group, viewer_id)
 
 
 @router.post("/{group_id}/join")
 async def join_group(group_id: str, request: Request,
                      user: dict = Depends(require_current_user)):
     db = request.app.state.db
-    doc = await db.groups.find_one({"id": group_id}, {"_id": 0, "id": 1})
+    doc = await db.groups.find_one({"id": group_id}, {"_id": 0, "id": 1, "privacy": 1})
     if not doc:
         raise HTTPException(status_code=404, detail="Grupo no encontrado")
     existing = await db.group_members.find_one({"group_id": group_id, "user_id": user["id"]}, {"_id": 0})
     if existing:
         return {"ok": True, "joined": False, "already_member": True}
+    # OMEGA F0.8 — no direct join to a private group. Approval/invitations are
+    # explicitly out of scope for this phase, so joining is simply refused.
+    if doc.get("privacy") == "private":
+        raise HTTPException(status_code=403, detail="Este grupo es privado")
     await db.group_members.insert_one({
         "id": f"gm_{uuid.uuid4().hex[:16]}",
         "group_id": group_id, "user_id": user["id"],
@@ -201,6 +217,40 @@ async def join_group(group_id: str, request: Request,
 async def leave_group(group_id: str, request: Request,
                       user: dict = Depends(require_current_user)):
     db = request.app.state.db
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0, "id": 1, "admin_id": 1})
+    if not group:
+        raise HTTPException(status_code=404, detail="Grupo no encontrado")
+    membership = await db.group_members.find_one(
+        {"group_id": group_id, "user_id": user["id"]}, {"_id": 0, "role": 1})
+    if not membership:
+        # Idempotente: salir dos veces no es un error ni mueve el contador.
+        return {"ok": True, "left": False, "not_member": True}
+
+    # OMEGA B3 — un grupo siempre conserva al menos un administrador.
+    # Sin esta regla, el dueño podía salir y dejar el grupo sin nadie que lo
+    # administre: `groups.admin_id` seguía apuntando a un ex-miembro y, si el
+    # grupo era privado, `visible_filter` lo ocultaba a todo el mundo (solo lo
+    # ven `admin_id` y los miembros, y ya no queda ninguno). El grupo quedaba
+    # inalcanzable de forma permanente, sin forma de recuperarlo desde la API.
+    # Se consultan las DOS fuentes de administrador que ya usa group_permissions
+    # (`groups.admin_id` y `group_members.role == "admin"`): si al salir no
+    # quedara ninguna, se rechaza con 409 en lugar de dejar el grupo huérfano.
+    #
+    # La transferencia de propiedad y el borrado del grupo NO existen todavía
+    # (hueco conocido, documentado en el informe de B3). Resolverlas aquí
+    # sería inventar funcionalidad, no endurecer.
+    leaver_is_admin = (group.get("admin_id") == user["id"]
+                       or membership.get("role") == "admin")
+    if leaver_is_admin:
+        other_admin_row = await db.group_members.find_one(
+            {"group_id": group_id, "role": "admin", "user_id": {"$ne": user["id"]}},
+            {"_id": 0, "user_id": 1})
+        owner_stays = bool(group.get("admin_id")) and group["admin_id"] != user["id"]
+        if not other_admin_row and not owner_stays:
+            raise HTTPException(
+                status_code=409,
+                detail="El grupo necesita al menos un administrador")
+
     res = await db.group_members.delete_one({"group_id": group_id, "user_id": user["id"]})
     if res.deleted_count:
         await db.groups.update_one({"id": group_id}, {"$inc": {"members_count": -1}})
@@ -209,8 +259,17 @@ async def leave_group(group_id: str, request: Request,
 
 @router.get("/{group_id}/members")
 async def list_members(group_id: str, request: Request,
-                       limit: int = Query(default=50, ge=1, le=200)):
+                       limit: int = Query(default=50, ge=1, le=200),
+                       session_token: Optional[str] = Cookie(default=None)):
     db = request.app.state.db
+    # OMEGA F0.8 — the roster of a private group is not public.
+    viewer_id = await _viewer_id(request, session_token)
+    group, info = await load_visible_group(
+        db, group_id, {"id": viewer_id} if viewer_id else None)
+    if not group:
+        raise HTTPException(status_code=404, detail="Grupo no encontrado")
+    if info["access"] == DENIED:
+        raise HTTPException(status_code=403, detail="Este grupo es privado")
     cur = db.group_members.find({"group_id": group_id}, {"_id": 0}).sort("joined_at", 1).limit(limit)
     rows = [m async for m in cur]
     users_by_id = {}
@@ -250,28 +309,55 @@ async def create_group_post(group_id: str, payload: GroupPostCreate,
     await db.group_posts.insert_one(post)
     await db.groups.update_one({"id": group_id}, {"$inc": {"posts_count": 1}})
 
-    # Fan-out: notify every other member of the group. We cap the fan-out
-    # at 500 to keep the request bounded; larger groups should use realtime.
+    # OMEGA FASE A / F0.9.5 — first real emitter of social activities.
+    # The post above is already persisted: this is an ADDITIONAL layer, and the
+    # try/except is deliberate so the "a post is never blocked by telemetry"
+    # invariant lives at the call site, not only inside record(). The audience
+    # is the group and visibility is "members" because a group post is scoped to
+    # the group, never broadcast — even for a public group.
+    try:
+        activity = await record_activity(
+            db,
+            kind="group.post_created",
+            actor_id=user["id"],
+            subject_type="group_post",
+            subject_id=post["id"],
+            audience={"type": "group", "id": group_id},
+            visibility="members",
+            metadata={"group_id": group_id},
+        )
+        # F0.9.7 bridge: consumers only run for a fact that was really stored.
+        if activity:
+            await publish_activity(activity)
+    except Exception:
+        logger.exception("no se pudo registrar la actividad del post %s", post["id"])
+
+    # Fan-out: notify every other member of the group.
+    # OMEGA F0.9.1 — was a sequential loop capped at `.limit(500)`, which
+    # silently dropped every member past the 500th. Now batched and uncapped;
+    # `dispatch` semantics are preserved (soft-fail, actor excluded, silences
+    # honoured, realtime best-effort). The post is already written above, so
+    # a notification failure can never cancel the publication.
     group = await db.groups.find_one({"id": group_id}, {"_id": 0, "name": 1})
     group_name = (group or {}).get("name") or "el grupo"
     excerpt = (payload.body or "").strip()
     excerpt = (excerpt[:120] + "…") if len(excerpt) > 120 else excerpt
-    cursor = db.group_members.find(
-        {"group_id": group_id, "user_id": {"$ne": user["id"]}},
-        {"_id": 0, "user_id": 1},
-    ).limit(500)
-    async for m in cursor:
-        await dispatch_notif(
-            db,
-            recipient_id=m["user_id"],
-            kind="group_post",
-            title=f"{user.get('name') or 'Alguien'} publicó en {group_name}",
-            body=excerpt,
-            actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
-            subject_type="group_post",
-            subject_id=post["id"],
-            subject_url=f"/comunidad?group={group_id}",
-        )
+    fanout = await fanout_to_group_members(
+        db,
+        group_id,
+        exclude_user_id=user["id"],
+        kind="group_post",
+        title=f"{user.get('name') or 'Alguien'} publicó en {group_name}",
+        body=excerpt,
+        actor={"id": user["id"], "name": user.get("name"), "picture": user.get("picture")},
+        subject_type="group_post",
+        subject_id=post["id"],
+        subject_url=f"/comunidad?group={group_id}",
+    )
+    # Observable, so a future move to a real queue has a baseline to compare
+    # against (sent / silenced / duplicates / batches).
+    logger.info("group_post_fanout group=%s post=%s %s",
+                group_id, post["id"], fanout)
 
     return {
         "id": post["id"], "group_id": group_id,
@@ -283,8 +369,17 @@ async def create_group_post(group_id: str, payload: GroupPostCreate,
 
 @router.get("/{group_id}/posts")
 async def list_group_posts(group_id: str, request: Request,
-                           limit: int = Query(default=20, ge=1, le=50)):
+                           limit: int = Query(default=20, ge=1, le=50),
+                           session_token: Optional[str] = Cookie(default=None)):
     db = request.app.state.db
+    # OMEGA F0.8 — a private group's timeline is not public.
+    viewer_id = await _viewer_id(request, session_token)
+    group, info = await load_visible_group(
+        db, group_id, {"id": viewer_id} if viewer_id else None)
+    if not group:
+        raise HTTPException(status_code=404, detail="Grupo no encontrado")
+    if info["access"] == DENIED:
+        raise HTTPException(status_code=403, detail="Este grupo es privado")
     cur = db.group_posts.find({"group_id": group_id}, {"_id": 0}).sort("created_at", -1).limit(limit)
     rows = [p async for p in cur]
     users_by_id = {}

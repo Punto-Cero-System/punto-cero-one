@@ -8,6 +8,43 @@ from typing import Optional
 from .base import FeedItem, FeedSignals, FeedMode
 from .providers import DEFAULT_PROVIDERS
 
+# OMEGA B4.2 — la visibilidad del Feed, desde la autoridad compartida.
+#
+# Se importa de `services.feed_visibility` y NUNCA de `routes.feed_routes`:
+# un servicio no puede depender de una ruta. B4.1 movió la regla precisamente
+# para que este import fuera posible sin invertir la arquitectura.
+# `_visibility_clause` es la MISMA función que usan `list_posts` (A2), las seis
+# interacciones (A3), el Mixed Feed (A4.1) y la búsqueda global (B3), así que
+# todos los endpoints que leen `posts` coinciden por construcción.
+from services.feed_visibility import _visibility_clause, _viewer_group_ids
+
+
+def _pool_query(base: dict, viewer_group_ids: set) -> dict:
+    """La query del pool con la visibilidad YA integrada.
+
+    B4.2 — la visibilidad se aplica AQUÍ, al construir el pool, y nunca después
+    del ranking. La razón no es estética: el ranking termina en
+    `top = ranked[:limit]`, así que un post invisible que hubiera entrado en el
+    pool expulsaría a uno visible del `limit`. Filtrar tarde no solo deja pasar
+    la fuga: además convierte el endpoint en un oráculo ("no veo este post que
+    sé que existe, luego hay algo oculto ocupándome el sitio").
+
+    Integrarlo en la query tiene un segundo efecto que sí cambia el ranking, y es
+    a mejor: el pool de `pool_size` se llena solo con posts visibles, así que el
+    presupuesto de ranking se aprovecha íntegro. Filtrando en memoria se perderían
+    plazas de las 200 con contenido que nadie puede leer.
+
+    Se fusiona como `visibility` o como `$or` según lo que devuelva la cláusula,
+    igual que hace `list_posts`. Las queries de este módulo no usan `$or` por su
+    cuenta, así que no hay conflicto posible.
+    """
+    vis_clause = _visibility_clause(viewer_group_ids)
+    if "$or" in vis_clause:
+        base["$or"] = vis_clause["$or"]
+    else:
+        base["visibility"] = vis_clause["visibility"]
+    return base
+
 
 async def load_user_signals(db, user: Optional[dict]) -> FeedSignals:
     """Load everything we need to rank in one pass."""
@@ -135,21 +172,43 @@ async def build_for_you_feed(
 ) -> tuple[list[FeedItem], FeedMode]:
     """Rank the last `pool_size` published posts within `lookback_days` and
     return the top `limit`. Anonymous users skip ranking entirely.
+
+    B4.2 — el pool se construye ya filtrado por visibilidad, en los DOS caminos
+    (anónimo y autenticado). Antes solo filtraba `status`, así que un post
+    `members` aparecía en "Para Ti" para cualquiera, mientras `/api/feed/posts`
+    y el Mixed Feed ya lo ocultaban.
+
+    La firma pública no cambia: `user` ya era el contexto del viewer y es lo que
+    se pasa a `_viewer_group_ids`. El anónimo resuelve a `set()` sin lanzar
+    ninguna consulta, así que este camino no cuesta nada adicional.
     """
+    # Una sola resolución por petición, compartida por ambos caminos.
+    # `_viewer_group_ids` corta en seco si el viewer no trae `id` (anónimo), así
+    # que en ese caso no se toca `group_members` ni `groups`: cero consultas
+    # extra para el visitante.
+    viewer_group_ids = await _viewer_group_ids(db, user)
+
     if not user:
-        cursor = db.posts.find({"status": "published"}, {"_id": 0}).sort("created_at", -1).limit(limit)
+        cursor = db.posts.find(
+            _pool_query({"status": "published"}, viewer_group_ids), {"_id": 0},
+        ).sort("created_at", -1).limit(limit)
         docs = [d async for d in cursor]
         return [FeedItem(post=d, score=0.0) for d in docs], FeedMode.CHRONOLOGICAL
 
     since = (datetime.now(timezone.utc) - timedelta(days=lookback_days)).isoformat()
     cursor = db.posts.find(
-        {"status": "published", "created_at": {"$gte": since}},
+        _pool_query({"status": "published", "created_at": {"$gte": since}},
+                    viewer_group_ids),
         {"_id": 0},
     ).sort("created_at", -1).limit(pool_size)
     pool = [d async for d in cursor]
     if not pool:
         return [], FeedMode.CHRONOLOGICAL
 
+    # A partir de aquí nada cambia: mismas señales, mismos providers, mismos
+    # pesos, mismo desempate y mismo corte a `limit`. La visibilidad ya está
+    # resuelta en la query, así que el ranking solo ve posts que el viewer puede
+    # leer y ninguna de sus decisiones se altera.
     signals = await load_user_signals(db, user)
     ranked = await _rank_posts(db, pool, signals)
     ranked.sort(key=lambda x: (x.score, x.post["created_at"]), reverse=True)

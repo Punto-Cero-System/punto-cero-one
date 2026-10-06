@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Heart, MessageCircle, Share2, Bookmark, Send, MoreHorizontal, Lightbulb, Trophy, HandHeart, HelpCircle, Info, Copy, Flag, UserPlus, Building2 } from 'lucide-react';
 import PresenceDot from './PresenceDot';
 import UserHoverCard from './UserHoverCard';
@@ -24,6 +25,17 @@ const REACTION_META = Object.fromEntries(REACTIONS.map((r) => [r.kind, r]));
  */
 const FeedPostCard = ({ post: initial, onDelete }) => {
   const [post, setPost] = useState(initial);
+  // P0.2 — `post` is the local, optimistic copy. It must be reconciled with
+  // the prop whenever the parent hands us a fresher version of the SAME post
+  // (refetch, parent re-render, follow/refresh). Without this the card keeps
+  // rendering the first `initial` forever, even though React.memo below lets
+  // it re-render when `updated_at` or a counter changed.
+  const syncedFromRef = useRef(initial);
+  useEffect(() => {
+    if (syncedFromRef.current === initial) return;
+    syncedFromRef.current = initial;
+    setPost(initial);
+  }, [initial]);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentBody, setCommentBody] = useState('');
@@ -33,10 +45,13 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
   const isAuthed = !!user && typeof user === 'object';
   const isOwner = isAuthed && user?.id === post.author.id;
 
-  // Register a view once per session for this post
+  // Register a view once per session for this post. Growth/editorial items use
+  // a synthetic `source-<id>` id that no real post row matches, so the call
+  // was a guaranteed 404 for every external card in the feed. Skip them.
   useEffect(() => {
+    if (post.is_growth) return;
     feedService.view(post.id, getViewSessionId()).catch(() => {});
-  }, [post.id]);
+  }, [post.id, post.is_growth]);
 
   const react = async (kind) => {
     if (!isAuthed) return;
@@ -122,7 +137,7 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
       flashShare('Publicado en tu feed');
       // trigger feed refresh
       window.dispatchEvent(new CustomEvent('pc:feed-refresh'));
-    } catch (e) {
+    } catch {
       flashShare('No se pudo publicar');
     }
   };
@@ -231,7 +246,7 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
             }}>FUENTE PÚBLICA</span>
         )}
         {(isOwner || user?.role === 'admin') && !post.is_growth && (
-          <button onClick={handleDelete} data-testid={`feed-post-delete-${post.id}`}
+          <button onClick={handleDelete} data-testid={`feed-post-delete-${post.id}`} aria-label="Eliminar publicación"
             style={{ background: 'transparent', border: 'none', color: 'rgba(11,31,58,0.5)', cursor: 'pointer' }}>
             <MoreHorizontal size={16} />
           </button>
@@ -425,7 +440,7 @@ const FeedPostCard = ({ post: initial, onDelete }) => {
                   }}
                 />
                 <button type="submit" disabled={!commentBody.trim() || busy}
-                  data-testid={`feed-post-comment-submit-${post.id}`}
+                  data-testid={`feed-post-comment-submit-${post.id}`} aria-label="Publicar comentario"
                   style={{
                     padding: '0.5rem 0.85rem', borderRadius: 100, border: 'none',
                     background: NAVY, color: '#FFFFFF', cursor: 'pointer', fontSize: '0.8rem',
@@ -552,15 +567,23 @@ const ReactionButton = ({ meta, onClick, onPickReaction, disabled, testid }) => 
 
 export default React.memo(FeedPostCard, (prev, next) => (
   // FeedPostCard is a large tree that owns its own internal state. It only
-  // needs to re-render if the post identity or any counter/reaction visible
-  // to the user actually changed. We compare a small signature to skip the
-  // vast majority of parent-driven re-renders (feed scroll, sibling updates).
+  // needs to re-render if the post identity or any field the card actually
+  // renders changed. We compare a small signature to skip the vast majority
+  // of parent-driven re-renders (feed scroll, sibling updates).
+  //
+  // Every field below is one the card paints: `author.picture` is the avatar
+  // and `for_you.reasons` renders the "Porque …" chip, so omitting them left
+  // real updates invisible until the user reloaded the feed.
   prev.post?.id === next.post?.id &&
   prev.post?.updated_at === next.post?.updated_at &&
   prev.post?.image_url === next.post?.image_url &&
   prev.post?.body === next.post?.body &&
   prev.post?.counts?.reactions === next.post?.counts?.reactions &&
   prev.post?.counts?.comments === next.post?.counts?.comments &&
+  prev.post?.counts?.saves === next.post?.counts?.saves &&
+  prev.post?.counts?.shares === next.post?.counts?.shares &&
+  prev.post?.author?.picture === next.post?.author?.picture &&
+  (prev.post?.for_you?.reasons?.join('|') || '') === (next.post?.for_you?.reasons?.join('|') || '') &&
   prev.post?.my_reaction === next.post?.my_reaction &&
   prev.post?.my_saved === next.post?.my_saved
 ));
@@ -568,7 +591,11 @@ export default React.memo(FeedPostCard, (prev, next) => (
 const FeedPostMenu = ({ post, onSave, onShare, isAuthed }) => {
   const [open, setOpen] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [reportOpen, setReportOpen] = React.useState(false);
+  const [reportReason, setReportReason] = React.useState('');
+  const [reportDone, setReportDone] = React.useState('');
   const menuRef = React.useRef(null);
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     if (!open) return;
@@ -590,26 +617,29 @@ const FeedPostMenu = ({ post, onSave, onShare, isAuthed }) => {
   };
   const report = async (e) => {
     e.stopPropagation();
-    const reason = window.prompt('¿Por qué reportas esta publicación?');
-    if (!reason) return;
-    try { await feedService.report(post.id, reason); alert('Reporte enviado. Gracias.'); }
-    catch { alert('No se pudo enviar el reporte.'); }
-    setOpen(false);
+    try {
+      await feedService.report(post.id, reportReason);
+      setReportDone('Reporte enviado. Gracias.');
+    } catch {
+      setReportDone('No se pudo enviar el reporte.');
+    }
+    setReportOpen(false);
+    setTimeout(() => setReportDone(''), 2500);
   };
 
   const items = [
     { label: copied ? '¡Enlace copiado!' : 'Copiar enlace', icon: Copy, onClick: copyLink, testid: `menu-copy-${post.id}` },
     { label: 'Compartir', icon: Share2, onClick: (e) => { e.stopPropagation(); onShare(); setOpen(false); }, testid: `menu-share-${post.id}` },
     { label: post.my_saved ? 'Quitar de guardados' : 'Guardar', icon: Bookmark, onClick: (e) => { e.stopPropagation(); onSave(); setOpen(false); }, testid: `menu-save-${post.id}`, hidden: !isAuthed },
-    { label: 'Ver empresa', icon: Building2, onClick: (e) => { e.stopPropagation(); window.location.href = '/empresas'; }, testid: `menu-company-${post.id}` },
-    { label: 'Seguir autor', icon: UserPlus, onClick: (e) => { e.stopPropagation(); alert('Próximamente'); setOpen(false); }, testid: `menu-follow-${post.id}`, hidden: !isAuthed },
-    { label: 'Reportar', icon: Flag, onClick: report, testid: `menu-report-${post.id}`, danger: true, hidden: !isAuthed },
+    { label: 'Ver empresa', icon: Building2, onClick: (e) => { e.stopPropagation(); setOpen(false); navigate('/empresas'); }, testid: `menu-company-${post.id}` },
+    { label: 'Seguir autor', icon: UserPlus, onClick: (e) => { e.stopPropagation(); setReportDone('Seguir autores estará disponible próximamente.'); setTimeout(() => setReportDone(''), 2500); setOpen(false); }, testid: `menu-follow-${post.id}`, hidden: !isAuthed },
+    { label: 'Reportar', icon: Flag, onClick: (e) => { e.stopPropagation(); setReportOpen(true); setOpen(false); }, testid: `menu-report-${post.id}`, danger: true, hidden: !isAuthed },
   ].filter((x) => !x.hidden);
 
   return (
     <div ref={menuRef} style={{ position: 'relative' }}>
       <button onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
-        data-testid={`feed-post-menu-${post.id}`}
+        data-testid={`feed-post-menu-${post.id}`} aria-label="Menú de opciones de la publicación"
         style={{ background: 'transparent', border: 'none', color: 'rgba(11,31,58,0.55)', cursor: 'pointer', padding: 4 }}>
         <MoreHorizontal size={18} />
       </button>
@@ -640,11 +670,69 @@ const FeedPostMenu = ({ post, onSave, onShare, isAuthed }) => {
           ))}
         </motion.div>
       )}
+
+      {/* Inline report form — replaces window.prompt + alert */}
+      {reportOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.15 }}
+          data-testid={`feed-post-report-form-${post.id}`}
+          style={{
+            position: 'absolute', top: '110%', right: 0, zIndex: 30,
+            width: 260, padding: '0.8rem',
+            background: '#FFFFFF', borderRadius: 12,
+            boxShadow: '0 20px 50px rgba(11,31,58,0.18), 0 0 0 1px rgba(11,31,58,0.06)',
+          }}
+        >
+          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: NAVY, marginBottom: 6 }}>
+            ¿Por qué reportas esta publicación?
+          </div>
+          <input
+            autoFocus value={reportReason}
+            onChange={(e) => setReportReason(e.target.value)}
+            placeholder="Contenido inapropiado, spam…"
+            data-testid={`feed-post-report-input-${post.id}`}
+            style={{
+              width: '100%', boxSizing: 'border-box', padding: '0.5rem 0.6rem',
+              border: '1px solid rgba(11,31,58,0.12)', borderRadius: 8,
+              fontSize: '0.8rem', marginBottom: 8,
+            }}
+          />
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button type="button" onClick={() => { setReportOpen(false); setReportReason(''); }}
+              data-testid={`feed-post-report-cancel-${post.id}`}
+              style={{
+                padding: '0.4rem 0.75rem', borderRadius: 100, border: '1px solid rgba(11,31,58,0.12)',
+                background: 'transparent', color: NAVY, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600,
+              }}>Cancelar</button>
+            <button type="button" disabled={!reportReason.trim()} onClick={report}
+              data-testid={`feed-post-report-submit-${post.id}`}
+              style={{
+                padding: '0.4rem 0.85rem', borderRadius: 100, border: 'none',
+                background: reportReason.trim() ? '#B91C1C' : 'rgba(11,31,58,0.12)',
+                color: '#FFFFFF', cursor: reportReason.trim() ? 'pointer' : 'not-allowed',
+                fontSize: '0.78rem', fontWeight: 700,
+              }}>Enviar</button>
+          </div>
+        </motion.div>
+      )}
+
+      {reportDone && (
+        <div
+          data-testid={`feed-post-menu-toast-${post.id}`}
+          style={{
+            position: 'absolute', top: '110%', right: 0, zIndex: 31,
+            padding: '0.5rem 0.75rem', borderRadius: 10, maxWidth: 260,
+            background: '#FFFFFF', color: NAVY,
+            border: '1px solid rgba(11,31,58,0.08)',
+            boxShadow: '0 12px 32px rgba(11,31,58,0.14)',
+            fontSize: '0.76rem', fontWeight: 600,
+          }}
+        >{reportDone}</div>
+      )}
     </div>
   );
 };
-
-
 
 /**
  * SharePopover — inline popover with the 3 share options.

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Lock, Sparkles, CheckCircle, AlertCircle, Shield } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Lock, CheckCircle, AlertCircle, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const API = process.env.REACT_APP_BACKEND_URL;

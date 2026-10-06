@@ -1,0 +1,24 @@
+Creating an optimized production build...
+Compiled successfully.
+
+File sizes after gzip:
+
+  356.92 kB  build\static\js\main.fd0b0651.js
+  10.4 kB    build\static\css\main.4e9ac644.css
+  6.32 kB    build\static\js\318.e69aa605.chunk.js
+
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+
+The build folder is ready to be deployed.
+You may serve it with a static server:
+
+  npm install -g serve
+  serve -s build
+
+Find out more about deployment here:
+
+  https://cra.link/deployment
+
+(node:1508) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)

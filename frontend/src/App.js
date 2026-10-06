@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Lenis from '@studio-freight/lenis';
 import './App.css';
 import HomePage from './pages/HomePage';
@@ -17,7 +17,10 @@ import InvestorSetupPage from './pages/InvestorSetupPage';
 import InvestorPortalPage from './pages/InvestorPortalPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import LoginPage from './pages/LoginPage';
-import WorkspaceGatewayPage from './pages/WorkspaceGatewayPage';
+  // FASE OMEGA / ETAPA 1: el Launcher heredado (WorkspaceGatewayPage) y
+  // SystemEntry se eliminaron por ser codigo muerto (sin ruta y sin importacion
+  // en producción). El login de One (pages/JoinPage.jsx) es el único punto de
+  // autenticacion: consume el Identity Core y resuelve el destino.
 import WorkspaceSpacePlaceholderPage from './pages/WorkspaceSpacePlaceholderPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminDocumentsPage from './pages/AdminDocumentsPage';
@@ -35,6 +38,7 @@ import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
 import MessagesPage from './pages/MessagesPage';
 import AdminPlatformPage from './pages/AdminPlatformPage';
+import EcosystemManager from './admin/ecosystem/EcosystemManager';
 import NuestraHistoriaPage from './pages/NuestraHistoriaPage';
 import { PrivacyPage, CookiesPage, TermsPage, ProfessionalAgreementPage } from './pages/LegalPages';
 import MarketplacePage from './pages/MarketplacePage';
@@ -150,12 +154,14 @@ function AppRouter() {
       <Route path="/h/:tag" element={<HashtagPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/login" element={<LoginPage />} />
-      {/* Workspace Gateway FUERA DE USO (oculto, no eliminado):
-          /workspace continúa hacia el flujo original del sistema.
-          El componente WorkspaceGatewayPage queda intacto para reactivarse. */}
-      <Route path="/workspace" element={<Navigate to="/" replace />} />
-      {/* Workspace Gateway — espacios del ecosistema (estructura inicial, sin backend).
-          Mismo componente reutilizado; el espacio se resuelve por `spaceKey`. */}
+      {/* Compatibilidad: los enlaces viejos a /workspace pasan por el login original. */}
+      <Route path="/workspace" element={<WorkspaceSpacePlaceholderPage spaceKey="legal" />} />
+      <Route path="/agent" element={<WorkspaceSpacePlaceholderPage spaceKey="legal" />} />
+      <Route path="/firm-os" element={<WorkspaceSpacePlaceholderPage spaceKey="empresa" />} />
+      <Route path="/portal" element={<HomePage />} />
+      <Route path="/medical" element={<WorkspaceSpacePlaceholderPage spaceKey="medical" />} />
+      {/* Espacios por vertical (estructura existente, sin backend nuevo).
+          El destino lo decide el Identity Core; ninguna de estas rutas es un selector. */}
       <Route path="/workspace/legal" element={<WorkspaceSpacePlaceholderPage spaceKey="legal" />} />
       <Route path="/workspace/medical" element={<WorkspaceSpacePlaceholderPage spaceKey="medical" />} />
       <Route path="/workspace/empresa" element={<WorkspaceSpacePlaceholderPage spaceKey="empresa" />} />
@@ -189,6 +195,14 @@ function AppRouter() {
         element={
           <ProtectedAdminRoute>
             <AdminPlatformPage />
+          </ProtectedAdminRoute>
+        }
+      />
+      <Route
+        path="/admin/ecosystem"
+        element={
+          <ProtectedAdminRoute>
+            <EcosystemManager />
           </ProtectedAdminRoute>
         }
       />

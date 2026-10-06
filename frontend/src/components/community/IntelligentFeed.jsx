@@ -207,11 +207,15 @@ const IntelligentFeed = ({ limit = PAGE_SIZE, country }) => {
       doSave(true);
       frozen = true;
     };
+    const onBeforeUnload = () => doSave(true);
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('beforeunload', () => doSave(true));
+    window.addEventListener('beforeunload', onBeforeUnload);
     document.addEventListener('click', onClickCapture, true);
     return () => {
       window.removeEventListener('scroll', onScroll);
+      // P0.3 — the handler used to be an inline arrow, so it could never be
+      // removed: every mount leaked a listener writing to sessionStorage.
+      window.removeEventListener('beforeunload', onBeforeUnload);
       document.removeEventListener('click', onClickCapture, true);
     };
   }, []);
@@ -348,12 +352,27 @@ const IntelligentFeed = ({ limit = PAGE_SIZE, country }) => {
       )}
 
       {!loading && items.length === 0 && !error && (
-        <div style={{
+        <div data-testid="intelligent-feed-empty" style={{
           padding: '2rem 1.5rem', textAlign: 'center', borderRadius: 16,
           background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)',
           color: 'rgba(11,31,58,0.6)', fontSize: '0.9rem',
         }}>
-          Aún no hay contenido para tu región. Volvé a intentarlo en unos minutos.
+          <div style={{ fontWeight: 700, color: NAVY, marginBottom: '0.35rem' }}>
+            Descubre contenido que te inspire a participar.
+          </div>
+          <div style={{ fontSize: '0.82rem', marginBottom: '0.9rem' }}>
+            Aún no hay contenido para tu región. Explora la comunidad o las empresas mientras tanto.
+          </div>
+          <div style={{ display: 'flex', gap: '0.55rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a href="/comunidad" data-testid="intelligent-feed-empty-community"
+              style={{ padding: '0.55rem 1rem', borderRadius: 100, background: NAVY, color: '#FFFFFF', fontWeight: 700, fontSize: '0.78rem', textDecoration: 'none' }}>
+              Ver comunidad
+            </a>
+            <a href="/empresas" data-testid="intelligent-feed-empty-companies"
+              style={{ padding: '0.55rem 1rem', borderRadius: 100, background: '#FFFFFF', color: NAVY, fontWeight: 700, fontSize: '0.78rem', textDecoration: 'none', border: '1px solid rgba(11,31,58,0.15)' }}>
+              Explorar empresas
+            </a>
+          </div>
         </div>
       )}
     </div>

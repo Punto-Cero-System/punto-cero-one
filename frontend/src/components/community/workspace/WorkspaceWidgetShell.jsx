@@ -14,7 +14,7 @@ const NAVY = '#0B1F3A';
 const Shell = ({ id, title, editing, collapsed, onToggleEnabled, onToggleCollapse, children }) => {
   if (!editing) {
     if (collapsed) return null;
-    return <>{children}</>;
+    return children;
   }
   return (
     <motion.div

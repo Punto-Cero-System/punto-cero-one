@@ -1,9 +1,14 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';import EmptyState from '../components/EmptyState';import { Link } from 'react-router-dom';
+
+
 import { motion } from 'framer-motion';
 import { Users, Plus, X, Send, Shield, Check } from 'lucide-react';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 import { groupsService } from '../services/feedService';
+// OMEGA B2 — integración con el Social Graph: el mismo FollowButton genérico
+// que ya usan company/hashtag, con entity_type="group". No hay servicio nuevo.
+import FollowButton from '../components/community/FollowButton';
 
 const CommunityPage = () => {
   const { user } = useCommunityAuth();
@@ -134,18 +139,37 @@ const CommunityPage = () => {
                     Unirme al grupo
                   </button>
                 )}
+                {/* OMEGA B2 — seguir es una relación del grafo (`follows`,
+                    entity_type="group"), distinta de ser miembro. Reutiliza el
+                    botón genérico: sin colección nueva, sin contador y sin
+                    regla duplicada — la autoridad sigue siendo el servidor
+                    (group_permissions). El `toggle` ya detiene la propagación
+                    para no abrir el detalle de la tarjeta. */}
+                <FollowButton entityType="group" entityId={g.id} size="sm"
+                  testid={`group-follow-${g.id}`} />
               </div>
+              {g.privacy === 'private' && (
+                <div data-testid={`group-follow-hint-${g.id}`}
+                  style={{ fontSize: '0.68rem', color: 'rgba(11,31,58,0.55)' }}>
+                  Seguir el grupo no da acceso a él: solo los miembros participan.
+                </div>
+              )}
             </div>
           </motion.article>
         ))}
       </div>
 
       {groups.length === 0 && (
-        <div data-testid="community-empty" style={{
-          padding: '2rem', textAlign: 'center', borderRadius: 16,
-          background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)',
-          color: 'rgba(11,31,58,0.6)', fontSize: '0.9rem',
-        }}>Aún no hay grupos en esta categoría. ¡Sé el primero en crear uno!</div>
+        <EmptyState
+          testid="community-empty"
+          icon="groups"
+          title="Todavía no hay grupos en esta categoría"
+          why="Los grupos son donde la comunidad se organiza por interés. El primero que abra uno le da nombre a la conversación."
+          actions={[
+            { label: 'Crear el primer grupo', kind: 'primary', onClick: () => setCreatorOpen(true), testid: 'community-empty-cta-create' },
+            { label: 'Ver toda la comunidad', to: '/comunidad', testid: 'community-empty-cta-all' },
+          ]}
+        />
       )}
 
       {creatorOpen && (
@@ -205,7 +229,7 @@ const GroupCreator = ({ categories, onClose, onCreated }) => {
             <div style={{ fontSize: '0.65rem', letterSpacing: '0.2em', color: '#00A277', fontWeight: 700 }}>NUEVO GRUPO</div>
             <h3 style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.25rem', color: NAVY, margin: '0.15rem 0 0' }}>Crea tu comunidad</h3>
           </div>
-          <button type="button" onClick={onClose} data-testid="group-creator-close"
+          <button type="button" onClick={onClose} data-testid="group-creator-close" aria-label="Cerrar"
             style={{ background: 'transparent', border: 'none', color: 'rgba(11,31,58,0.5)', cursor: 'pointer' }}><X size={18} /></button>
         </div>
         <Field label="Nombre"><input value={form.name} data-testid="group-creator-name" onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} style={inp} required minLength={2} /></Field>
@@ -228,6 +252,10 @@ const GroupDetail = ({ groupId, onClose, onChanged }) => {
   const [posts, setPosts] = useState([]);
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
+  // OMEGA B3 — el servidor puede rechazar la salida (409: el grupo necesita al
+  // menos un administrador). Se muestra su mensaje; la regla vive en el backend,
+  // aquí no se decide nada.
+  const [leaveError, setLeaveError] = useState('');
   const { user } = useCommunityAuth();
   const isAuthed = !!user && typeof user === 'object';
 
@@ -243,7 +271,19 @@ const GroupDetail = ({ groupId, onClose, onChanged }) => {
   useEffect(() => { reload().catch(() => {}); }, [reload]);
 
   const join = async () => { await groupsService.join(groupId); await reload(); onChanged?.(); };
-  const leave = async () => { await groupsService.leave(groupId); await reload(); onChanged?.(); };
+  const leave = async () => {
+    // OMEGA B3 — el backend rechaza (409) que un grupo se quede sin
+    // administrador. Se muestra el detalle del servidor en vez de fallar en
+    // silencio: `groupsService` propaga `detail` en el mensaje del error.
+    try {
+      await groupsService.leave(groupId);
+      setLeaveError('');
+      await reload();
+      onChanged?.();
+    } catch (e) {
+      setLeaveError(e?.message || 'No se pudo salir del grupo');
+    }
+  };
   const publish = async (e) => {
     e.preventDefault();
     if (!body.trim() || busy) return;
@@ -273,7 +313,7 @@ const GroupDetail = ({ groupId, onClose, onChanged }) => {
               {group.members_count} miembros · {group.posts_count} publicaciones · {group.privacy === 'private' ? 'Privado' : 'Público'}
             </div>
           </div>
-          <button onClick={onClose} data-testid="group-detail-close" style={{ background: 'transparent', border: 'none', color: 'rgba(11,31,58,0.5)', cursor: 'pointer' }}><X size={18} /></button>
+          <button onClick={onClose} data-testid="group-detail-close" aria-label="Cerrar" style={{ background: 'transparent', border: 'none', color: 'rgba(11,31,58,0.5)', cursor: 'pointer' }}><X size={18} /></button>
         </div>
         {group.description && <p style={{ marginTop: '0.85rem', fontSize: '0.88rem', color: 'rgba(11,31,58,0.78)', lineHeight: 1.5 }}>{group.description}</p>}
         {group.rules && (
@@ -287,18 +327,66 @@ const GroupDetail = ({ groupId, onClose, onChanged }) => {
           ) : (
             <button onClick={isAuthed ? join : () => window.location.assign('/join')} data-testid="group-detail-join" style={{ padding: '0.5rem 1rem', borderRadius: 100, background: NAVY, color: '#FFFFFF', border: 'none', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>{isAuthed ? 'Unirme al grupo' : 'Unirse para participar'}</button>
           )}
+          {/* OMEGA B2 — el detalle ofrece el mismo Social Graph, sin duplicar
+              la lógica de membresía ni de permisos. */}
+          <FollowButton entityType="group" entityId={group.id} size="sm"
+            testid={`group-detail-follow-${group.id}`} />
         </div>
+        {group.privacy === 'private' && (
+          <div data-testid="group-detail-follow-hint"
+            style={{ marginTop: '0.5rem', fontSize: '0.72rem', color: 'rgba(11,31,58,0.55)' }}>
+            Seguir el grupo no da acceso a él: solo los miembros participan.
+          </div>
+        )}
+        {leaveError && (
+          <div data-testid="group-detail-leave-error"
+            style={{ marginTop: '0.5rem', color: '#B91C1C', fontSize: '0.78rem' }}>
+            {leaveError}
+          </div>
+        )}
 
         {group.is_member && (
           <form onSubmit={publish} style={{ marginTop: '1rem', display: 'flex', gap: 8 }}>
             <input value={body} onChange={(e) => setBody(e.target.value)} data-testid="group-detail-post-input" placeholder="Publica algo al grupo…" style={inp} />
-            <button type="submit" disabled={!body.trim() || busy} data-testid="group-detail-post-submit" style={{ padding: '0.55rem 0.85rem', borderRadius: 100, background: NAVY, color: '#FFFFFF', border: 'none', cursor: body.trim() ? 'pointer' : 'not-allowed' }}><Send size={13} /></button>
+            <button type="submit" disabled={!body.trim() || busy} data-testid="group-detail-post-submit" aria-label="Publicar" style={{ padding: '0.55rem 0.85rem', borderRadius: 100, background: NAVY, color: '#FFFFFF', border: 'none', cursor: body.trim() ? 'pointer' : 'not-allowed' }}><Send size={13} /></button>
           </form>
         )}
 
         <div style={{ marginTop: '1rem' }}>
           <div style={{ fontSize: '0.62rem', letterSpacing: '0.22em', fontWeight: 700, color: 'rgba(11,31,58,0.5)', marginBottom: '0.5rem' }}>PUBLICACIONES</div>
-          {posts.length === 0 && <div style={{ padding: '0.85rem', fontSize: '0.82rem', color: 'rgba(11,31,58,0.55)' }}>Aún no hay publicaciones en este grupo.</div>}
+          {posts.length === 0 && (
+
+            <div data-testid="group-posts-empty" style={{
+
+              padding: '1.25rem', textAlign: 'center', borderRadius: 14,
+
+              border: '1px dashed rgba(11,31,58,0.12)', background: 'rgba(11,31,58,0.02)',
+
+            }}>
+
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: NAVY }}>
+
+                Este grupo aún no tiene publicaciones
+
+              </div>
+
+              <div style={{ fontSize: '0.78rem', color: 'rgba(11,31,58,0.55)', margin: '0.35rem auto 0.75rem', maxWidth: 340 }}>
+
+                Publica tu punto cero y da el primer paso de la conversación.
+
+              </div>
+
+              <Link to="/" data-testid="group-posts-empty-cta" style={{
+
+                display: 'inline-flex', padding: '0.45rem 0.95rem', borderRadius: 100,
+
+                background: '#00C896', color: NAVY, fontSize: '0.76rem', fontWeight: 800, textDecoration: 'none',
+
+              }}>Ir al feed y publicar</Link>
+
+            </div>
+
+          )}
           {posts.map((p) => (
             <div key={p.id} data-testid={`group-post-${p.id}`} style={{ display: 'flex', gap: 10, padding: '0.7rem 0', borderBottom: '1px solid rgba(11,31,58,0.06)' }}>
               {p.author?.picture ? <img src={p.author.picture} alt="" referrerPolicy="no-referrer" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />

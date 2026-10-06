@@ -1,0 +1,72 @@
+[
+  {
+    "key": "legal",
+    "status": "live",
+    "label": "Punto Cero Legal",
+    "route": "/workspace/legal",
+    "location": "internal"
+  },
+  {
+    "key": "medical",
+    "status": "declared",
+    "label": "Punto Cero Medical",
+    "route": "/workspace/medical",
+    "location": "internal"
+  },
+  {
+    "key": "odontologia",
+    "status": "declared",
+    "label": "Odontología",
+    "route": "/workspace/odontologia",
+    "location": "internal"
+  },
+  {
+    "key": "psicologia",
+    "status": "declared",
+    "label": "Psicología",
+    "route": "/workspace/psicologia",
+    "location": "internal"
+  },
+  {
+    "key": "enfermeria",
+    "status": "declared",
+    "label": "Enfermería",
+    "route": "/workspace/enfermeria",
+    "location": "internal"
+  },
+  {
+    "key": "finance",
+    "status": "declared",
+    "label": "Finanzas",
+    "route": "/workspace/finance",
+    "location": "internal"
+  },
+  {
+    "key": "accounting",
+    "status": "declared",
+    "label": "Contabilidad",
+    "route": "/workspace/accounting",
+    "location": "internal"
+  },
+  {
+    "key": "inmobiliaria",
+    "status": "declared",
+    "label": "Inmobiliaria",
+    "route": "/workspace/inmobiliaria",
+    "location": "internal"
+  },
+  {
+    "key": "empresa",
+    "status": "preview",
+    "label": "Punto Cero Empresa",
+    "route": "/workspace/empresa",
+    "location": "internal"
+  },
+  {
+    "key": "comunidad",
+    "status": "live",
+    "label": "Punto Cero One",
+    "route": "/",
+    "location": "external"
+  }
+]

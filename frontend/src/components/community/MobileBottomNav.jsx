@@ -3,18 +3,27 @@
  * Renders the primary navigation targets as icons + labels. Hidden on
  * larger screens via CSS. Uses `pc-bottom-nav-space` global class in
  * body to reserve safe area when the bar is visible.
+ *
+ * PUNTO 7 · C6 — La barra se DERIVA de `NAV_ITEMS` (la MISMA fuente de verdad
+ * que el header) en vez de declarar su propia lista. Antes eran dos arrays
+ * paralelos: la alineación Desktop/Móvil del Punto 4 dependía de que alguien
+ * recordara editar los dos a mano, y ya se había desincronizado (`/perfil`
+ * sólo existía aquí). Ahora el único destino extra que se conserva es
+ * "Perfil", que no es un módulo del ecosistema sino una cuenta de usuario —
+ * por eso vive aparte y no se cuela en `NAV_ITEMS`.
+ *
+ * Sin cambio de destinos ni de claves: los `data-testid` se conservan
+ * exactamente igual (`mobile-bottom-nav-<key>`).
  */
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import AppIcon from './AppIcon';
+import { NAV_ITEMS } from '../Header';
 
-const NAV = [
-  { key: 'home', label: 'Mi Espacio', to: '/', icon: 'home' },
-  { key: 'news', label: 'Noticias', to: '/noticias', icon: 'news' },
-  { key: 'jobs', label: 'Empleos', to: '/empleos', icon: 'jobs' },
-  { key: 'events', label: 'Eventos', to: '/eventos', icon: 'events' },
-  { key: 'me', label: 'Perfil', to: '/perfil', icon: 'community' },
-];
+/** Destino que no pertenece al ecosistema: el perfil del propio usuario. */
+const ACCOUNT_ITEM = { key: 'me', label: 'Perfil', to: '/perfil', icon: 'community' };
+
+const NAV = [...NAV_ITEMS, ACCOUNT_ITEM];
 
 const MobileBottomNav = () => (
   <>

@@ -16,8 +16,11 @@ const GOLD = '#D4AF37';
  * (not brand-heavy). Every item uses an AppIcon glyph for family consistency.
  * `to` = react-router path (real destination); `hash` optional legacy fragment
  * kept only for the mobile menu when the item stays on the homepage.
+ *
+ * NAV_ITEMS is exported so the Home discovery section renders the exact same
+ * modules as the header / mobile nav (single source of truth — no drift).
  */
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { key: 'home', label: 'Mi Espacio', to: '/', icon: 'home' },
   { key: 'news', label: 'Noticias', to: '/noticias', icon: 'news' },
   { key: 'video', label: 'Videos', to: '/videos', icon: 'video' },
@@ -31,8 +34,6 @@ const NAV_ITEMS = [
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useCommunityAuth();
   const isAuthed = !!user && typeof user === 'object';
@@ -226,7 +227,7 @@ const Header = () => {
                 boxShadow: '0 6px 18px rgba(0,200,150,0.35)',
               }}
             >
-              <LogIn size={14} /> Unirse
+              <LogIn size={14} /> Iniciar sesión
             </Link>
           )}
 
@@ -376,26 +377,6 @@ const NavItem = ({ item }) => {
     </Link>
   );
 };
-
-const IconAction = ({ icon, label, testid }) => (
-  <button
-    className="interactive"
-    aria-label={label}
-    data-testid={testid}
-    style={{
-      width: 38, height: 38, borderRadius: '50%',
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      color: '#FFFFFF', cursor: 'pointer',
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      transition: 'background 0.2s',
-    }}
-    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
-    onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-  >
-    {icon}
-  </button>
-);
 
 /**
  * (ConoceMenu se reubicó al LeftSidebar como accordion — Wave 12 Fase 5.)

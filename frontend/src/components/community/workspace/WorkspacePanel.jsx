@@ -53,13 +53,23 @@ const SortableItem = ({ id, editing, children }) => {
   );
 };
 
-const WorkspacePanel = ({ panel = 'left', editing = false, gap = '0.85rem', testid }) => {
+const WorkspacePanel = ({ panel = 'left', editing = false, gap = '0.85rem', testid, hideIds = [] }) => {
   const { workspace, isWidgetEnabled, isWidgetCollapsed, toggleWidget, toggleCollapse } = useWorkspace();
   const ids = workspace?.panels?.[panel] || [];
 
+  // `hideIds` lets a host promote a widget elsewhere on the page without
+  // rendering it twice (used by HomePage for the `feed` widget, which now has
+  // its own CommunityFeedSection). Three guarantees keep this inert elsewhere:
+  //   1. default is [] -> nothing is ever filtered for existing consumers.
+  //   2. it is IGNORED while `editing` -> the user can always drag the widget
+  //      back into this panel.
+  //   3. the widget is never removed from the registry or from the user's
+  //      saved workspace, only skipped at render time.
+  const visible = editing ? ids : ids.filter((id) => !hideIds.includes(id));
+
   const { setNodeRef, isOver } = useDroppable({ id: panel, disabled: !editing });
 
-  const sortableIds = ids.map((id) => `${panel}::${id}`);
+  const sortableIds = visible.map((id) => `${panel}::${id}`);
 
   const body = (
     <div
@@ -75,14 +85,14 @@ const WorkspacePanel = ({ panel = 'left', editing = false, gap = '0.85rem', test
         minHeight: editing ? 60 : undefined,
       }}
     >
-      {ids.length === 0 && editing && (
+      {visible.length === 0 && editing && (
         <div style={{
           padding: '1rem', textAlign: 'center', fontSize: '0.75rem',
           color: 'rgba(11,31,58,0.55)', background: 'rgba(11,31,58,0.03)',
           borderRadius: 12, border: '1px dashed rgba(11,31,58,0.15)',
         }}>Suelta aquí un widget para agregarlo al panel</div>
       )}
-      {ids.map((id) => {
+      {visible.map((id) => {
         const entry = getWidget(id);
         if (!entry) return null;
         const enabled = isWidgetEnabled(id);

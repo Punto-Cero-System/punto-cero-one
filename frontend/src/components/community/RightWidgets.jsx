@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, TrendingUp, Users } from 'lucide-react';
+import { ArrowUpRight, TrendingUp } from 'lucide-react';
 import AppIcon from './AppIcon';
 import {
   MarketsWidget, AIOfTheDayWidget, PollWidget,
@@ -167,16 +167,6 @@ const Widget = ({ title, icon, children }) => (
       {children}
     </div>
   </div>
-);
-
-const NewsRow = ({ title, hint }) => (
-  <a href="#news" style={{
-    display: 'block', padding: '0.4rem 0', textDecoration: 'none',
-    borderBottom: '1px solid rgba(11,31,58,0.05)',
-  }}>
-    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: NAVY, lineHeight: 1.35 }}>{title}</div>
-    <div style={{ fontSize: '0.68rem', color: 'rgba(11,31,58,0.5)', marginTop: '0.15rem' }}>{hint}</div>
-  </a>
 );
 
 const TrendRow = ({ n, label, meta }) => (

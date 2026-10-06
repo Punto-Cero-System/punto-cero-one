@@ -1,14 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import {
-  ArrowLeft, Globe, MapPin, Building2, ExternalLink, Check, Plus,
-  Edit3, Save, X, Linkedin, Instagram, Facebook, Twitter, Youtube, Music,
-} from 'lucide-react';
+import { Globe, MapPin, Building2, ExternalLink, Edit3, Save, X, Linkedin, Instagram, Facebook, Twitter, Youtube, Music } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import CompanyMediaManager from '../components/business/CompanyMediaManager';
 import CompanyRelated from '../components/business/CompanyRelated';
+import CompanyTrustBadge from '../components/business/CompanyTrustBadge';
 import FollowButton from '../components/community/FollowButton';
 import { companyService } from '../services/platformService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
@@ -42,11 +39,9 @@ const CompanyProfilePage = () => {
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [followBusy, setFollowBusy] = useState(false);
-
   const refetch = useCallback(async () => {
     try { setCompany(await companyService.get(id)); }
-    catch (e) { setError('No se pudo cargar la empresa'); }
+    catch { setError('No se pudo cargar la empresa'); }
   }, [id]);
 
   useEffect(() => {
@@ -60,23 +55,9 @@ const CompanyProfilePage = () => {
     try {
       const updated = await companyService.update(company.id, payload);
       setCompany((prev) => ({ ...prev, ...updated }));
-    } catch (e) {
+    } catch {
       // Fallback: refetch full doc
       refetch();
-    }
-  };
-
-  const toggleFollow = async () => {
-    if (!user || followBusy) return;
-    setFollowBusy(true);
-    try {
-      const method = company.my_following ? 'DELETE' : 'POST';
-      const res = await fetch(`${API}/api/companies/${company.id}/follow`, {
-        method, credentials: 'include',
-      });
-      if (res.ok) refetch();
-    } finally {
-      setFollowBusy(false);
     }
   };
 
@@ -178,6 +159,13 @@ const CompanyProfilePage = () => {
                     {company.tagline}
                   </div>
                 )}
+                {/* Trust state, named. The profile used to show NO trust signal at
+                    all, so a visitor arriving from a shared link or a search result
+                    could not tell a curated directory entry from a company
+                    registered minutes ago. */}
+                <div style={{ marginTop: '0.6rem' }}>
+                  <CompanyTrustBadge company={company} size="md" />
+                </div>
                 <div style={{ display: 'flex', gap: '0.85rem', marginTop: '0.6rem',
                               fontSize: '0.78rem', color: 'rgba(11,31,58,0.55)', flexWrap: 'wrap' }}>
                   {company.vertical && (
@@ -190,8 +178,8 @@ const CompanyProfilePage = () => {
                       <MapPin size={12} /> {[company.city, company.country].filter(Boolean).join(', ')}
                     </span>
                   )}
-                  {company.follower_count > 0 && (
-                    <span>{company.follower_count} seguidores</span>
+                  {company.followers_count > 0 && (
+                    <span>{company.followers_count} seguidores</span>
                   )}
                 </div>
               </div>
@@ -441,7 +429,7 @@ const EditableSocials = ({ company, canEdit, onSave }) => {
         </div>
       )}
       {canEdit && (
-        <button onClick={() => setEditing(true)} data-testid="socials-edit-btn"
+        <button onClick={() => setEditing(true)} data-testid="socials-edit-btn" aria-label="Editar redes sociales"
           style={{ position: 'absolute', top: 0, right: 0,
             width: 28, height: 28, borderRadius: '50%',
             background: 'rgba(11,31,58,0.06)', border: 'none', cursor: 'pointer',
@@ -477,11 +465,6 @@ const SkeletonCompany = () => (
   </div>
 );
 
-const primaryBtn = {
-  display: 'inline-flex', alignItems: 'center', gap: 5,
-  padding: '0.55rem 1.05rem', borderRadius: 100, cursor: 'pointer',
-  fontSize: '0.78rem', fontWeight: 700,
-};
 const ghostBtn = {
   display: 'inline-flex', alignItems: 'center', gap: 5, textDecoration: 'none',
   padding: '0.55rem 1.05rem', borderRadius: 100,

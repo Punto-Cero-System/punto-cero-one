@@ -32,6 +32,32 @@ MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = os.environ.get("DB_NAME", "test_database")
 
 
+def _load_admin_credentials():
+    """Credenciales del admin sembrado por server.py (fuente: backend/.env).
+
+    El servidor refresca el hash del admin desde ADMIN_PASSWORD en cada
+    arranque, así que el test debe leer el mismo valor en vez de hardcodearlo.
+    """
+    email = os.environ.get("ADMIN_EMAIL") or "admin@puntocerosystem.com"
+    password = os.environ.get("ADMIN_PASSWORD")
+    if not password:
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+        try:
+            with open(env_path, encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if line.startswith("ADMIN_EMAIL=") and not os.environ.get("ADMIN_EMAIL"):
+                        email = line.split("=", 1)[1].strip().strip('"').strip("'")
+                    elif line.startswith("ADMIN_PASSWORD="):
+                        password = line.split("=", 1)[1].strip().strip('"').strip("'")
+        except Exception:
+            pass
+    return email, password
+
+
+ADMIN_EMAIL, ADMIN_PASSWORD = _load_admin_credentials()
+
+
 @pytest.fixture(scope="module")
 def db():
     client = MongoClient(MONGO_URL)
@@ -190,7 +216,7 @@ class TestAdminRegression:
     def test_admin_login_still_works(self):
         r = requests.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "admin@puntocerosystem.com", "password": "PuntoCero2026Admin"},
+            json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
             timeout=15,
         )
         assert r.status_code == 200, r.text

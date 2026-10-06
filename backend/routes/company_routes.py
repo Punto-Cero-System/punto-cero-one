@@ -29,7 +29,8 @@ from services.analytics import record_event
 from services.notifications import dispatch as dispatch_notif
 from models_business import (
     CompanyCreate, CompanyUpdate, CompanyPublic, CompanyListResponse,
-    VerificationStatus, new_company_id, make_slug, new_follow_id,
+    VerificationStatus, VerificationSource, VerificationEvent,
+    VERIFICATION_HISTORY_CAP, new_company_id, make_slug, new_follow_id,
 )
 
 logger = logging.getLogger("punto-cero-api.companies")
@@ -63,6 +64,11 @@ async def _company_to_public(db, doc: dict, viewer: Optional[dict]) -> CompanyPu
                 if tm.get("user_id") == viewer["id"]:
                     my_role = tm.get("role", "member")
                     break
+    # Backwards compatibility: documents written before `origin` existed have no
+    # such field. Derive it from the flag that has always marked a curated
+    # directory entry, so no migration is required and nothing is overwritten.
+    doc = {**doc, "origin": doc.get("origin") or (
+        "directory" if doc.get("is_public_seed") else "member")}
     return CompanyPublic(**{
         **doc,
         "my_following": my_following,
@@ -87,7 +93,10 @@ async def create_company(
         "id": new_company_id(),
         "slug": slug,
         "owner_id": user["id"],
-        "verification": "unverified",
+        # A member-created company is "pending" (registered, awaiting a check),
+        # never "verified": nothing has been validated at this point.
+        "origin": "member",
+        "verification": "pending",
         "followers_count": 0, "posts_count": 0,
         "jobs_count": 0, "events_count": 0,
         "is_deleted": False,
@@ -256,7 +265,30 @@ async def toggle_follow(
 
 
 class VerificationUpdate(BaseModel):
+    """Admin-driven state change.
+
+    `source` is optional: omitting it is the same as `manual_review`, the only
+    process that exists today. It is typed as a Literal upstream, so a caller
+    cannot smuggle an arbitrary claim such as `"official_registry"`.
+    """
     status: VerificationStatus
+    source: Optional[VerificationSource] = "manual_review"
+
+
+async def _load_history(doc: dict) -> list[VerificationEvent]:
+    """Rehydrate the stored trail, tolerating documents written before it existed.
+
+    Entries whose shape we no longer recognise are dropped rather than raising —
+    losing one stale row must never block an admin from saving a verification.
+    """
+    raw = doc.get("verification_history") or []
+    out: list[VerificationEvent] = []
+    for item in raw:
+        try:
+            out.append(VerificationEvent(**item))
+        except Exception:
+            continue
+    return out
 
 
 @router.post("/{company_id}/verify")
@@ -266,8 +298,64 @@ async def set_verification(
     request: Request,
     admin: dict = Depends(require_admin),
 ):
+    """Change the verification state AND leave a signed, append-only record.
+
+    Three rules this enforces:
+      * A transition to `verified` stores who, when and by what means.
+      * Every transition — including `flagged` — appends to the history.
+      * A transition back to `unverified` does NOT erase what came before.
+        The trail is what makes a past "verified" defensible; the current
+        status is what the badge shows.
+    """
     db = request.app.state.db
     doc = await _find_company(db, company_id)
-    await db.companies.update_one({"id": doc["id"]},
-                                   {"$set": {"verification": payload.status, "updated_at": _now()}})
-    return {"ok": True, "status": payload.status}
+
+    now = _now()
+    # The admin is known because the route already depends on `require_admin`.
+    # No "system" sentinel: an unattributable entry means an unattributed
+    # review, and inventing one would forge an audit trail.
+    actor_id = admin.get("id")
+    actor_name = admin.get("name") or admin.get("email")
+
+    event = VerificationEvent(
+        status=payload.status,
+        by=actor_id,
+        by_name=actor_name,
+        at=now,
+        source=payload.source,
+    )
+
+    history = await _load_history(doc)
+    history.append(event)
+    # Cap from the END so the newest transitions survive a state churn.
+    if len(history) > VERIFICATION_HISTORY_CAP:
+        history = history[-VERIFICATION_HISTORY_CAP:]
+
+    update: dict = {
+        "verification": payload.status,
+        "verification_history": [e.model_dump() for e in history],
+        "updated_at": now,
+    }
+
+    # Only a real `verified` writes the headline accountability fields. Moving
+    # to `pending`, `flagged` or `unverified` leaves them untouched — they
+    # describe the last completed check, not the current workflow state, and
+    # clearing them on un-verify would destroy the very history we keep.
+    if payload.status == "verified":
+        update["verified_by"] = actor_id
+        update["verified_by_name"] = actor_name
+        update["verified_at"] = now
+        update["verification_source"] = payload.source
+
+    await db.companies.update_one({"id": doc["id"]}, {"$set": update})
+
+    return {
+        "ok": True,
+        "status": payload.status,
+        # New keys only; `ok`/`status` are unchanged so existing clients keep
+        # parsing this response exactly as before.
+        "verified_by": update.get("verified_by"),
+        "verified_at": update.get("verified_at"),
+        "verification_source": update.get("verification_source"),
+        "history_len": len(history),
+    }

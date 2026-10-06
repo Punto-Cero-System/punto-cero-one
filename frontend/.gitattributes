@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------------------
+# Finales de línea normalizados a LF (Fase Omega · Etapa 3 · Punto 4)
+#
+# El repositorio ya guarda los blobs en LF, pero el checkout con
+# core.autocrlf=true escribía CRLF en Windows: eso mezclaba EOL dentro de un
+# mismo archivo y hacía que `git status` marcara como modificados archivos cuyo
+# contenido era idéntico. `eol=lf` fija el comportamiento independientemente de
+# la configuración local de cada entorno.
+# ---------------------------------------------------------------------------
+* text=auto eol=lf
+
+# Fuentes e imagen: nunca se tocan
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.avif binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.mp4 binary
+*.webm binary
+
+# Texto del proyecto: siempre LF
+*.js text eol=lf
+*.jsx text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.svg text eol=lf

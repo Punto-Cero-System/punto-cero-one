@@ -15,7 +15,7 @@ jest.mock('../../contexts/CommunityAuthContext', () => ({
 }));
 
 // Import the modal directly (not lazy) for testing
-import WelcomeModal, { armWelcome } from '../community/WelcomeModal';
+import WelcomeModal from '../community/WelcomeModal';
 import { WELCOME_STORAGE_KEY } from '../community/welcomeArm';
 
 describe('WelcomeModal confetti gating', () => {

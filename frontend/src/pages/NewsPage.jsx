@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';import EmptyState from '../components/EmptyState';
+
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bookmark, Share2, ExternalLink, Newspaper, Rss, Sparkles, Clock } from 'lucide-react';
+import { Bookmark, Share2, ExternalLink, Rss, Sparkles, Clock } from 'lucide-react';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
 import { widgetsService } from '../services/widgetsService';
 
@@ -106,19 +107,16 @@ const NewsPage = () => {
       )}
 
       {!loading && items.length === 0 && (
-        <div style={{
-          background: '#FFFFFF', borderRadius: 20, padding: '3.5rem 2rem',
-          textAlign: 'center', border: '1px dashed rgba(11,31,58,0.15)',
-        }}>
-          <Newspaper size={38} color="rgba(11,31,58,0.35)" />
-          <div style={{ marginTop: '0.85rem', fontSize: '1.05rem', fontWeight: 700, color: NAVY,
-                        fontFamily: '"Space Grotesk", sans-serif' }}>
-            Sin noticias por ahora
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'rgba(11,31,58,0.55)' }}>
-            Configura más fuentes en <code>RSS_FEEDS</code> del backend.
-          </div>
-        </div>
+        <EmptyState
+          testid="news-empty"
+          icon="news"
+          title="Todavía no hay noticias cargadas"
+          why="Las noticias llegan de fuentes externas del ecosistema. Mientras tanto, la comunidad sigue publicando actividad en tiempo real."
+          actions={[
+            { label: 'Ver la comunidad', to: '/comunidad', kind: 'primary', testid: 'news-empty-cta-community' },
+            { label: 'Explorar empresas', to: '/empresas', testid: 'news-empty-cta-companies' },
+          ]}
+        />
       )}
     </CategoryPage>
   );

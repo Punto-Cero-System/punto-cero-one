@@ -33,6 +33,22 @@ from services.content_sources import (
 from services.growth import aggregator
 from services.growth.sources import COUNTRY_LABELS
 
+# OMEGA CARRIL A4.1 / B4.1 — el modelo de visibilidad del Feed, reutilizado.
+#
+# La regla está consolidada en `services/feed_visibility.py`: `_visibility_clause`
+# la traduce a una condición de Mongo y `_viewer_group_ids` resuelve los grupos
+# del viewer. Este endpoint era la fuga B2 porque leía `posts` con un
+# `{"status": "published"}` plano, sin ninguna de las dos.
+#
+# Se importa en vez de copiarse: las copias divergen, y una copia que se desvía
+# es exactamente la fuga. Hasta B4.1 se importaba de `routes.feed_routes`, lo que
+# obligaba a un `service` como `feed_engine` a depender de una RUTA. Con la
+# extracción la dependencia queda en un solo sentido: routes → services.
+# `_visibility_clause` es la MISMA función que usa `list_posts`, `search_routes` y
+# (en B4) `feed_engine`: todos los endpoints que leen `posts` coinciden por
+# construcción y no pueden separarse. El acceso queda acotado a estas dos llamadas.
+from services.feed_visibility import _visibility_clause, _viewer_group_ids
+
 logger = logging.getLogger("punto-cero-api.content_sources_api")
 
 router = APIRouter(prefix="/api/content-sources", tags=["content-sources"])
@@ -268,13 +284,27 @@ def _is_test_post(body: str | None) -> bool:
     return False
 
 
-async def _pool_user_posts(db, *, limit: int, skip: int = 0) -> list[dict]:
+async def _pool_user_posts(db, *, limit: int, skip: int = 0,
+                          viewer: Optional[dict] = None) -> list[dict]:
     # Pull a wider window (limit * 3) then filter out test artifacts client-side
     # so the informative pool ends up close to `limit`. We can't do the regex
     # entirely inside Mongo because the filter also excludes empty-body posts
     # unless they have an image_url.
+    #
+    # OMEGA CARRIL A4.1 — la visibilidad va EN LA QUERY, no en el bucle de Python.
+    # Es la misma razón que en `feed_routes.list_posts`: si se filtrara después,
+    # el pool se llenaría con posts invisibles y `offset` paginaría sobre huecos —
+    # el usuario vería posts saltados y el resultado NO coincidiría con el Feed.
+    # Integrada en la query, este endpoint devuelve exactamente el mismo
+    # conjunto que vería el viewer en `/api/feed/posts`.
     raw_limit = max(limit * 3, limit + 10)
-    cursor = db.posts.find({"status": "published"}, {"_id": 0}).sort("created_at", -1).skip(skip).limit(raw_limit)
+    query: dict = {"status": "published"}
+    vis_clause = _visibility_clause(await _viewer_group_ids(db, viewer))
+    if "$or" in vis_clause:
+        query["$or"] = vis_clause["$or"]
+    else:
+        query["visibility"] = vis_clause["visibility"]
+    cursor = db.posts.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(raw_limit)
     out: list[dict] = []
     async for p in cursor:
         body = p.get("body")
@@ -325,7 +355,21 @@ async def _pool_user_posts(db, *, limit: int, skip: int = 0) -> list[dict]:
 
 
 async def _pool_companies(db, *, country: Optional[str], limit: int, skip: int = 0) -> list[dict]:
-    q: dict = {"is_deleted": {"$ne": True}, "verification": {"$in": ["verified", "pending"]}}
+    # A company earns a slot in this pool by being either a curated directory
+    # entry OR a record that has been through verification. Directory entries
+    # are `origin: "directory"` + `verification: "unverified"`, so filtering on
+    # `verification` alone would silently drop the whole catalogue.
+    # `is_public_seed` is kept in the OR as the legacy marker for documents
+    # written before `origin` existed, so the pool is identical to before the
+    # origin/verification split.
+    q: dict = {
+        "is_deleted": {"$ne": True},
+        "$or": [
+            {"origin": "directory"},
+            {"is_public_seed": True},
+            {"verification": {"$in": ["verified", "pending"]}},
+        ],
+    }
     if country:
         q["country"] = country
     cursor = db.companies.find(q, {"_id": 0}).sort("updated_at", -1).skip(skip).limit(limit * 2)
@@ -460,7 +504,10 @@ async def mixed_feed(
     jobs = await _pool_growth(db, kind="job", country=resolved, limit=per_pool, skip=offset)
     events = await _pool_growth(db, kind="event", country=resolved, limit=per_pool, skip=offset)
     videos_dyn = await _pool_growth(db, kind="video", country=resolved, limit=per_pool, skip=offset)
-    user_posts = await _pool_user_posts(db, limit=per_pool, skip=offset)
+    # OMEGA CARRIL A4.1 — el viewer ya se resolvía aquí para el país; ahora también
+    # gobierna qué posts del pool son visibles. Es el MISMO viewer que la
+    # resolución de país, sin ninguna consulta extra.
+    user_posts = await _pool_user_posts(db, limit=per_pool, skip=offset, viewer=viewer)
     companies = await _pool_companies(db, country=resolved, limit=per_pool, skip=offset)
 
     # Fill curated pools where dynamic pool came back empty or short.

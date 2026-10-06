@@ -16,16 +16,22 @@ const _regionHeader = () => {
   } catch { return {}; }
 };
 
-const fj = (path, opts = {}) =>
-  fetch(`${API}${path}`, {
+const fj = (path, opts = {}) => {
+  // `FormData` bodies must NOT carry an explicit Content-Type: the browser has
+  // to generate the multipart boundary itself. Passing 'application/json' on a
+  // FormData upload makes the server fail to parse the part boundary.
+  const isFormData = typeof FormData !== 'undefined' && opts.body instanceof FormData;
+  const { headers: optHeaders, ...rest } = opts;
+  return fetch(`${API}${path}`, {
     credentials: 'include',
-    ...opts,
+    ...rest,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ..._regionHeader(),
-      ...(opts.headers || {}),
+      ...(optHeaders || {}),
     },
   });
+};
 
 const throwOnError = async (res) => {
   if (res.ok) return res.json();
@@ -66,6 +72,17 @@ export const feedService = {
   forYou: (limit = 20) => fj(`/api/feed/for-you?limit=${limit}`).then(throwOnError),
   report: (postId, reason) =>
     fj(`/api/feed/posts/${postId}/report`, { method: 'POST', body: JSON.stringify({ reason }) }).then(throwOnError),
+
+  /**
+   * Upload an image for a post. Goes through `fj` so the request carries the
+   * same X-Region-* headers as every other feed call — the composer used to
+   * `fetch` this endpoint directly and silently dropped them.
+   */
+  mediaUpload: (file) => {
+    const form = new FormData();
+    form.append('file', file);
+    return fj('/api/feed/media/upload', { method: 'POST', body: form }).then(throwOnError);
+  },
 };
 
 export const categoryService = {

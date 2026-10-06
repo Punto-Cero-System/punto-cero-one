@@ -43,7 +43,7 @@ const asAbsoluteMedia = (url) => {
 const ProfileCustomizePage = () => {
   const navigate = useNavigate();
   const { user } = useCommunityAuth();
-  const { prefs, update, reset, DEFAULTS } = useUIPreferences();
+  const { prefs, update, reset } = useUIPreferences();
   const [me, setMe] = useState(null);
   const [busySlot, setBusySlot] = useState(null); // 'picture' | 'cover' | null
   const [flash, setFlash] = useState('');

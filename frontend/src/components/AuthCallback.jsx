@@ -47,7 +47,7 @@ const AuthCallback = () => {
               armWelcome(exchanged.id);
             }
           }
-        } catch (err) {
+        } catch {
           // best-effort only
         }
         // clear the hash before navigating away

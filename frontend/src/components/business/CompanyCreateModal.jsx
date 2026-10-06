@@ -76,7 +76,7 @@ const CompanyCreateModal = ({ onClose, onCreated }) => {
                 Publica tu empresa en el ecosistema
               </h2>
             </div>
-            <button type="button" onClick={onClose} data-testid="company-create-close"
+            <button type="button" onClick={onClose} data-testid="company-create-close" aria-label="Cerrar"
               style={{ background: 'transparent', border: 'none', color: 'rgba(11,31,58,0.5)', cursor: 'pointer' }}>
               <X size={20} />
             </button>

@@ -1,0 +1,275 @@
+{
+  "contract_version": "D2.1",
+  "authority": "backend/services/workspace_registry.py",
+  "note": "Snapshot GENERADO desde el codigo por backend/scripts/generate_workspace_contract.py. No editar a mano. D2.1 congela el estado real, incluidas las divergencias: no las corrige. Un cambio aqui es una decision consciente, no un efecto colateral.",
+  "status_vocabulary": {
+    "backend": [
+      "live",
+      "preview",
+      "declared",
+      "deprecated"
+    ],
+    "frontend_workspace_spaces": [
+      "available",
+      "coming_soon",
+      "external"
+    ],
+    "backend_identity_core_mirror": [
+      "available",
+      "coming_soon",
+      "external"
+    ],
+    "nota": "Los vocabularios NO estan unificados y D2.1 no los unifica. Se documentan para que el contract test pueda reportar la divergencia en lugar de fallar en silencio. El espejo de `identity_core` comparte vocabulario con `workspaceSpaces.js` a proposito: son las dos caras del mismo catalogo de navegacion."
+  },
+  "backend": {
+    "source": "backend/services/workspace_registry.py",
+    "constant": "WORKSPACE_REGISTRY",
+    "workspaces": {
+      "legal": {
+        "space_key": "legal",
+        "status": "live",
+        "permission": "workspace.open.legal",
+        "route": "/workspace/legal",
+        "label": "Punto Cero Legal",
+        "core_id": "punto-cero-legal"
+      },
+      "medical": {
+        "space_key": "medical",
+        "status": "declared",
+        "permission": "workspace.open.medical",
+        "route": "/workspace/medical",
+        "label": "Punto Cero Medical",
+        "core_id": "punto-cero-legal"
+      },
+      "odontologia": {
+        "space_key": "odontologia",
+        "status": "declared",
+        "permission": "workspace.open.odontologia",
+        "route": "/workspace/odontologia",
+        "label": "Odontología",
+        "core_id": "punto-cero-legal"
+      },
+      "psicologia": {
+        "space_key": "psicologia",
+        "status": "declared",
+        "permission": "workspace.open.psicologia",
+        "route": "/workspace/psicologia",
+        "label": "Psicología",
+        "core_id": "punto-cero-legal"
+      },
+      "enfermeria": {
+        "space_key": "enfermeria",
+        "status": "declared",
+        "permission": "workspace.open.enfermeria",
+        "route": "/workspace/enfermeria",
+        "label": "Enfermería",
+        "core_id": "punto-cero-legal"
+      },
+      "finance": {
+        "space_key": "finance",
+        "status": "declared",
+        "permission": "workspace.open.finance",
+        "route": "/workspace/finance",
+        "label": "Finanzas",
+        "core_id": "punto-cero-legal"
+      },
+      "accounting": {
+        "space_key": "accounting",
+        "status": "declared",
+        "permission": "workspace.open.accounting",
+        "route": "/workspace/accounting",
+        "label": "Contabilidad",
+        "core_id": "punto-cero-legal"
+      },
+      "inmobiliaria": {
+        "space_key": "inmobiliaria",
+        "status": "declared",
+        "permission": "workspace.open.inmobiliaria",
+        "route": "/workspace/inmobiliaria",
+        "label": "Inmobiliaria",
+        "core_id": "punto-cero-legal"
+      },
+      "empresa": {
+        "space_key": "empresa",
+        "status": "preview",
+        "permission": "workspace.open.empresa",
+        "route": "/workspace/empresa",
+        "label": "Punto Cero Empresa",
+        "core_id": "punto-cero-legal"
+      },
+      "comunidad": {
+        "space_key": "comunidad",
+        "status": "live",
+        "permission": "workspace.open.comunidad",
+        "route": "/",
+        "label": "Punto Cero One",
+        "core_id": "punto-cero-legal"
+      }
+    }
+  },
+  "backend_mirror": {
+    "source": "backend/services/identity_core.py",
+    "constant": "SPACE_CATALOG",
+    "nota": "Cuarto catalogo. NO es la autoridad: es un espejo de navegacion y usa el vocabulario `available`/`coming_soon`/`external`, no el de lifecycle. Se congela aparte de `backend` a proposito, para que compararlo contra la autoridad sea una operacion explicita y no una mezcla accidental de dos cosas distintas.",
+    "workspaces": {
+      "legal": {
+        "key": "legal",
+        "status": "available",
+        "label": "Punto Cero Legal",
+        "vertical": "legal"
+      },
+      "medical": {
+        "key": "medical",
+        "status": "coming_soon",
+        "label": "Punto Cero Medical",
+        "vertical": "health"
+      },
+      "empresa": {
+        "key": "empresa",
+        "status": "coming_soon",
+        "label": "Punto Cero Empresa",
+        "vertical": "empresa"
+      },
+      "comunidad": {
+        "key": "comunidad",
+        "status": "external",
+        "label": "Punto Cero One",
+        "vertical": "one"
+      }
+    }
+  },
+  "frontend": {
+    "workspaceSpaces": {
+      "source": "frontend/src/config/workspaceSpaces.js",
+      "constant": "WORKSPACE_SPACES",
+      "workspaces": {
+        "legal": {
+          "key": "legal",
+          "status": "available",
+          "route": "/workspace/legal",
+          "label": "Legal"
+        },
+        "medical": {
+          "key": "medical",
+          "status": "coming_soon",
+          "route": "/workspace/medical",
+          "label": "Medical"
+        },
+        "empresa": {
+          "key": "empresa",
+          "status": "coming_soon",
+          "route": "/workspace/empresa",
+          "label": "Empresa"
+        },
+        "comunidad": {
+          "key": "comunidad",
+          "status": "external",
+          "route": "/join",
+          "label": "Comunidad One"
+        }
+      }
+    },
+    "workspaceCatalog": {
+      "source": "frontend/src/system/workspaceCatalog.js",
+      "constant": "WORKSPACE_CATALOG",
+      "workspaces": {
+        "legal": {
+          "key": "legal",
+          "status": "live",
+          "label": "Punto Cero Legal",
+          "availability": "open"
+        },
+        "medical": {
+          "key": "medical",
+          "status": "preview",
+          "label": "Punto Cero Medical",
+          "availability": "open"
+        },
+        "odontologia": {
+          "key": "odontologia",
+          "status": "declared",
+          "label": "Punto Cero Odontología",
+          "availability": "closed"
+        },
+        "psicologia": {
+          "key": "psicologia",
+          "status": "declared",
+          "label": "Punto Cero Psicología",
+          "availability": "closed"
+        },
+        "enfermeria": {
+          "key": "enfermeria",
+          "status": "declared",
+          "label": "Punto Cero Enfermería",
+          "availability": "closed"
+        },
+        "legacy": {
+          "key": "legacy",
+          "status": "deprecated",
+          "label": "Punto Cero Legacy",
+          "availability": "closed"
+        }
+      }
+    },
+    "workspaceRegistry": {
+      "source": "frontend/src/system/workspaceRegistry.js",
+      "constant": "workspaceRegistry.workspaces",
+      "workspaces": {
+        "legal": {
+          "key": "legal",
+          "status": "live",
+          "lifecycle": "live"
+        },
+        "medical": {
+          "key": "medical",
+          "status": "preview",
+          "lifecycle": "preview"
+        },
+        "odontologia": {
+          "key": "odontologia",
+          "status": "declared",
+          "lifecycle": "declared"
+        },
+        "psicologia": {
+          "key": "psicologia",
+          "status": "declared",
+          "lifecycle": "declared"
+        },
+        "enfermeria": {
+          "key": "enfermeria",
+          "status": "declared",
+          "lifecycle": "declared"
+        }
+      }
+    },
+    "systemEntryRules": {
+      "source": "frontend/src/system/systemEntryRules.js",
+      "constant": "WORKSPACE_ROUTES",
+      "workspaces": {
+        "legal": {
+          "key": "legal",
+          "route": "/workspace/legal"
+        },
+        "medical": {
+          "key": "medical",
+          "route": "/workspace/medical"
+        },
+        "empresa": {
+          "key": "empresa",
+          "route": "/workspace/empresa"
+        }
+      }
+    }
+  },
+  "excluded_from_contract": {
+    "campos": [
+      "emoji",
+      "description",
+      "presetId",
+      "accent",
+      "panels",
+      "copy"
+    ],
+    "motivo": "Metadata puramente visual o de layout. D2.1 NO la convierte en contrato: obligarla a coincidir entre backend y frontend seria contrato sobre algo sin valor de autorizacion."
+  }
+}

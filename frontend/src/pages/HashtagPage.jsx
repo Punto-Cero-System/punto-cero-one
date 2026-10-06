@@ -119,7 +119,7 @@ const HashtagPage = () => {
 
 const SkeletonPost = () => (
   <div style={{
-    background: '#FFFFFF', borderRadius: 16, height: 180,
+    borderRadius: 16, height: 180,
     border: '1px solid rgba(11,31,58,0.06)',
     background: 'linear-gradient(90deg,#eef1f7 0%,#f8f9fc 50%,#eef1f7 100%)',
     backgroundSize: '200% 100%', animation: 'pcSkel 1.4s ease-in-out infinite',

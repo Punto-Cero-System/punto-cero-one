@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';import { Link } from 'react-router-dom';
+
 import { motion } from 'framer-motion';
 import { MapPin, Briefcase, Send, Check, Bookmark } from 'lucide-react';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
@@ -23,7 +24,7 @@ const JobsPage = () => {
       const data = await jobService.list({ limit: 20, cursor: reset ? undefined : cursor });
       setItems((prev) => (reset ? data.items : [...prev, ...data.items]));
       setCursor(data.next_cursor); setHasMore(!!data.next_cursor);
-    } catch (e) { /* silent */ } finally { setLoading(false); }
+    } catch { /* silent */ } finally { setLoading(false); }
   }, [cursor]);
 
   // The initial load intentionally runs once on mount.
@@ -117,9 +118,51 @@ const JobsPage = () => {
 
       {loading && items.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(11,31,58,0.5)' }}>Cargando…</div>}
       {!loading && items.length === 0 && (
-        <div data-testid="jobs-empty" style={{ padding: '1.4rem', textAlign: 'center', borderRadius: 16, background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)', color: 'rgba(11,31,58,0.6)', fontSize: '0.9rem' }}>
-          Aún no hay vacantes del ecosistema. Mientras tanto, explora oportunidades en portales regionales de confianza:
+
+        <div data-testid="jobs-empty" style={{
+
+          padding: '1.4rem', borderRadius: 16, background: '#FFFFFF',
+
+          border: '1px dashed rgba(11,31,58,0.12)',
+
+        }}>
+
+          <div style={{ fontSize: '0.92rem', fontWeight: 700, color: NAVY }}>
+
+            Todavía no hay vacantes publicadas en el ecosistema
+
+          </div>
+
+          <div style={{ fontSize: '0.85rem', color: 'rgba(11,31,58,0.6)', margin: '0.35rem 0 0.85rem' }}>
+
+            Abajo tienes portales regionales de confianza. Estos son los próximos pasos:
+
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+
+            <Link to="/comunidad" data-testid="jobs-empty-cta-community" style={{
+
+              display: 'inline-flex', padding: '0.45rem 0.95rem', borderRadius: 100,
+
+              background: '#00C896', color: NAVY, fontSize: '0.76rem', fontWeight: 800, textDecoration: 'none',
+
+            }}>Ver la comunidad</Link>
+
+            <Link to="/empresas" data-testid="jobs-empty-cta-companies" style={{
+
+              display: 'inline-flex', padding: '0.45rem 0.95rem', borderRadius: 100,
+
+              border: '1px solid rgba(11,31,58,0.15)', color: NAVY, textDecoration: 'none',
+
+              fontSize: '0.76rem', fontWeight: 700,
+
+            }}>Explorar empresas</Link>
+
+          </div>
+
         </div>
+
       )}
 
       <ExternalSourcesSection

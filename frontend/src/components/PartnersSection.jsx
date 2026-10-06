@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Handshake, Zap, Globe, Code } from 'lucide-react';
+import { Handshake, Globe, Code } from 'lucide-react';
 
 const PartnersSection = () => {
   const sectionRef = useRef(null);

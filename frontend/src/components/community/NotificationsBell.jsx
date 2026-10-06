@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Check, X } from 'lucide-react';
+import { Bell, Check } from 'lucide-react';
 import { notificationService } from '../../services/coreServices';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
 import { useRealtime } from '../../contexts/RealtimeContext';
@@ -22,19 +22,37 @@ const NotificationsBell = () => {
   const navigate = useNavigate();
   const isAuthed = !!user && typeof user === 'object';
 
-  const load = useCallback(async () => {
+  const refresh = useCallback(async () => {
     if (!isAuthed) return;
     try {
       const data = await notificationService.list({ limit: 8 });
       setItems(data.items || []);
-      setUnread(data.unread || 0);
+      const serverUnread = typeof data.unread === 'number'
+        ? data.unread
+        : (data.items || []).filter((n) => !n.is_read).length;
+      setUnread(serverUnread);
     } catch { /* noop */ }
   }, [isAuthed]);
 
   useEffect(() => {
     if (!isAuthed) return;
-    load();
-  }, [isAuthed, load]);
+    refresh();
+  }, [isAuthed, refresh]);
+
+  // Refresh pending activity when the user returns to the community window.
+  useEffect(() => {
+    if (!isAuthed) return;
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [isAuthed, refresh]);
+
+  // Keep the bell badge in sync when NotificationsPage marks/reads elsewhere.
+  useEffect(() => {
+    if (!isAuthed) return;
+    const onSync = () => refresh();
+    window.addEventListener('pc:notifications-updated', onSync);
+    return () => window.removeEventListener('pc:notifications-updated', onSync);
+  }, [isAuthed, refresh]);
 
   // Live subscription: prepend every new notification and bump unread.
   useEffect(() => {
@@ -53,14 +71,17 @@ const NotificationsBell = () => {
   if (!isAuthed) return null;
 
   const markAllRead = async () => {
-    await notificationService.markAllRead();
-    setItems((p) => p.map((n) => ({ ...n, is_read: true })));
-    setUnread(0);
+    try {
+      await notificationService.markAllRead();
+      setItems((p) => p.map((n) => ({ ...n, is_read: true })));
+      setUnread(0);
+    } catch { /* noop */ }
   };
 
   const openItem = async (n) => {
     if (!n.is_read) {
-      try { await notificationService.markRead(n.id); } catch { /* noop */ }
+      try { await notificationService.markRead(n.id, false); } catch { /* noop */ }
+      setItems((p) => p.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
       setUnread((u) => Math.max(0, u - 1));
     }
     setOpen(false);
@@ -97,9 +118,18 @@ const NotificationsBell = () => {
                 </button>
               )}
             </div>
+            {unread > 0 && (
+              <div data-testid="notifications-pending-summary" role="status"
+                style={{ padding: '0.7rem 1rem', background: 'rgba(0,200,150,0.08)', color: '#FFFFFF', fontSize: '0.75rem' }}>
+                <strong>Tenemos novedades para ti</strong>
+                <div style={{ color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>
+                  Tienes {unread} {unread === 1 ? 'novedad' : 'novedades'} sin leer.
+                </div>
+              </div>
+            )}
             {items.length === 0 && (
-              <div data-testid="notifications-empty" style={{ padding: '2rem 1rem', textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem' }}>
-                No tienes notificaciones todavía.
+              <div data-testid="notifications-empty" style={{ padding: '2rem 1rem', textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem' }}>
+                No tienes novedades todavía. Sigue profesionales y empresas para recibir actualizaciones.
               </div>
             )}
             {items.map((n) => (

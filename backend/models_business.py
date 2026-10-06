@@ -25,12 +25,56 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 # ---------------------------------------------------------------------------
 # Shared enums
 # ---------------------------------------------------------------------------
+# `CompanyOrigin` answers WHERE the company came from.
+# `VerificationStatus` answers WHETHER its identity was actually checked.
+#
+# These are deliberately two different axes. Before this split, the curated
+# directory wrote `verification: "verified"`, which made a public reference
+# entry indistinguishable from a legally validated company. `origin` carries
+# the provenance; `verification` is reserved for a real identity check.
+CompanyOrigin = Literal["directory", "member"]
 VerificationStatus = Literal["unverified", "pending", "verified", "flagged"]
 JobModality = Literal["remote", "hybrid", "onsite", "unspecified"]
 JobEmployment = Literal["full_time", "part_time", "contract", "internship", "freelance"]
 ApplicationStatus = Literal["submitted", "reviewing", "interview", "offer", "hired", "rejected", "withdrawn"]
 EventModality = Literal["online", "in_person", "hybrid"]
 RsvpStatus = Literal["going", "interested", "cancelled"]
+
+# ── Verification traceability ───────────────────────────────────────────────
+# Every field of this mechanism is FLAT on the document on purpose. Nesting it
+# under `verification` would change that field's shape from a string to an
+# object, breaking the `$in` filter that feeds Discovery
+# (content_sources_routes), the equality filter of the admin panel
+# (admin_platform_routes) and the check in search_routes — plus every company
+# document already stored in Mongo. Nothing here changes those.
+#
+# `VerificationSource` is a Literal with a single value because exactly one
+# process exists today: a human admin reviewing by hand. Opening it to free
+# text would let anyone write "official_registry" over a guess, which is the
+# opposite of what this is for. Extending it is a one-line change when a real
+# external source lands.
+VerificationSource = Literal["manual_review"]
+
+
+class VerificationEvent(BaseModel):
+    """One immutable entry of a company's verification trail.
+
+    Append-only: entries are added, never rewritten. A transition away from
+    `verified` does not delete what happened — it records the new state beside
+    the old one, so history survives un-verification and un-flagging.
+    """
+    model_config = ConfigDict(extra="ignore")
+    status: VerificationStatus
+    by: Optional[str] = None
+    by_name: Optional[str] = None
+    at: str
+    source: Optional[VerificationSource] = None
+
+
+# Hard ceiling so a document can never grow without bound if an admin toggles
+# the state repeatedly. Keeps the newest entries; the most recent are the ones
+# a reader needs.
+VERIFICATION_HISTORY_CAP = 20
 
 
 def _uid(prefix: str) -> str:
@@ -132,7 +176,30 @@ class CompanyPublic(BaseModel):
     banner_url: Optional[str] = None
     cover_url: Optional[str] = None
     gallery: list[str] = []
+    # Provenance. Defaults to "member" so a company created before this field
+    # existed keeps behaving as a member-created record.
+    origin: CompanyOrigin = "member"
+    # Identity check. "verified" is reserved for a real, documented check
+    # against an official source — it is NOT implied by being in the directory.
     verification: VerificationStatus = "unverified"
+    # ── Verification traceability ────────────────────────────────────────────
+    # `verification` alone answers "what state is this in?" but not "on whose
+    # authority?". These flat fields keep that answer. They are deliberately
+    # NOT nested inside `verification`: that field is a plain string queried
+    # with `$in`/equality by Discovery, the admin filter and search, and nesting
+    # it would break every one of those plus all existing documents.
+    #
+    # All Optional with a null default ON PURPOSE: a company verified before
+    # this existed has no record of who did it, and inventing one ("system",
+    # a backdated timestamp) would fabricate an audit trail. Null means
+    # "no human check on record", which is the honest value.
+    verified_by: Optional[str] = None
+    verified_by_name: Optional[str] = None
+    verified_at: Optional[str] = None
+    verification_source: Optional[VerificationSource] = None
+    # Append-only trail of every state change, newest last, capped in the
+    # route so a single document can never grow without bound.
+    verification_history: list[VerificationEvent] = Field(default_factory=list)
     followers_count: int = 0
     posts_count: int = 0
     jobs_count: int = 0

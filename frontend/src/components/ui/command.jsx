@@ -33,7 +33,9 @@ const CommandDialog = ({
 }
 
 const CommandInput = React.forwardRef(({ className, ...props }, ref) => (
-  <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
+  // El atributo marker de cmdk se conserva via spread: es un gancho de CSS del
+  // propio cmdk, no una prop de React (de otro modo react/no-unknown-property lo marca).
+  <div className="flex items-center border-b px-3" {...{ 'cmdk-input-wrapper': '' }}>
     <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
     <CommandPrimitive.Input
       ref={ref}

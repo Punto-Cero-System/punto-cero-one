@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, ArrowLeft, Sparkles, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import BrandMark from '../components/BrandMark';
@@ -7,6 +7,16 @@ import { AUTH_PROVIDERS, authService } from '../services/authService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 import { useAuth } from '../contexts/AuthContext';
 import { armWelcome } from '../components/community/welcomeArm';
+// ── Identity Core + OneEntry ────────────────────────────────────────────
+// El login ORIGINAL de One es el único punto de autenticacion de Punto Cero
+// System. These son los mismos modulos que vivian dentro de SystemEntry.jsx:
+// reubicados aqui, sin duplicar logica y sin pantalla intermedia.
+import { resolveEntryPath } from '../system/systemEntryRules';
+import { fetchEntitlements } from '../system/accessBridgeClient';
+import { resolveAccessShell, resolvePostLoginEntry } from '../system/accessBridgeEntry';
+import { getSessionState, hydrateSession, launchVertical } from '../system/sessionManager';
+import { resolveWorkspaceDestination } from '../system/workspaceOrchestrator';
+import { activateWorkspace } from '../system/workspaceActivation';
 
 const NAVY = '#0B1F3A';
 
@@ -73,6 +83,19 @@ const JoinPage = () => {
       .catch(() => { /* keep fallback */ });
   }, []);
 
+  // Deep-link de recuperación: /login?… y /join?modo=forgot abren la pestaña
+  // "Correo" directamente en modo recuperación. Sin esto, quien llega desde
+  // la otra puerta de entrada tiene que adivinar dos clics.
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('modo') === 'forgot') {
+      setTab('email');
+      setMode('forgot');
+    }
+    // Solo al montar: cambiar el query después no debe reescribir el formulario.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const flash = (msg, kind = 'ok') => {
     if (kind === 'ok') { setNotice(msg); setError(''); setTimeout(() => setNotice(''), 4500); }
     else { setError(msg); setNotice(''); setTimeout(() => setError(''), 5000); }
@@ -106,10 +129,87 @@ const JoinPage = () => {
         navigate('/', { replace: true });
       } else if (mode === 'login') {
         const authenticated = await login(email.trim().toLowerCase(), password);
-        const recommended = authenticated?.systemContext?.workspaces?.recommended;
-        if (recommended === 'legal') navigate('/workspace/legal', { replace: true });
-        else if (recommended === 'medical') navigate('/workspace/medical', { replace: true });
-        else navigate('/', { replace: true });
+        // Destino: manda el Identity Core. No se pregunta nada al usuario.
+        // ── IDENTITY CORE ──────────────────────────────────────────────────
+        // `login()` ya devolvio el system-context del nucleo:
+        // POST /api/auth/login → GET /api/auth/me → GET /api/auth/system-context.
+        const context = authenticated?.systemContext || null;
+        const currentUser = authenticated || null;
+        const sessionToken = localStorage.getItem('pcl_token');
+
+        // Permisos del Access Bridge. Tolerante a fallo: un backend sin
+        // /api/access/* no debe impedir el acceso al destino del sistema.
+        let rights = [];
+        // FASE 4.4: distingue 'Bridge respondio y no autorizo' de
+        // 'Bridge no respondio'. Ambos dan rights=[] pero solo el primero
+        // bloquea el acceso (D1).
+        let entitlementsResolved = false;
+        try {
+          rights = (await fetchEntitlements()).entitlements || [];
+          entitlementsResolved = true;
+        } catch {
+          rights = [];
+          entitlementsResolved = false;
+        }
+
+        // ── ONEENTRY ───────────────────────────────────────────────────────
+        // Misma cadena que SystemEntry.jsx:64-92, reubicada aqui para que este
+        // login sea el único punto de entrada. No pregunta nada al usuario:
+        // no hay selector de Comunidad/Workspace.
+        await hydrateSession({ user: currentUser, token: sessionToken, entitlements: rights });
+        const session = getSessionState();
+        const activeOrganization = context?.activeOrganization || context?.active_organization;
+
+        const decision = resolveWorkspaceDestination({
+          entitlements: rights,
+          registry: session.workspaces,
+          systemContext: context,
+          activeOrganization,
+          availableWorkspaces: context?.workspaces?.available,
+        });
+        const activation = activateWorkspace(decision, {
+          registry: session.workspaces,
+          entitlements: rights,
+          systemContext: context,
+          activeOrganization,
+          userContext: currentUser,
+        });
+
+        if (activation.activated && decision.launchMode === 'workspace') {
+          const launchUrl = await launchVertical(activation.workspaceKey, {
+            entry_host: window.location.host,
+          });
+          // El Session Manager ya redirigio a la vertical externa.
+          if (launchUrl) return;
+          // FASE 4.4: si el Bridge no autoriza espacios, `path` es null
+          // (usuario suspendido). En ese caso no se navega a ningun shell.
+          const shell = resolveAccessShell(context, rights, currentUser);
+          if (shell.path) navigate(shell.path, { replace: true });
+          return;
+        }
+        if (activation.activated) {
+          const activatedContext = {
+            ...context,
+            workspaces: { ...context?.workspaces, recommended: activation.target },
+          };
+          navigate(resolveEntryPath(activatedContext), { replace: true });
+          return;
+        }
+
+        // ── WORKSPACE CORRESPONDIENTE ───────────────────────────────────────
+        // FASE 4.4: la decision vive en UNA sola funcion
+        // (`resolvePostLoginEntry`, en system/accessBridgeEntry.js). Este
+        // archivo ya no reimplementa el destino ni lo deduce del `role`.
+        // FASE 4.4: decision única en `resolvePostLoginEntry`.
+        // `resolveEntryPath` (Identity Core) aporta la ruta especifica de la
+        // vertical; la navegacion se decide por entitlements, nunca por `role`.
+        const entry = resolvePostLoginEntry(context, rights, currentUser, {
+          entitlementsResolved,
+          fallbackPath: resolveEntryPath(context),
+        });
+        if (entry) navigate(entry, { replace: true });
+        
+        
       } else if (mode === 'forgot') {
         const r = await authService.forgotPassword({ email: email.trim() });
         flash(r.message || 'Si el email existe, enviamos un enlace de recuperación.');

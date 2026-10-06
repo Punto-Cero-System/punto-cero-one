@@ -1,6 +1,14 @@
 // craco.config.js
 const path = require("path");
-require("dotenv").config();
+const fs = require("fs");
+
+// Local developer overrides: .env.local (gitignored, absent in production)
+// must win over the committed .env. Because dotenv never overrides values that
+// are already present in process.env, .env.local has to be loaded first.
+const localEnvPath = path.resolve(__dirname, ".env.local");
+require("dotenv").config(
+  fs.existsSync(localEnvPath) ? { path: localEnvPath } : undefined,
+);
 
 // Check if we're in development/preview mode (not production build)
 // Craco sets NODE_ENV=development for start, NODE_ENV=production for build

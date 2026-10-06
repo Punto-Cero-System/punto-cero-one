@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';import EmptyState from '../components/EmptyState';
+
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Building2, Users, Briefcase, Calendar, MapPin, ExternalLink } from 'lucide-react';
@@ -195,10 +196,10 @@ const MarketplacePage = () => {
           {loading ? (
             <SkeletonGrid />
           ) : tab === 'professionals' ? (
-            <EmptyState title="Profesionales pronto"
+            <EmptyState testid="marketplace-empty" title="Profesionales pronto"
               body="Estamos preparando el directorio de profesionales verificados por país. Muy pronto podrás explorar perfiles filtrados por ubicación." />
           ) : activeItems.length === 0 ? (
-            <EmptyState title={`Aún sin ${TABS.find(x => x.key === tab).label.toLowerCase()} en ${country.name}`}
+            <EmptyState testid="marketplace-empty" title={`Aún sin ${TABS.find(x => x.key === tab).label.toLowerCase()} en ${country.name}`}
               body="Sé el primero: crea el contenido y abre la conversación con el ecosistema local." />
           ) : (
             <div style={{
@@ -307,19 +308,6 @@ const SkeletonGrid = () => (
         background-size: 200% 100%; animation: pcSkel 1.4s ease-in-out infinite; }
       @keyframes pcSkel { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     `}</style>
-  </div>
-);
-
-const EmptyState = ({ title, body }) => (
-  <div data-testid="marketplace-empty" style={{
-    background: '#FFFFFF', borderRadius: 22, padding: '4rem 2rem', textAlign: 'center',
-    border: '1px dashed rgba(11,31,58,0.15)',
-  }}>
-    <div style={{ fontSize: '2.4rem', marginBottom: '1rem' }}>🚀</div>
-    <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", sans-serif',
-                 color: NAVY, fontSize: '1.25rem', fontWeight: 700 }}>{title}</h3>
-    <p style={{ maxWidth: 480, margin: '0.75rem auto 0',
-                color: 'rgba(11,31,58,0.6)', lineHeight: 1.55, fontSize: '0.95rem' }}>{body}</p>
   </div>
 );
 

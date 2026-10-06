@@ -25,6 +25,7 @@ from pydantic import BaseModel
 
 from auth import require_admin
 from services.notifications import dispatch as dispatch_notif
+from services.activities import record as record_activity
 from services.feed_engine import build_for_you_feed
 from services.object_storage import get_storage, app_prefix, ObjectStorageError
 from models_feed import (
@@ -136,6 +137,24 @@ async def _dispatch_mentions(db, *, body: str, actor: dict, subject_id: str,
     ):
         if u["id"] == actor.get("id"):
             continue
+        # FASE 2.1 — Activity Layer: la mención es un hecho dirigido al
+        # mencionado. Se registra ANTES de notificar: un fallo del fan-out no
+        # debe borrar el hecho. Sin `publish()` — el productor es el único que
+        # notifica (regla R8, sin duplicados).
+        try:
+            await record_activity(
+                db,
+                kind="post.mentioned",
+                actor_id=actor.get("id") or "",
+                subject_type=subject_type,
+                subject_id=subject_id,
+                audience={"type": "user", "id": u["id"]},
+                visibility="private",
+                metadata={"excerpt": (body or "")[:140],
+                          "subject_url": subject_url or f"/?post={subject_id}"},
+            )
+        except Exception:
+            logger.debug("activity not recorded for mention %s", u.get("id"), exc_info=True)
         try:
             await dispatch_notif(
                 db, recipient_id=u["id"], kind="mention",
@@ -157,6 +176,140 @@ def _author_mini(user: dict) -> PostAuthorMini:
         picture=user.get("picture"),
         headline=user.get("headline"),
     )
+
+
+# ---------------------------------------------------------------------------
+# VISIBILITY — OMEGA CARRIL A2
+# ---------------------------------------------------------------------------
+# `visibility` se persistía desde siempre y se serializaba en la respuesta,
+# pero NINGUNA consulta de lectura lo usaba como condición: un post `members`
+# o `unlisted` era tan legible como uno `public` para cualquiera, incluido un
+# anónimo que acertara el id. Esto solo añade la condición que faltaba.
+#
+# LAS TRES REGLAS, y de dónde sale cada una
+# ------------------------------------------
+# public     → visible para cualquiera. No se filtra: es el comportamiento actual.
+# members    → solo quien pertenece al grupo o lo administra.
+#              Fuentes de autoridad, las mismas dos que ya usa F0.8
+#              (`services.group_permissions`): `group_members` para la
+#              pertenencia y `groups.admin_id` para la propiedad. Se consultan
+#              -por el mismo motivo- AMBAS, porque pueden divergir tras una
+#              futura transferencia de propiedad.
+#              NUNCA por ser follower: `follows` no se consulta aquí. Seguir un
+#              grupo da interés, no acceso, y una notification sí llega al
+#              seguidor; el contenido no.
+#              NUNCA por conocer el id: la condición va en la query, no después.
+# unlisted   → se conserva EXACTAMENTE la semántica vigente: hoy no restringe
+#              nada, así que hoy no restringe nada. Ver la nota de abajo.
+#
+# POR QUÉ NO SE USA `group_permissions.evaluate_access`
+# ----------------------------------------------------
+# Ese módulo autoriza el ACCESO A UN GRUPO (F0.8, `privacy=public|private`), no
+# la visibilidad de un post. Son cosas distintas: un grupo público con un post
+# `members` sigue siendo de solo-para-miembros. Reusar `evaluate_access` haría
+# que `privacy="public"` abriera el post, que es exactamente el bug que se
+# corrige. Aquí la regla es de post y solo ella decide.
+#
+# NOTA SOBRE `unlisted` (documentada, no improvisada)
+# ---------------------------------------------------
+# `PostVisibility` declara `unlisted`, pero el producto nunca le dio semántica:
+# el compositor publica siempre `public` (`FeedPostCard.jsx`), el grupo tiene su
+# propia colección `group_posts`, y ninguna lectura ha distinguido `unlisted` de
+# `public`. Fijar ahora un significado nuevo (p. ej. "sólo por enlace directo")
+# sería inventar producto dentro de una corrección de lectura. Por tanto `unlisted`
+# se comporta como hoy, y la ausencia de semántica queda anotada en vez de
+# resuelta por sorpresa. Decisión de producto pendiente, no de este carril.
+#
+# Posts `members` sin `group_id`
+# ------------------------------
+# La colección `posts` nunca ha guardado `group_id` (los posts de grupo viven en
+# `group_posts`, que es otra colección y otra ruta). Si algún documento llegara
+# con `members` sin grupo, no hay contra qué comprobar la pertenencia: se trata
+# como no visible, porque el otro extremo del criterio sería abrirlo a cualquiera,
+# que es la fuga que esta fase cierra.
+
+#: visibilities que NO restringen la lectura. `unlisted` entra aquí a propósito
+#: —ver la nota de arriba: su comportamiento actual es público.
+#:
+#: OMEGA B4.1 — las dos piezas del cálculo de visibilidad y las constantes que
+#: comparten se movieron a `services/feed_visibility.py` (la autoridad única),
+#: para que un `service` como `feed_engine` no tenga que importar una RUTA. El
+#: código es idéntico: no cambia ninguna condición de query.
+#:
+#: Se reimportan aquí, y no se usan qualified, por dos razones concretas:
+#:   · las llamadas de este archivo (`list_posts`, `get_post`, A3) siguen igual;
+#:   · el bloque de visibilidad de este archivo conserva su contenido, que es
+#:     justo lo que el test de A2 audita para asegurar que `follows` no se
+#:     consulta. Reexportar mantiene ese contrato sin duplicar la regla.
+from services.feed_visibility import (  # noqa: F401  (reexportados a propósito)
+    _UNRESTRICTED_VISIBILITIES,
+    _GROUP_SCOPED_VISIBILITY,
+    _viewer_group_ids,
+    _visibility_clause,
+)
+
+
+def _post_is_visible(post: dict, viewer_group_ids: set) -> bool:
+    """La misma regla en memoria, para la ruta de un solo post.
+
+    Espejo exacto de `_visibility_clause`: quien audite una debe poder leer la
+    otra. Un post `members` sin `group_id` no es visible para nadie, porque no
+    hay grupo contra el que comprobar la pertenencia.
+    """
+    visibility = post.get("visibility")
+    if visibility in _UNRESTRICTED_VISIBILITIES:
+        return True
+    if visibility != _GROUP_SCOPED_VISIBILITY:
+        # Valor fuera del vocabulario declarado: se trata como restringido.
+        return False
+    return bool(post.get("group_id")) and post["group_id"] in viewer_group_ids
+
+
+# ---------------------------------------------------------------------------
+# INTERACCIONES — OMEGA CARRIL A3
+# ---------------------------------------------------------------------------
+# Resuelve el post de una interacción y aplica la MISMA regla que A2, sin
+# escribirla otra vez. `add_comment`, `react_to_post`, `share_post`, `save_post`
+# y `register_view` solo comprobaban que el post existiera (o ni siquiera eso),
+# así que un post `members` era comentable, reactionable, guardable, compartible
+# y contable por cualquiera que acertara el id.
+#
+# POR QUÉ UN SOLO HELPER Y NO UNA COPIA POR RUTA
+# ----------------------------------------------
+# `_visibility_clause` (query) y `_post_is_visible` (memoria) son el par que A2
+# dejó explícitamente espejado. Este helper compone ese par; si cada ruta
+# escribiera su propio `if`, aparecería una tercera implementación que nadie
+# auditaría y volveríamos al bug de A2 en otra forma.
+#
+# `status: "published"` es el criterio que ya usaban `add_comment`,
+# `react_to_post` y `share_post`: esas tres conservan su 404 actual sin tocarlo.
+#
+# 404 Y NO 403 — la misma razón que en `get_post`: confirmar que el post existe
+# pero no es interactuable ya sería filtrar su existencia.
+#
+# ADVERTENCIA — LA PROYECCIÓN DEBE INCLUIR `visibility` Y `group_id`
+# ------------------------------------------------------------------
+# `_post_is_visible` lee esos dos campos. Un campo no proyectado se lee como
+# `None`, y `None` está en `_UNRESTRICTED_VISIBILITIES`: recortar la proyección
+# sin querer convertiría un post `members` en público. Por eso las proyecciones
+# parciales de las rutas de interacción los incluyen explícitamente.
+async def _load_visible_post(
+    db,
+    post_id: str,
+    viewer: Optional[dict],
+    *,
+    projection: Optional[dict] = None,
+) -> dict:
+    """Devuelve el post si el viewer puede leerlo; si no, responde 404."""
+    post = await db.posts.find_one(
+        {"id": post_id, "status": "published"},
+        {"_id": 0} if projection is None else projection,
+    )
+    if not post:
+        raise HTTPException(status_code=404, detail="Publicación no encontrada")
+    if not _post_is_visible(post, await _viewer_group_ids(db, viewer)):
+        raise HTTPException(status_code=404, detail="Publicación no encontrada")
+    return post
 
 
 async def _serialize_post(db, post: dict, viewer: Optional[dict]) -> PostPublic:
@@ -389,6 +542,15 @@ async def list_posts(
     if cursor:
         query["created_at"] = {"$lt": cursor}
 
+    # OMEGA CARRIL A2 — la condición de visibilidad que faltaba. Se fusiona con
+    # la query ya construida en lugar de envolverla: `query` no usa `$or` por
+    # su cuenta, y sobrescribirla tiraría los filtros de categoría/hashtag/etc.
+    vis_clause = _visibility_clause(await _viewer_group_ids(db, viewer))
+    if "$or" in vis_clause:
+        query["$or"] = vis_clause["$or"]
+    else:
+        query["visibility"] = vis_clause["visibility"]
+
     cursor_docs = db.posts.find(query, {"_id": 0}).sort("created_at", -1).limit((limit + 1) * 3)
     raw_docs = [d async for d in cursor_docs]
     # Hide test-artifact posts from anyone who isn't an admin. Same regex as
@@ -440,6 +602,12 @@ async def get_post(
             doc = await db.posts.find_one({"id": post_id}, {"_id": 0})
         if not doc:
             raise HTTPException(status_code=404, detail="Publicación no encontrada")
+    # OMEGA CARRIL A2 — misma regla que el listado. Se responde 404 y no 403:
+    # confirmar que un post existe pero no es legible ya sería filtrar su
+    # existencia, que es justo lo que `visibility` debe impedir.
+    viewer_groups = await _viewer_group_ids(db, viewer)
+    if not _post_is_visible(doc, viewer_groups):
+        raise HTTPException(status_code=404, detail="Publicación no encontrada")
     return await _serialize_post(db, doc, viewer)
 
 
@@ -474,9 +642,10 @@ async def add_comment(
 ):
     user = await _require_current_user(request, session_token, authorization)
     db = request.app.state.db
-    post = await db.posts.find_one({"id": post_id, "status": "published"}, {"_id": 0, "id": 1})
-    if not post:
-        raise HTTPException(status_code=404, detail="Publicación no encontrada")
+    # OMEGA CARRIL A3 — el mismo filtro que en el listado: antes bastaba con que
+    # el post existiera y estuviera publicado, así que se podía comentar un
+    # post `members` sin haberlo podido leer.
+    await _load_visible_post(db, post_id, user, projection={"_id": 0, "id": 1})
     doc = {
         "id": new_comment_id(),
         "post_id": post_id,
@@ -488,6 +657,25 @@ async def add_comment(
     await db.posts.update_one({"id": post_id}, {"$inc": {"counts.comments": 1}})
     # Notify author
     post_doc = await db.posts.find_one({"id": post_id}, {"_id": 0, "author_id": 1})
+    # FASE 2.1 — Activity Layer: el comentario es un hecho y queda registrado
+    # en el log de hechos EN PARALELO a la notificación (sin `publish()`:
+    # notifica solo el productor, sin duplicados — regla R8). El comentario
+    # ya está insertado: si el log falla, la invariante vive en el call site.
+    if post_doc and post_doc.get("author_id"):
+        try:
+            await record_activity(
+                db,
+                kind="post.commented",
+                actor_id=user["id"],
+                subject_type="post",
+                subject_id=post_id,
+                audience={"type": "user", "id": post_doc["author_id"]},
+                visibility="private",
+                metadata={"excerpt": doc["body"][:140],
+                          "subject_url": f"/?post={post_id}"},
+            )
+        except Exception:
+            logger.debug("activity not recorded for comment %s", post_id, exc_info=True)
     if post_doc and post_doc.get("author_id") != user["id"]:
         await dispatch_notif(
             db, recipient_id=post_doc["author_id"], kind="comment",
@@ -512,9 +700,21 @@ async def add_comment(
 async def list_comments(
     post_id: str,
     request: Request,
+    session_token: Optional[str] = Cookie(default=None),
+    authorization: Optional[str] = Header(default=None),
     limit: int = Query(default=50, ge=1, le=200),
 ):
+    # OMEGA CARRIL A3 — esta ruta era la fuga más grande del carril: no
+    # recibía sesión, no comprobaba la visibilidad y devolvía el hilo entero de
+    # cualquier post `members` (y de cualquier post moderado) a quien acertara el
+    # id. Ahora recibe la sesión como el resto del módulo y delega en el mismo
+    # helper que las demás interacciones. Se añaden los dos parámetros de
+    # cookie/Authorization que ya usan las rutas vecinas: el contrato HTTP no
+    # cambia (ambos son opcionales y anónimos siguen leyendo los posts
+    # públicos), solo se deja de responder 200 con contenido restringido.
+    viewer = await _current_user_or_none(request, session_token, authorization)
     db = request.app.state.db
+    await _load_visible_post(db, post_id, viewer)
     cursor = db.post_comments.find({"post_id": post_id}, {"_id": 0}).sort("created_at", 1).limit(limit)
     docs = [d async for d in cursor]
     items = []
@@ -544,9 +744,11 @@ async def react_to_post(
     kind switches it (atomically updates counters and per-kind buckets)."""
     user = await _require_current_user(request, session_token, authorization)
     db = request.app.state.db
-    post = await db.posts.find_one({"id": post_id, "status": "published"}, {"_id": 0, "reactions_by_kind": 1})
-    if not post:
-        raise HTTPException(status_code=404, detail="Publicación no encontrada")
+    # OMEGA CARRIL A3 — además de la visibilidad, la proyección conserva
+    # `reactions_by_kind`, que era lo único que esta ruta leía del post.
+    await _load_visible_post(db, post_id, user,
+                            projection={"_id": 0, "reactions_by_kind": 1,
+                                        "visibility": 1, "group_id": 1})
 
     existing = await db.post_reactions.find_one({"post_id": post_id, "user_id": user["id"]}, {"_id": 0})
     now = _now()
@@ -585,6 +787,24 @@ async def react_to_post(
     )
     # Notify the post's author (except on self-reactions)
     post_doc = await db.posts.find_one({"id": post_id}, {"_id": 0, "author_id": 1, "body": 1})
+    # FASE 2.1 — Activity Layer: solo la reacción NUEVA llega aquí; el toggle-off
+    # y el cambio de tipo retornan arriba, así que no se registra ni se notifica
+    # (el hecho "reaccionó" ya no es cierto). Sin `publish()` — regla R8.
+    if post_doc and post_doc.get("author_id"):
+        try:
+            await record_activity(
+                db,
+                kind="post.reacted",
+                actor_id=user["id"],
+                subject_type="post",
+                subject_id=post_id,
+                audience={"type": "user", "id": post_doc["author_id"]},
+                visibility="private",
+                metadata={"excerpt": (post_doc.get("body") or "")[:140],
+                          "subject_url": f"/?post={post_id}"},
+            )
+        except Exception:
+            logger.debug("activity not recorded for reaction on %s", post_id, exc_info=True)
     if post_doc and post_doc.get("author_id") != user["id"]:
         await dispatch_notif(
             db, recipient_id=post_doc["author_id"], kind="reaction",
@@ -608,6 +828,11 @@ async def save_post(
 ):
     user = await _require_current_user(request, session_token, authorization)
     db = request.app.state.db
+    # OMEGA CARRIL A3 — `save_post` no consultaba `posts` en absoluto: guardaba
+    # e incrementaba `counts.saves` de cualquier id, existente o no. Ahora
+    # resuelve el post (404 si no existe o no es visible) y solo después toca el
+    # toggle, así que el contador tampoco se corrompe con ids inventados.
+    await _load_visible_post(db, post_id, user)
     existing = await db.post_saves.find_one({"post_id": post_id, "user_id": user["id"]}, {"_id": 0})
     if existing:
         await db.post_saves.delete_one({"post_id": post_id, "user_id": user["id"]})
@@ -638,9 +863,9 @@ async def share_post(
     """Records an intent to share. Anonymous OK — we still bump the counter."""
     viewer = await _current_user_or_none(request, session_token, authorization)
     db = request.app.state.db
-    post = await db.posts.find_one({"id": post_id, "status": "published"}, {"_id": 0, "id": 1})
-    if not post:
-        raise HTTPException(status_code=404, detail="Publicación no encontrada")
+    # OMEGA CARRIL A3 — el share sigue siendo anónimo-ok, pero el post que se
+    # comparte tiene que ser legible por quien lo comparte.
+    await _load_visible_post(db, post_id, viewer)
     await db.post_shares.insert_one({
         "id": new_share_id(),
         "post_id": post_id,
@@ -680,6 +905,10 @@ async def register_view(
     from pymongo.errors import DuplicateKeyError
     viewer = await _current_user_or_none(request, session_token, authorization)
     db = request.app.state.db
+    # OMEGA CARRIL A3 — el contador de vistas tampoco consultaba `posts`:
+    # inflaba `counts.views` de cualquier id, incluido inexistente o no legible.
+    # La deduplicación por `session_id` y el `DuplicateKeyError` quedan igual.
+    await _load_visible_post(db, post_id, viewer)
     try:
         await db.post_views.insert_one({
             "id": new_view_id(),

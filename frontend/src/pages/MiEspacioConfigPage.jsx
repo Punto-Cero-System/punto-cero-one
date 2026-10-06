@@ -9,7 +9,7 @@
  * All state is driven by WorkspaceContext; autosave persists to Mongo.
  * Anonymous users hit this page → we redirect them to /join.
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowUp, ArrowDown, RotateCcw, EyeOff, Eye, ChevronUp, ChevronDown } from 'lucide-react';
@@ -17,8 +17,13 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
-import { WORKSPACE_WIDGETS, getWidget, workspaceCategories } from '../services/workspaceRegistry';
+import { WORKSPACE_WIDGETS, getWidget } from '../services/workspaceRegistry';
 import { WORKSPACE_PRESETS } from '../services/workspacePresets';
+import { WORKSPACE_IDENTITIES } from '../config/workspaceIdentity';
+import {
+  TAXONOMY_GROUPS, GROUP_META, WIDGET_TAXONOMY,
+  labelsOf, recommendationsFor, PENDING_CAPABILITIES,
+} from '../config/workspaceTaxonomy';
 
 const NAVY = '#0B1F3A';
 const EMERALD = '#00C896';
@@ -34,8 +39,25 @@ const MiEspacioConfigPage = () => {
   const {
     workspace, isWidgetEnabled, isWidgetCollapsed,
     toggleWidget, toggleCollapse, moveWidget, reorderPanel, resetWorkspace,
-    applyPreset,
+    applyPreset, identity, applyIdentity,
   } = useWorkspace();
+
+  // Agrupamos por la taxonomia de NEGOCIO (5 familias) en lugar de la
+  // categoria tecnica del registro. El registro NO se modifica: sus
+  // categorias tecnicas siguen visibles como etiqueta en cada widget.
+  const cats = useMemo(() => {
+    const byFamily = {};
+    WORKSPACE_WIDGETS.forEach((w) => {
+      const fam = WIDGET_TAXONOMY[w.id]?.group || 'otros';
+      (byFamily[fam] = byFamily[fam] || []).push(w);
+    });
+    return Object.keys(TAXONOMY_GROUPS)
+      .map((k) => [GROUP_META[k].label, byFamily[k] || []])
+      .filter(([, list]) => list.length > 0);
+  }, []);
+
+  // Widgets que la identidad activa recomienda (solo ids existentes).
+  const recommended = useMemo(() => new Set(recommendationsFor(identity)), [identity]);
 
   if (user === null) {
     // not authed — send them to /join
@@ -77,13 +99,35 @@ const MiEspacioConfigPage = () => {
     moveWidget(id, target);
   };
 
-  const cats = workspaceCategories();
-
   return (
     <>
       <Header />
       <main style={{ paddingTop: '58px', background: '#F4F6FB', minHeight: '100vh' }}>
         <div className="pc-config-wrap">
+        {/* Capacidades pedidas que aun NO tienen widget. No se crean aqui: */}
+        <div data-testid="pending-capabilities" style={{
+          background: 'rgba(245,158,11,0.07)',
+          border: '1px solid rgba(245,158,11,0.28)', borderRadius: 16,
+          padding: '0.9rem 1rem', margin: '1.25rem 0',
+        }}>
+          <div style={{ fontSize: '0.62rem', letterSpacing: '0.2em', fontWeight: 800, color: '#B45309', marginBottom: '0.4rem' }}>
+            PENDIENTES · SIN WIDGET TODAVIA
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'rgba(11,31,58,0.65)', marginBottom: '0.6rem' }}>
+            Estas capacidades se pidieron y aun no existen en el catálogo. No se crea ningún widget aquí:
+            quedan registradas para decisión de producto.
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.5rem' }}>
+            {PENDING_CAPABILITIES.map((c) => (
+              <div key={c.capability} data-testid={`pending-${c.capability.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                style={{ background: '#FFFFFF', border: '1px solid rgba(11,31,58,0.07)', borderRadius: 12, padding: '0.55rem 0.65rem' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: NAVY }}>{c.capability}</div>
+                <div style={{ fontSize: '0.63rem', color: 'rgba(11,31,58,0.5)', marginTop: 2 }}>{c.profile}</div>
+                <div style={{ fontSize: '0.66rem', color: 'rgba(11,31,58,0.65)', marginTop: 3 }}>{c.gap}</div>
+              </div>
+            ))}
+          </div>
+        </div>
           {/* Hero */}
           <motion.div
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -133,7 +177,75 @@ const MiEspacioConfigPage = () => {
               boxShadow: '0 4px 20px rgba(11,31,58,0.04)',
               padding: '1rem 1.1rem', marginBottom: '1.25rem',
             }}>
-            <div style={{
+
+              <div style={{
+                background: '#FFFFFF',
+                border: '1px solid rgba(11,31,58,0.06)',
+                boxShadow: '0 4px 20px rgba(11,31,58,0.04)',
+                padding: '1rem 1.1rem', marginBottom: '1.25rem',
+              }}>
+                <div style={{
+                  fontSize: '0.62rem', letterSpacing: '0.22em', fontWeight: 800,
+                  color: 'rgba(11,31,58,0.55)', marginBottom: '0.5rem',
+                }}>IDENTIDAD · MI ESPACIO</div>
+                <div style={{ fontSize: '0.72rem', color: 'rgba(11,31,58,0.6)', marginBottom: '0.85rem' }}>
+                  Un único Workspace que se adapta a tu identidad. Elige una para
+                  recomendar el orden inicial y los widgets; después personalízalo
+                  arrastrando y soltando.
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
+                  gap: '0.55rem',
+                }}>
+                  {WORKSPACE_IDENTITIES.map(({ key, label, Icon, accent, description }) => {
+                    const active = key === identity;
+                    return (
+                      <button key={key}
+                        type="button"
+                        onClick={() => applyIdentity(key)}
+                        data-testid={`config-identity-${key}`}
+                        aria-pressed={active}
+                        style={{
+                          textAlign: 'left', cursor: 'pointer',
+                          padding: '0.7rem 0.85rem', borderRadius: 14,
+                          background: active ? `${accent}1F` : `${accent}0F`,
+                          border: `1px solid ${active ? accent : `${accent}33`}`,
+                          color: NAVY,
+                          display: 'flex', gap: '0.65rem', alignItems: 'center',
+                        }}>
+                        <div style={{
+                          width: 38, height: 38, borderRadius: 10,
+                          background: `${accent}22`, display: 'flex',
+                          alignItems: 'center', justifyContent: 'center',
+                          color: accent, flexShrink: 0,
+                        }}>
+                          <Icon size={19} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{
+                            fontSize: '0.86rem', fontWeight: 800, color: NAVY,
+                            display: 'flex', alignItems: 'center', gap: '0.35rem',
+                          }}>
+                            {label}
+                            {active && (
+                              <span style={{
+                                fontSize: '0.55rem', letterSpacing: '0.12em', fontWeight: 800,
+                                color: accent, background: `${accent}1A`,
+                                padding: '2px 6px', borderRadius: 100,
+                              }}>ACTIVA</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '0.66rem', color: 'rgba(11,31,58,0.6)', marginTop: 2 }}>
+                            {description}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+<div style={{
               fontSize: '0.62rem', letterSpacing: '0.22em', fontWeight: 800,
               color: 'rgba(11,31,58,0.55)', marginBottom: '0.5rem',
             }}>PRESETS · PUNTO CERO</div>
@@ -259,6 +371,9 @@ const MiEspacioConfigPage = () => {
               fontSize: '0.62rem', letterSpacing: '0.22em', fontWeight: 800,
               color: 'rgba(11,31,58,0.55)', marginBottom: '1rem',
             }}>CATÁLOGO DE WIDGETS</div>
+  <div style={{ fontSize: '0.68rem', color: 'rgba(11,31,58,0.6)', marginTop: '-0.6rem', marginBottom: '1rem' }}>
+    {WORKSPACE_WIDGETS.length} widgets existentes, agrupados por familia. Las familias recomendadas de la identidad activa.
+  </div>
             {Object.entries(cats).map(([cat, list]) => (
               <div key={cat} style={{ marginBottom: '1.25rem' }}>
                 <div style={{
@@ -280,6 +395,22 @@ const MiEspacioConfigPage = () => {
                           border: `1px solid ${placed ? 'rgba(0,200,150,0.22)' : 'rgba(11,31,58,0.06)'}`,
                         }}>
                         <div style={{ fontSize: '0.82rem', fontWeight: 700, color: NAVY }}>{w.title}</div>
+                        <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', marginTop: 3 }}>
+                          {labelsOf(w.id).map((l) => (
+                            <span key={l} style={{
+                              fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.06em',
+                              color: 'rgba(11,31,58,0.5)', background: 'rgba(11,31,58,0.05)',
+                              padding: '1px 6px', borderRadius: 100,
+                            }}>{l}</span>
+                          ))}
+                          {recommended.has(w.id) && (
+                            <span data-testid={`catalog-recommended-${w.id}`} style={{
+                              fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.06em',
+                              color: EMERALD, background: 'rgba(0,200,150,0.12)',
+                              padding: '1px 6px', borderRadius: 100,
+                            }}>RECOMENDADO</span>
+                          )}
+                        </div>
                         <div style={{ fontSize: '0.66rem', color: 'rgba(11,31,58,0.55)', margin: '0.15rem 0 0.5rem' }}>
                           {w.description}
                         </div>

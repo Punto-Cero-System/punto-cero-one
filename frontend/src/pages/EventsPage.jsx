@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';import { Link } from 'react-router-dom';
+
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, Check } from 'lucide-react';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
@@ -20,7 +21,7 @@ const EventsPage = () => {
       const data = await eventService.list({ limit: 20, cursor: reset ? undefined : cursor });
       setItems((prev) => (reset ? data.items : [...prev, ...data.items]));
       setCursor(data.next_cursor); setHasMore(!!data.next_cursor);
-    } catch (e) { /* silent */ } finally { setLoading(false); }
+    } catch { /* silent */ } finally { setLoading(false); }
   }, [cursor]);
 
   // The initial load intentionally runs once on mount.
@@ -40,7 +41,7 @@ const EventsPage = () => {
       // Refresh counts from server for the affected event
       const fresh = await eventService.get(event.id);
       setItems((p) => p.map((e) => (e.id === event.id ? fresh : e)));
-    } catch (err) { /* silent */ }
+    } catch { /* silent */ }
   };
 
   const fmtDate = (iso) => {
@@ -114,9 +115,51 @@ const EventsPage = () => {
 
       {loading && items.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(11,31,58,0.5)' }}>Cargando…</div>}
       {!loading && items.length === 0 && (
-        <div data-testid="events-empty" style={{ padding: '1.4rem', textAlign: 'center', borderRadius: 16, background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)', color: 'rgba(11,31,58,0.6)', fontSize: '0.9rem' }}>
-          Aún no hay encuentros propios. Estos son eventos profesionales regionales para tu país:
+
+        <div data-testid="events-empty" style={{
+
+          padding: '1.4rem', borderRadius: 16, background: '#FFFFFF',
+
+          border: '1px dashed rgba(11,31,58,0.12)',
+
+        }}>
+
+          <div style={{ fontSize: '0.92rem', fontWeight: 700, color: NAVY }}>
+
+            Todavía no hay eventos propios del ecosistema
+
+          </div>
+
+          <div style={{ fontSize: '0.85rem', color: 'rgba(11,31,58,0.6)', margin: '0.35rem 0 0.85rem' }}>
+
+            Abajo tienes eventos profesionales de tu región. Estos son los próximos pasos:
+
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+
+            <Link to="/comunidad" data-testid="events-empty-cta-community" style={{
+
+              display: 'inline-flex', padding: '0.45rem 0.95rem', borderRadius: 100,
+
+              background: '#00C896', color: NAVY, fontSize: '0.76rem', fontWeight: 800, textDecoration: 'none',
+
+            }}>Ver la comunidad</Link>
+
+            <Link to="/empleos" data-testid="events-empty-cta-jobs" style={{
+
+              display: 'inline-flex', padding: '0.45rem 0.95rem', borderRadius: 100,
+
+              border: '1px solid rgba(11,31,58,0.15)', color: NAVY, textDecoration: 'none',
+
+              fontSize: '0.76rem', fontWeight: 700,
+
+            }}>Explorar oportunidades</Link>
+
+          </div>
+
         </div>
+
       )}
 
       <ExternalSourcesSection

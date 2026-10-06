@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { resolveEntryPath, resolveEntryFromAccess } from '../system/systemEntryRules';
+import { getSpace } from '../config/workspaceSpaces';
+import SpaceSelector from './SpaceSelector';
 
 /**
  * LoginCardOne — tarjeta de login PORTABLE con el diseño visual de Punto Cero One.
@@ -322,25 +325,68 @@ const LoginCardOne = ({ redirectTo, onSuccess, ...viewProps }) => {
   const { user, login, systemContext } = useAuth();
   const navigate = useNavigate();
 
-  const destinationFor = (context) => {
-    if (redirectTo) return redirectTo;
-    const recommended = context?.workspaces?.recommended;
-    if (recommended === 'legal') return '/workspace/legal';
-    if (recommended === 'medical') return '/workspace/medical';
-    return '/';
+  // Destino resuelto con la MISMA fuente de verdad que el login original de One
+  // (../system/systemEntryRules.js). SystemEntry ya no participa del flujo de
+  // autenticacion. aqui NO se hardcodea ningun workspace ni identidad.
+  const destinationFor = (context) => redirectTo || resolveEntryPath(context);
+
+  // FASE 3C: el destino se decide con el Identity Contract del Access Bridge
+  // (la misma entity_id que el backend usa para autorizar). Si el Bridge no
+  // responde, accessContext es null y se cae a la regla previa: la sesión
+  // NUNCA se cierra por un fallo de contexto.
+  const spacePath = (key) => {
+    const space = getSpace(key);
+    return space ? space.path : null;
+  };
+
+  const entryFromContract = (context) => {
+    if (!context) return null;
+    if (redirectTo) return { action: "redirect", path: redirectTo };
+    return resolveEntryFromAccess(context, spacePath);
+  };
+
+  const [pendingSpaces, setPendingSpaces] = useState(null);
+
+  const routeFromContract = (context, fallbackContext) => {
+    const entry = entryFromContract(context);
+    if (!entry) {
+      // Sin contrato (Bridge caido o token no valido): regla previa.
+      // Se usa el contexto recien devuelto por login() y, en su defecto, el
+      // que ya mantiene AuthContext. La sesión nunca se cierra aqui.
+      return destinationFor(fallbackContext || systemContext);
+    }
+    if (entry.action === "redirect" && entry.path) {
+      return entry.path;
+    }
+    // 0 o >1 espacios: se muestra el selector; no se navega ni se cierra sesión.
+    setPendingSpaces(entry.spaces);
+    return null;
+  };
+
+  const handleSpaceSelect = (key) => {
+    const path = spacePath(key);
+    if (path) {
+      setPendingSpaces(null);
+      navigate(path, { replace: true });
+    }
   };
 
   const handleSubmit = async (email, password) => {
     const result = await login(email, password);
-    if (typeof onSuccess === 'function') await onSuccess(result);
-    navigate(destinationFor(result?.systemContext), { replace: true });
+    if (typeof onSuccess === "function") await onSuccess(result);
+    const path = routeFromContract(result?.accessContext, result?.systemContext);
+    if (path) navigate(path, { replace: true });
     return result;
   };
+
+  if (pendingSpaces) {
+    return <SpaceSelector spaces={pendingSpaces} onSelect={handleSpaceSelect} />;
+  }
 
   return (
     <LoginCardOneView
       {...viewProps}
-      user={user && typeof user === 'object' ? user : null}
+      user={user && typeof user === "object" ? user : null}
       onSubmitCredentials={handleSubmit}
       onEnter={() => navigate(destinationFor(systemContext))}
     />

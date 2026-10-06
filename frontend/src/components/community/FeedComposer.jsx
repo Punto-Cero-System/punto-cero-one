@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Image, Send, X } from 'lucide-react';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
+import { feedService } from '../../services/feedService';
 
 const NAVY = '#0B1F3A';
-const EMERALD = '#00C896';
-const API = process.env.REACT_APP_BACKEND_URL;
 
 /**
  * FeedComposer — real publisher wired to the backend feed.
@@ -42,16 +41,7 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
     setImage({ url: null, previewUrl });
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch(`${API}/api/feed/media/upload`, {
-        method: 'POST', body: form, credentials: 'include',
-      });
-      if (!res.ok) {
-        const detail = (await res.json().catch(() => ({}))).detail || 'upload_failed';
-        throw new Error(detail);
-      }
-      const data = await res.json();
+      const data = await feedService.mediaUpload(file);
       setImage({ url: data.url, previewUrl });
     } catch (err) {
       setImage(null);
@@ -137,7 +127,7 @@ const FeedComposer = ({ onSubmit, categoryKey = null }) => {
         }}>
           <img src={image.previewUrl} alt="preview"
             style={{ width: '100%', maxHeight: 320, objectFit: 'cover', display: 'block' }} />
-          <button type="button" onClick={clearImage} data-testid="feed-composer-image-remove"
+          <button type="button" onClick={clearImage} data-testid="feed-composer-image-remove" aria-label="Quitar imagen"
             style={{
               position: 'absolute', top: 8, right: 8,
               width: 30, height: 30, borderRadius: '50%',

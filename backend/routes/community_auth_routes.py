@@ -23,6 +23,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, Cookie, Header
 from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
 from auth import hash_password, verify_password
+from services.identity_audit import record_event, sanitize
 from services.community_auth import (
     registry,
     AuthProviderError,
@@ -48,6 +49,17 @@ class SessionExchangeInput(BaseModel):
     model_config = ConfigDict(extra="ignore")
     provider: str = Field(default="google", min_length=2, max_length=40)
     session_id: str = Field(min_length=4, max_length=400)
+    # FASE 0.5 · control explícito de vinculación de credenciales.
+    # Por defecto False (fail-closed): sin esta confirmación, una colisión de
+    # email con una cuenta existente NO se enlaza y responde 409.
+    confirm_link: bool = Field(
+        default=False,
+        description=(
+            "Confirmación explícita del usuario para enlazar una credencial "
+            "OAuth a una cuenta preexistente con el mismo email. Sin ella, "
+            "la colisión devuelve identity_unresolved (409)."
+        ),
+    )
 
 
 class CommunityUserPublic(BaseModel):
@@ -119,55 +131,344 @@ def _extract_token(cookie_val: Optional[str], auth_header: Optional[str]) -> Opt
     return None
 
 
-async def _upsert_user_from_identity(db, identity: ProviderIdentity) -> dict:
-    """Idempotent: create by email, else merge provider link & refresh basic fields."""
-    existing = await db.users.find_one({"email": identity.email}, {"_id": 0})
+# ---------------------------------------------------------------------------
+# FASE 0.5 · Identity events (H-1 / H-2 / H-4)
+#
+# REGLA: `provider_user_id` representa la identidad EN EL PROVEEDOR. Nunca un
+# email. Para cuentas de password se genera un identificador opaco y estable,
+# porque `password` no es un proveedor federado y no emite un `sub`.
+#
+# NOTA DE ALCANCE: el buffer es EN MEMORIA y acotado. No es la auditoría
+# definitiva (Fase 0.6), que exigirá colección persistente append-only. Sirve
+# para observar colisiones sin introducir un contrato de datos nuevo.
+# ---------------------------------------------------------------------------
+MAX_IDENTITY_EVENTS = 200
+_identity_events: list[dict] = []
+
+
+def _record_identity_event(kind: str, payload: dict) -> None:
+    # FASE 0.8 · El log y el buffer en memoria son un sumidero de PII tan real
+    # como la colección. Este buffer nació en FASE 0.5 sin enmascarar y escribía
+    # el correo completo en el log de aplicación, que suele ser más accesible
+    # que la base (CI, agregadores). Se le aplica el mismo `mask_email`.
+    safe = sanitize(payload)
+    event = {"kind": kind, "at": _now_iso(), **safe}
+    _identity_events.append(event)
+    if len(_identity_events) > MAX_IDENTITY_EVENTS:
+        del _identity_events[: len(_identity_events) - MAX_IDENTITY_EVENTS]
+    logger.warning("identity_event %s %s", kind, safe)
+
+
+# FASE 0.6 · Puente hacia la auditoría persistente.
+#
+# `_record_identity_event` sigue igual: buffer en memoria + log, para no
+# cambiar el comportamiento observado en FASE 0.5. Aquí se AÑADE la escritura
+# persistente, y se hace a prova de fallos: si la auditoría no está disponible,
+# el login continúa. Auditar es importante, pero razonable es una sesión.
+async def _audit(db, event_type: str, **payload) -> None:
+    try:
+        await record_event(db, event_type, **payload)
+    except Exception as exc:  # la auditoría nunca debe tumbar la autenticación
+        logger.warning("identity_audit_write_failed %s: %s", event_type, exc)
+
+
+def _new_password_credential_id() -> str:
+    """Identidad estable y opaca para la credencial `password`.
+
+    No es un secreto y no autentica nada: solo evita que el email ocupe el
+    campo `provider_user_id`, que pertenece al proveedor.
+    """
+    return f"pwd_{uuid.uuid4().hex}"
+
+
+def _is_federated_provider(provider: str) -> bool:
+    """`password` no es federado: no tiene `sub` del proveedor."""
+    return str(provider or "").lower() != "password"
+
+
+def _looks_like_email(value: str) -> bool:
+    return bool(value) and "@" in str(value)
+
+
+def _password_credential_id(user: dict) -> str:
+    """
+    H-2 · Devuelve el `provider_user_id` de la credencial `password`.
+
+    Reutiliza el existente si es válido (no es un email). Para cuentas cuyo
+    registro heredó el email como `provider_user_id`, emite uno nuevo y
+    descarta el email: la migración se hace en el mismo `$set` que el login.
+    """
+    for link in (user.get("auth_providers") or []):
+        if str(link.get("provider") or "").lower() == "password":
+            current = link.get("provider_user_id")
+            if current and not _looks_like_email(str(current)):
+                return str(current)
+            break
+    return _new_password_credential_id()
+
+
+async def _identity_unresolved(
+    db, reason: str, detail: dict, profile_reference: Optional[str] = None
+) -> HTTPException:
+    """409 estable. El mensaje es para humanos; `code` es el contrato."""
+    _record_identity_event("identity_unresolved", {"reason": reason, **detail})
+    await _audit(
+        db,
+        "profile.link_rejected",
+        source=detail.get("provider"),
+        profile_reference=profile_reference,
+        rule_applied=f"H-1:{reason}",
+        evidence=dict(detail),
+    )
+    return HTTPException(
+        status_code=409,
+        detail={
+            "code": "identity_unresolved",
+            "reason": reason,
+            "message": (
+                "Existe una cuenta con este correo y no podemos confirmar que "
+                "sea la misma persona. Inicia sesión con tu método original y "
+                "confirma la vinculación desde tu perfil."
+            ),
+        },
+    )
+
+
+async def check_email_collision(db, email: str, provider: str) -> Optional[dict]:
+    """
+    H-1 · DETECTA y CLASIFICA una coincidencia de email. NUNCA decide identidad.
+
+    Devuelve None si no hay colisión, o un dict con:
+        existing_user_id, email_verified, existing_providers, collision_type
+
+    collision_type:
+        same_provider_link → el mismo (provider, provider_user_id) ya está
+                             enlazado. NO es colisión: es el mismo perfil.
+        password_account   → existe una cuenta de password con ese email.
+        other_provider     → existe una cuenta creada con otro proveedor.
+    """
+    if not email:
+        return None
+    existing = await db.users.find_one(
+        {"email": email},
+        {"_id": 0, "id": 1, "email_verified": 1, "auth_providers": 1},
+    )
+    if not existing:
+        return None
+
+    existing_providers = existing.get("auth_providers") or []
+    has_same_provider = any(
+        str(p.get("provider") or "").lower() == str(provider or "").lower()
+        for p in existing_providers
+    )
+    has_password = any(
+        str(p.get("provider") or "").lower() == "password" for p in existing_providers
+    )
+
+    if has_same_provider:
+        collision_type = "same_provider_link"
+    elif has_password:
+        collision_type = "password_account"
+    else:
+        collision_type = "other_provider"
+
+    _record_identity_event(
+        "email_collision",
+        {
+            "email": email,
+            "incoming_provider": provider,
+            "existing_user_id": existing.get("id"),
+            "email_verified": bool(existing.get("email_verified")),
+            "collision_type": collision_type,
+        },
+    )
+    await _audit(
+        db,
+        "email_collision.detected",
+        source=provider,
+        profile_reference=existing.get("id"),
+        rule_applied="H-1:email-no-es-clave-de-identidad",
+        evidence={
+            "email": email,
+            "incoming_provider": provider,
+            "email_verified": bool(existing.get("email_verified")),
+            "collision_type": collision_type,
+            "existing_providers": [
+                p.get("provider") for p in existing_providers if p.get("provider")
+            ],
+        },
+    )
+    return {
+        "existing_user_id": existing.get("id"),
+        "email_verified": bool(existing.get("email_verified")),
+        "existing_providers": existing_providers,
+        "collision_type": collision_type,
+    }
+
+
+async def _upsert_user_from_identity(
+    db, identity: ProviderIdentity, confirm_link: bool = False
+) -> dict:
+    """
+    FASE 0.5 · H-1 cerrado.
+
+    REGLA: EMAIL MATCH ≠ IDENTITY MATCH.
+
+    Orden de búsqueda:
+      1. (provider, provider_user_id) → única clave que demuestra identidad.
+      2. email → SOLO para detectar y clasificar la colisión. Nunca para fusionar.
+
+    Sin coincidencia de proveedor y sin colisión de email → alta limpia.
+    Con colisión de email se exigen las TRES condiciones: email_verified=True en
+    la cuenta existente, provider federado con `sub` real, y confirmación
+    explícita del usuario. Si falta cualquiera → 409 identity_unresolved.
+    """
     now = _now_iso()
     link = {
         "provider": identity.provider,
         "provider_user_id": identity.provider_user_id,
         "linked_at": now,
     }
-    if not existing:
-        user_id = f"user_{uuid.uuid4().hex[:12]}"
-        doc = {
-            "id": user_id,
-            "email": identity.email,
-            "name": identity.name,
-            "role": "member",
-            "picture": identity.picture,
-            "country": None,
-            "language": None,
-            "headline": None,
-            "auth_providers": [link],
-            "email_verified": True,  # Social providers already verified this email.
-            "email_verified_at": now,
-            "created_at": now,
+
+    # 1) Clave de identidad real: el par (provider, provider_user_id).
+    existing = await db.users.find_one(
+        {
+            "auth_providers": {
+                "$elemMatch": {
+                    "provider": identity.provider,
+                    "provider_user_id": identity.provider_user_id,
+                }
+            }
+        },
+        {"_id": 0},
+    )
+    if existing:
+        update = {
+            "name": existing.get("name") or identity.name,
+            "picture": existing.get("picture") or identity.picture,
             "last_login_at": now,
         }
-        await db.users.insert_one(doc)
-        # Fire-and-forget welcome email (soft-fails if provider not configured).
-        try:
-            from services.email import send_welcome
-            await send_welcome(identity.email, identity.name)
-        except Exception:
-            pass
-        return doc
+        await db.users.update_one({"id": existing["id"]}, {"$set": update})
+        existing.update(update)
+        return existing
 
-    # merge
-    providers = existing.get("auth_providers") or []
-    if not any(p.get("provider") == identity.provider for p in providers):
-        providers.append(link)
-    update = {
-        "name": existing.get("name") or identity.name,
-        "picture": existing.get("picture") or identity.picture,
-        "auth_providers": providers,
+    # 2) El email deja de ser clave de identidad: solo detección de colisión.
+    collision = await check_email_collision(db, identity.email, identity.provider)
+    if collision:
+        if not collision["email_verified"]:
+            raise await _identity_unresolved(
+                db,
+                "email_no_verificado_en_cuenta_existente",
+                {"email": identity.email, "provider": identity.provider},
+                profile_reference=collision["existing_user_id"],
+            )
+        if not (
+            _is_federated_provider(identity.provider)
+            and identity.provider_user_id
+            and not _looks_like_email(identity.provider_user_id)
+        ):
+            raise await _identity_unresolved(
+                db,
+                "provider_sin_identidad_externa_real",
+                {"email": identity.email, "provider": identity.provider},
+                profile_reference=collision["existing_user_id"],
+            )
+        if not confirm_link:
+            raise await _identity_unresolved(
+                db,
+                "falta_confirmacion_explicita",
+                {"email": identity.email, "provider": identity.provider},
+                profile_reference=collision["existing_user_id"],
+            )
+        # Confirmado: enlace de credencial, NO fusión de identidad.
+        # FASE 0.7 · se registra la INTENCIÓN antes de materializar nada.
+        await _audit(
+            db,
+            "profile.link_requested",
+            source=identity.provider,
+            profile_reference=collision["existing_user_id"],
+            rule_applied="H-1:confirmacion-explicita",
+            evidence={
+                "collision_type": collision["collision_type"],
+                "confirmed_by_user": True,
+            },
+        )
+        user = await db.users.find_one(
+            {"id": collision["existing_user_id"]}, {"_id": 0}
+        )
+        if not user:
+            raise await _identity_unresolved(
+                db,
+                "cuenta_existente_desaparecio",
+                {"email": identity.email},
+                profile_reference=collision["existing_user_id"],
+            )
+        providers = _touch_provider_link(
+            user, identity.provider, identity.provider_user_id
+        )
+        update = {
+            "name": user.get("name") or identity.name,
+            "picture": user.get("picture") or identity.picture,
+            "auth_providers": providers,
+            "last_login_at": now,
+        }
+        await db.users.update_one({"id": user["id"]}, {"$set": update})
+        user.update(update)
+        _record_identity_event(
+            "credential_linked_with_confirmation",
+            {
+                "user_id": user["id"],
+                "provider": identity.provider,
+                "collision_type": collision["collision_type"],
+            },
+        )
+        await _audit(
+            db,
+            "profile.linked",
+            source=identity.provider,
+            profile_reference=user["id"],
+            rule_applied="H-1:confirmacion-explicita",
+            evidence={
+                "collision_type": collision["collision_type"],
+                "email_verified": collision["email_verified"],
+                "confirmed_by_user": True,
+            },
+        )
+        await _audit(
+            db,
+            "provider.attached",
+            source=identity.provider,
+            profile_reference=user["id"],
+            rule_applied="H-4:par-provider-provider_user_id",
+            evidence={"provider": identity.provider},
+        )
+        return user
+
+    # 3) Sin colisión: alta limpia.
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    doc = {
+        "id": user_id,
+        "email": identity.email,
+        "name": identity.name,
+        "role": "member",
+        "picture": identity.picture,
+        "country": None,
+        "language": None,
+        "headline": None,
+        "auth_providers": [link],
+        "email_verified": True,  # Social providers already verified this email.
+        "email_verified_at": now,
+        "created_at": now,
         "last_login_at": now,
     }
-    # Preserve admin/investor roles; only default to member on brand-new records.
-    await db.users.update_one({"id": existing["id"]}, {"$set": update})
-    existing.update(update)
-    return existing
+    await db.users.insert_one(doc)
+    # Fire-and-forget welcome email (soft-fails if provider not configured).
+    try:
+        from services.email import send_welcome
+        await send_welcome(identity.email, identity.name)
+    except Exception:
+        pass
+    return doc
 
 
 def _user_to_public(user: dict) -> CommunityUserPublic:
@@ -254,7 +555,9 @@ async def create_session(
         raise HTTPException(status_code=401, detail=str(e))
 
     db = request.app.state.db
-    user = await _upsert_user_from_identity(db, identity)
+    user = await _upsert_user_from_identity(
+        db, identity, confirm_link=payload.confirm_link
+    )
 
     # Prefer provider-issued session token when available for continuity;
     # otherwise mint our own — the client only sees the httpOnly cookie.
@@ -386,8 +689,22 @@ async def _issue_session_cookie(db, response: Response, user: dict, provider: st
 
 
 def _touch_provider_link(user: dict, provider: str, provider_user_id: str) -> list[dict]:
-    providers = user.get("auth_providers") or []
-    if not any(p.get("provider") == provider for p in providers):
+    """
+    FASE 0.5 · H-4 cerrado: compara el PAR (provider, provider_user_id).
+
+    Antes comparaba solo `provider`, de modo que `google+123456` y
+    `google+987654` se trataban como el mismo enlace y el segundo se
+    descartaba EN SILENCIO (vector de suplantación). Ahora son enlaces
+    distintos y ambos se conservan.
+
+    Nunca sobrescribe un enlace existente: si el par exacto ya está, no-op.
+    """
+    providers = list(user.get("auth_providers") or [])
+    if not any(
+        p.get("provider") == provider
+        and p.get("provider_user_id") == provider_user_id
+        for p in providers
+    ):
         providers.append({
             "provider": provider,
             "provider_user_id": provider_user_id,
@@ -415,7 +732,9 @@ async def register_email(
         if existing.get("password_hash"):
             raise HTTPException(status_code=409, detail="Ya existe una cuenta con este email. Inicia sesión.")
         # Otherwise, link password to a social-only account.
-        providers = _touch_provider_link(existing, "password", email)
+        providers = _touch_provider_link(
+            existing, "password", _password_credential_id(existing)
+        )
         await db.users.update_one(
             {"id": existing["id"]},
             {"$set": {
@@ -441,7 +760,9 @@ async def register_email(
             "email_verified": False,
             "auth_providers": [{
                 "provider": "password",
-                "provider_user_id": email,
+                # H-2: el email NUNCA ocupa provider_user_id. `password` no es
+                # un proveedor federado y no emite `sub`; se genera un id opaco.
+                "provider_user_id": _new_password_credential_id(),
                 "linked_at": now,
             }],
             "created_at": now,
@@ -509,7 +830,9 @@ async def login_email(
 
     # success — clear counter + touch provider link if missing
     await db.login_attempts.delete_one({"identifier": identifier})
-    providers = _touch_provider_link(user, "password", email)
+    providers = _touch_provider_link(
+        user, "password", _password_credential_id(user)
+    )
     await db.users.update_one(
         {"id": user["id"]},
         {"$set": {"last_login_at": _now_iso(), "auth_providers": providers}},
@@ -581,7 +904,9 @@ async def reset_password(
     if not user:
         raise HTTPException(status_code=400, detail="Usuario no encontrado")
 
-    providers = _touch_provider_link(user, "password", user["email"])
+    providers = _touch_provider_link(
+        user, "password", _password_credential_id(user)
+    )
     await db.users.update_one(
         {"id": user["id"]},
         {"$set": {

@@ -15,11 +15,7 @@
  *     clicks on the widget content when *not* editing.
  */
 import React, { useState } from 'react';
-import {
-  DndContext, PointerSensor, KeyboardSensor, TouchSensor,
-  useSensor, useSensors, closestCenter, closestCorners,
-  DragOverlay, defaultDropAnimationSideEffects,
-} from '@dnd-kit/core';
+import { DndContext, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, closestCorners, DragOverlay, defaultDropAnimationSideEffects } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
 import { useWorkspace } from '../../../contexts/WorkspaceContext';

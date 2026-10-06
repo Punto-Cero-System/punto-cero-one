@@ -1,11 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import {
-  LogOut, Filter, Search, RefreshCcw, Shield, Users, ArrowRight,
-  Clock, Loader, CheckCircle, XCircle, ChevronRight, ExternalLink, Mail, Building2, Globe2,
-  Sparkles, BarChart3, Presentation, Download, Eye, Timer,
-} from 'lucide-react';
+import { LogOut, Filter, Search, RefreshCcw, Shield, Users, ArrowRight, Clock, Loader, CheckCircle, XCircle, ChevronRight, ExternalLink, Mail, Building2, Globe2, Sparkles, Presentation, Download, Eye, Timer } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const CONTACT_TYPE_LABELS = {

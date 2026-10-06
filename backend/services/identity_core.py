@@ -23,11 +23,26 @@ from typing import Any, Dict, List, Optional, Tuple
 # (única fuente de verdad de navegación). Nota de mapeo: el nombre comercial
 # "Punto Cero One" corresponde a la key frontend `comunidad` (status external).
 #
-# FUENTE CANÓNICA TRANSITORIA V1: este espejo backend es la referencia del
-# servidor para calcular `workspaces`. Pendientes:
+# ESTE ES EL CUARTO CATALOGO. `ONE-SYSTEM-BOUNDARY.md` §2.bis declara que el
+# mismo catálogo de espacios está escrito cuatro veces: aquí, en
+# `services/workspace_registry.py` (la AUTORIDAD) y en dos catálogos del
+# frontend. Los cuatro congelan su estado real en
+# `docs/architecture/workspace_registry.contract.json`.
+#
+# NO es la autoridad y no debe aspirar a serlo: `workspace_registry.py` es quien
+# concede permisos. Este espejo alimenta `compute_workspaces()`, que solo pinta
+# el selector de navegación.
+#
+# Pendientes:
 #   - F13.2: evaluar migrar el catálogo completo al backend y deprecar el JS.
-#   - Agregar test de contrato frontend/backend que detecte divergencia de
-#     keys/estados (drift) entre ambos archivos.
+#
+# HECHO (D2.2-B.3-B): el test de contrato que esta nota pedia desde hace tiempo
+# ya existe, en `backend/tests/test_workspace_registry_contract.py`. No obliga a
+# que los status coincidan con el backend —no coinciden, y decidir eso es D2.2—
+# sino que este espejo siga siendo un espejo: sin keys huérfanas, con las mismas
+# keys que `workspaceSpaces.js`, y sin colar vocabulario de lifecycle
+# (`live`/`declared`…) donde solo tiene sentido el de navegación
+# (`available`/`coming_soon`/`external`).
 SPACE_CATALOG: List[Dict[str, Any]] = [
     {"key": "legal", "label": "Punto Cero Legal", "status": "available", "vertical": "legal"},
     {"key": "medical", "label": "Punto Cero Medical", "status": "coming_soon", "vertical": "health"},
@@ -128,7 +143,27 @@ def compute_account_type(organizations: List[Dict[str, Any]], verticals: List[st
 
 
 def _public_user(user: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    """Proyección segura del usuario (sin password_hash ni datos sensibles)."""
+    """Proyección segura del usuario (sin password_hash ni datos sensibles).
+
+    D1 — SYSTEM CORE HARDENING: `status` viaja aquí A PROPÓSITO.
+
+    Antes esta proyección lo descartaba, y `entitlement_service.entitlements_for_identity`
+    lee justamente `user["status"]` para aplicar el corte fail-closed. Con el
+    campo ausente, el estado llegaba como `None` → normalizado a "activo" → un
+    usuario `suspendido` recibía `workspace.open.comunidad` al recorrer la
+    cadena pública de este módulo. El corte ya existía y era correcto: faltaba
+    el dato. Es la misma clase de fallo que la brecha D1 original del Bridge
+    (la política existía, el dato se perdía en la frontera), en el otro sentido.
+
+    No es un dato sensible: describe la cuenta del propio solicitante, que ya
+    puede leer en `/api/auth/me`, y no revela nada de terceros. Mantenerlo aquí
+    permite además que la UI refleje la suspensión en vez de ofrecer espacios
+    que el backend le va a negar en la llamada siguiente.
+
+    Ausencia del campo en `users` (usuarios preexistentes) se sigue proyectando
+    como `None`: cada consumidor mantiene su compatibilidad "ausente → activo",
+    así que ningún usuario anterior pierde acceso.
+    """
     if not user:
         return {}
     return {
@@ -136,6 +171,7 @@ def _public_user(user: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         "email": user.get("email"),
         "name": user.get("name"),
         "picture": user.get("picture"),
+        "status": user.get("status"),
     }
 
 
@@ -223,11 +259,13 @@ async def resolve_identity(
     if jwt_id and community_id and jwt_id != community_id:
         raise IdentityConflictError(jwt_user_id=jwt_id, community_user_id=community_id)
 
-    sources: List[str] = []
-    if jwt_user:
-        sources.append("jwt")
-    if community_user:
-        sources.append("community")
+    # CONCEPTO 2 (ADR-IDENT-001): esto son Or?genes de SESION, no "source"
+    # de identidad. `source` nombra al Sistema propietario del external_id y
+    # vive en system_identity. Renombrado para que los dos conceptos nunca
+    # vuelvan a confundirse.
+    session_sources: List[str] = []
+    session_sources.append("jwt")
+    session_sources.append("community")
 
     base = jwt_user or community_user or {}
     verticals, verticals_source = extract_verticals(base)
@@ -236,8 +274,9 @@ async def resolve_identity(
     return {
         "user": _public_user(base),
         "session": {
-            "sources": sources,
-            "unified": bool(jwt_user and community_user),
+            # La clave publica sigue siendo "sources" para no romper el
+            # contrato HTTP; el concepto ya esta separado en el nombre local.
+            "sources": session_sources,
         },
         "identity": {
             "account_type": account_type,

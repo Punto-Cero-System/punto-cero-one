@@ -259,7 +259,10 @@ async def sync_entity_seed(db, source: dict) -> dict:
         "services": [], "team": [], "gallery": [],
         "logo_url": cfg.get("logo_url") or _logo_from_website(website),
         "banner_url": None, "cover_url": None,
-        "verification": "verified",
+        # Same rule as services/discovery/seeder.py: a source-backed entry is a
+        # directory reference, not an identity check.
+        "origin": "directory",
+        "verification": "unverified",
         "owner_id": "system-discovery",
         "is_public_seed": True,
         "is_deleted": False,

@@ -1,15 +1,8 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import {
-  ArrowLeft, ArrowRight, ExternalLink, Sparkles, ChevronDown, ChevronRight,
-  Rocket, Target, Zap, Layers, Cpu, Shield, ShoppingBag, Briefcase,
-  TrendingUp, Users, DollarSign, Wallet, Activity, LineChart, PieChart,
-  Building2, Scale, Compass, Info, Circle, Percent, Calendar, Milestone,
-  Wrench, Store, Landmark, HeartPulse, Factory, AlertTriangle, Sparkle,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, ExternalLink, Sparkles, ChevronDown, Rocket, Layers, Cpu, Shield, Briefcase, TrendingUp, Users, DollarSign, Wallet, Activity, Building2, Scale, Compass, Info, Circle, Wrench, Store, AlertTriangle, Sparkle } from 'lucide-react';
 
-const API = process.env.REACT_APP_BACKEND_URL;
 const NAVY = '#0B1F3A';
 const NAVY_DEEP = '#071527';
 const EMERALD = '#00C896';
@@ -206,11 +199,6 @@ const EditablePercent = ({ value, onChange, testid }) => (
 // ============================================================================
 // SCENARIO CONTEXT (shared)
 // ============================================================================
-const SCENARIO_META = {
-  conservative: { label: 'Conservador', color: '#7CC4FF', bg: 'rgba(124,196,255,0.12)' },
-  base: { label: 'Base', color: EMERALD, bg: `${EMERALD}12` },
-  accelerated: { label: 'Acelerado', color: GOLD, bg: `${GOLD}18` },
-};
 
 // ============================================================================
 // MAIN PAGE

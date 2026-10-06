@@ -5,7 +5,6 @@ import PresenceDot from './PresenceDot';
 import FollowButton from './FollowButton';
 
 const NAVY = '#0B1F3A';
-const EMERALD = '#00C896';
 const API = process.env.REACT_APP_BACKEND_URL;
 
 /**
@@ -142,12 +141,6 @@ const MetaLine = ({ icon: Icon, text }) => (
   </div>
 );
 
-const primaryBtn = {
-  display: 'inline-flex', alignItems: 'center', gap: 4,
-  padding: '0.35rem 0.75rem', borderRadius: 100,
-  background: EMERALD, color: '#FFFFFF', border: 'none', cursor: 'pointer',
-  fontSize: '0.68rem', fontWeight: 700,
-};
 const ghostBtn = {
   display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none',
   padding: '0.35rem 0.75rem', borderRadius: 100,

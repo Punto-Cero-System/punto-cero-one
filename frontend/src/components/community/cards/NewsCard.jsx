@@ -49,12 +49,6 @@ const NewsCard = ({ item, layout = 'medium' }) => {
 
   const save = () => flash('Guardado próximamente');
 
-  const sourceFavicon = item.source && !item.image ? null : (
-    // Best-effort: some feeds embed logos separately. When only image is present
-    // we still show it as the hero.
-    null
-  );
-
   return (
     <BaseCard
       accent={ACCENT}

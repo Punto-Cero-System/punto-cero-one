@@ -195,7 +195,7 @@ const GalleryPanel = ({ company, onUpdated, canEdit }) => {
                   }}>
                   {canEdit && (
                     <button onClick={() => removeAt(i)}
-                      data-testid={`gallery-remove-${i}`}
+                      data-testid={`gallery-remove-${i}`} aria-label="Quitar imagen"
                       style={{
                         position: 'absolute', top: 6, right: 6,
                         width: 28, height: 28, borderRadius: '50%',
@@ -298,7 +298,7 @@ const PreviewWithActions = ({ img, slot, crop, onReplace, onRemove, canEdit }) =
           style={{ padding: '0.4rem 0.75rem', borderRadius: 100,
                    background: '#FFFFFF', color: NAVY, border: 'none', cursor: 'pointer',
                    fontSize: '0.7rem', fontWeight: 700 }}>Reemplazar</button>
-        <button onClick={onRemove} data-testid={`media-remove-${slot}`}
+        <button onClick={onRemove} data-testid={`media-remove-${slot}`} aria-label="Quitar imagen"
           style={{ padding: '0.4rem 0.55rem', borderRadius: 100,
                    background: 'rgba(255,255,255,0.15)', color: '#FFFFFF',
                    border: '1px solid rgba(255,255,255,0.35)', cursor: 'pointer',

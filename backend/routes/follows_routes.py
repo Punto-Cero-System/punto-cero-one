@@ -14,6 +14,27 @@ service is a superset that:
   3. Exposes aggregated queries used by the feed engine (Wave 3 P2 upgrade)
      and by the frontend Social Graph UI.
 
+OMEGA FASE B1 — entity_type="group"
+-----------------------------------
+Groups became followable entities. `group` is a plain entry in `VALID_TYPES`,
+so the generic machinery (idempotent upsert, one relation per user+entity,
+bulk status, `my_follows`, `count`) applies unchanged.
+
+Two things are specific to groups:
+
+* **Existence** — following a group that does not exist would store a relation
+  pointing at nothing, so a group follow 404s instead of inserting.
+* **Privacy** — a private group may only be followed by its members, its
+  `admin_id`, a `group_members.role == "admin"`, or a platform admin. The rule
+  is *not* restated here: it comes from `evaluate_access` in
+  `services.group_permissions` (OMEGA F0.8), the same helper the read endpoints
+  use, so a change to group privacy cannot drift between reading and following.
+
+**No `group_followers_count` and no new collection.** `follows` stays the single
+source of truth (SOCIAL_GRAPH_CONTRACT v1 §1); `GET /{type}/{id}/count` derives
+the number from it. Adding a denormalised counter here is exactly the class of
+bug OMEGA F0 fixed for companies.
+
 Endpoints
 ---------
 POST   /api/follows/{entity_type}/{entity_id}   → follow
@@ -32,15 +53,17 @@ from typing import Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from services.community_deps import require_current_user
+from services.group_permissions import DENIED, evaluate_access
 from services.notifications import dispatch as dispatch_notif
+from services.activities import record as record_activity
 
 
 logger = logging.getLogger("punto-cero-api.follows")
 
 router = APIRouter(prefix="/api/follows", tags=["follows"])
 
-EntityType = Literal["user", "company", "hashtag", "country", "vertical", "event"]
-VALID_TYPES = {"user", "company", "hashtag", "country", "vertical", "event"}
+EntityType = Literal["user", "company", "hashtag", "country", "vertical", "event", "group"]
+VALID_TYPES = {"user", "company", "hashtag", "country", "vertical", "event", "group"}
 
 
 def _now():
@@ -66,6 +89,18 @@ async def follow(entity_type: str, entity_id: str, request: Request,
         raise HTTPException(status_code=400, detail="No puedes seguirte a ti mismo")
 
     db = request.app.state.db
+
+    # OMEGA FASE B1 — entity_type="group". Existence + privacy are resolved with
+    # the F0.8 helper instead of restating the rule, so following a group cannot
+    # grant more access than reading it. No counter is written: the count is
+    # derived from `follows` by GET /{type}/{id}/count.
+    if entity_type == "group":
+        group = await db.groups.find_one({"id": eid}, {"_id": 0})
+        if not group:
+            raise HTTPException(status_code=404, detail="Grupo no encontrado")
+        if await evaluate_access(db, group, user) == DENIED:
+            raise HTTPException(status_code=403, detail="Este grupo es privado")
+
     doc = {"user_id": user["id"], "entity_type": entity_type, "entity_id": eid, "created_at": _now()}
     try:
         res = await db.follows.update_one(
@@ -84,12 +119,41 @@ async def follow(entity_type: str, entity_id: str, request: Request,
             )
             # Only increment when company_follows was newly inserted as well.
             if getattr(res2, "upserted_id", None) is not None:
-                await db.companies.update_one({"id": eid}, {"$inc": {"follower_count": 1}})
+                # OMEGA F0 — `followers_count` (plural) is the canonical field:
+                # it is what CompanyPublic declares and what company_routes.py
+                # (legacy endpoint) increments. This route used to write
+                # `follower_count`, a phantom field nothing reads or creates,
+                # so counters never surfaced and the $gt guard below could
+                # never match on unfollow.
+                await db.companies.update_one({"id": eid}, {"$inc": {"followers_count": 1}})
     except Exception as e:
         logger.warning("follows.follow write failed: %s", e)
         raise HTTPException(status_code=502, detail="No se pudo registrar la relación")
 
     count = await db.follows.count_documents({"entity_type": entity_type, "entity_id": eid})
+
+    # FASE 2.1 — Activity Layer: el hecho "X siguió a Y" queda en el log
+    # append-only `activities`, EN PARALELO a la notificación de más abajo (que
+    # sigue saliendo del productor con su texto personalizado). No se llama
+    # `publish()`: el consumidor `notifications` entregaría una SEGUNDA
+    # notificación — regla R8 del diseño F0.9.2, escritura en un solo sitio.
+    # Solo cuenta un follow NUEVO: repetir el POST no cambió nada, no hay hecho.
+    # `record()` nunca lanza y el try/except repite la invariante de F0.9.5 en
+    # el call site — un fallo del log de actividades no puede bloquear seguir.
+    if inserted and entity_type in ("user", "company"):
+        try:
+            await record_activity(
+                db,
+                kind="user.followed",
+                actor_id=user["id"],
+                subject_type=entity_type,
+                subject_id=eid,
+                audience={"type": entity_type, "id": eid},
+                visibility="private",
+                metadata={"subject_url": f"/u/{user['id']}"},
+            )
+        except Exception:
+            logger.debug("follows.follow activity not recorded", exc_info=True)
 
     # ---- Notification fan-out (Wave 7) ----------------------------------
     # Notify the entity owner / subject when someone follows it. Uses the
@@ -133,7 +197,9 @@ async def unfollow(entity_type: str, entity_id: str, request: Request,
     r = await db.follows.delete_one({"user_id": user["id"], "entity_type": entity_type, "entity_id": eid})
     if entity_type == "company" and r.deleted_count:
         await db.company_follows.delete_one({"user_id": user["id"], "company_id": eid})
-        await db.companies.update_one({"id": eid, "follower_count": {"$gt": 0}}, {"$inc": {"follower_count": -1}})
+        # OMEGA F0 — guard now matches the canonical `followers_count`, so the
+        # decrement actually fires. Clamped at 0 to stay idempotent.
+        await db.companies.update_one({"id": eid, "followers_count": {"$gt": 0}}, {"$inc": {"followers_count": -1}})
     count = await db.follows.count_documents({"entity_type": entity_type, "entity_id": eid})
     return {"ok": True, "entity_type": entity_type, "entity_id": eid, "count": count, "my_following": False}
 

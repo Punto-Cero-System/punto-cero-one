@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import { Loader, Filter, Sparkles } from 'lucide-react';
 import { feedService, categoryService, growthService } from '../../services/feedService';
 import { useCommunityAuth } from '../../contexts/CommunityAuthContext';
@@ -45,7 +44,6 @@ const mergeFeedAndGrowth = (posts, growth) => {
 const LiveFeed = ({ initialCategory = null }) => {
   const { user } = useCommunityAuth();
   const [items, setItems] = useState([]);
-  const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState(initialCategory);
@@ -62,11 +60,21 @@ const LiveFeed = ({ initialCategory = null }) => {
   const inflight = useRef(false);
   const nextCursorRef = useRef(null);
   const hasMoreRef = useRef(true);
+  const itemsCountRef = useRef(0);
+
+  // Mirror of items.length. `loadMore` reads this instead of closing over
+  // `items` state, so that appending a page does NOT change loadMore's
+  // identity (see the reset effect below for why that matters).
+  useEffect(() => { itemsCountRef.current = items.length; }, [items.length]);
 
   // Growth items are fetched once per session/category and interleaved
   // into the feed. They come from public sources (RSS) and appear as
   // "source" authored posts (is_growth: true).
   useEffect(() => {
+    // Growth is only merged into the non-discover lists (mergeFeedAndGrowth is
+    // called under `tab !== 'discover'`), so fetching it on the default tab
+    // burned a request whose response was never rendered.
+    if (tab === 'discover') return;
     let cancelled = false;
     growthService.feed({ limit: 30, vertical: category || undefined })
       .then((d) => {
@@ -76,7 +84,7 @@ const LiveFeed = ({ initialCategory = null }) => {
       })
       .catch(() => setGrowth([]));
     return () => { cancelled = true; };
-  }, [category, refreshTick]);
+  }, [category, refreshTick, tab]);
 
   // stable page loader — reads cursor/category via refs to avoid stale closures
   const loadMore = useCallback(async () => {
@@ -87,7 +95,7 @@ const LiveFeed = ({ initialCategory = null }) => {
     try {
       // "Para Ti" — first page is a ranked snapshot; subsequent pages fall
       // through to chronological /posts to keep infinite scroll flowing.
-      if (tab === 'for-you' && nextCursorRef.current == null && items.length === 0) {
+      if (tab === 'for-you' && nextCursorRef.current == null && itemsCountRef.current === 0) {
         const data = await feedService.forYou(30);
         const list = data.items || [];
         setItems(list);
@@ -97,7 +105,6 @@ const LiveFeed = ({ initialCategory = null }) => {
         const oldest = list.length ? list[list.length - 1].created_at : null;
         nextCursorRef.current = oldest;
         hasMoreRef.current = !!oldest;
-        setCursor(oldest);
         setHasMore(!!oldest);
       } else {
         const data = await feedService.listPosts({
@@ -113,7 +120,6 @@ const LiveFeed = ({ initialCategory = null }) => {
         });
         nextCursorRef.current = data.next_cursor;
         hasMoreRef.current = !!data.next_cursor;
-        setCursor(data.next_cursor);
         setHasMore(!!data.next_cursor);
       }
     } catch (e) {
@@ -124,13 +130,18 @@ const LiveFeed = ({ initialCategory = null }) => {
       setLoading(false);
       inflight.current = false;
     }
-  }, [category, tab, items.length]);
+    // NOTE: deliberately depends only on [category, tab]. It reads the item
+    // count through `itemsCountRef` and appends through the functional
+    // setItems updater, so appending a page no longer re-creates loadMore.
+  }, [category, tab]);
 
-  // reset when category OR tab changes
+  // reset when category OR tab changes.
+  // loadMore is stable for a given (category, tab) pair, so this effect runs
+  // exactly once per real change — NOT on every appended page.
   useEffect(() => {
     nextCursorRef.current = null;
     hasMoreRef.current = true;
-    setCursor(null); setHasMore(true); setItems([]);
+    setHasMore(true); setItems([]);
     if (tab === 'discover') return;  // Descubrir uses its own fetcher
     loadMore();
   }, [category, tab, loadMore]);
@@ -161,7 +172,7 @@ const LiveFeed = ({ initialCategory = null }) => {
       t = setTimeout(() => {
         nextCursorRef.current = null;
         hasMoreRef.current = true;
-        setCursor(null); setHasMore(true); setItems([]);
+        setHasMore(true); setItems([]);
         setRefreshTick((n) => n + 1);
         loadMore();
       }, 350);
@@ -183,6 +194,7 @@ const LiveFeed = ({ initialCategory = null }) => {
     // Invalidate the Descubrir feed cache so the user sees their fresh
     // publication immediately when the tab remounts (no stale hydration).
     try { sessionStorage.removeItem('pc_intelligent_feed_cache_v1'); } catch { /* ignore */ }
+    try { window.dispatchEvent(new CustomEvent('pc:post-created', { detail: { id: post?.id } })); } catch { /* ignore */ }
     setFeedRefreshKey((k) => k + 1);
     return post;
   };
@@ -225,7 +237,7 @@ const LiveFeed = ({ initialCategory = null }) => {
       {tab !== 'discover' && resolvedCountry && (
         <div data-testid="feed-region-hint" style={{
           fontSize: '0.68rem', letterSpacing: '0.14em', fontWeight: 700,
-          color: 'rgba(11,31,58,0.55)', display: 'inline-flex',
+          display: 'inline-flex',
           alignItems: 'center', gap: '0.4rem',
           padding: '0.35rem 0.7rem', borderRadius: 100,
           background: 'rgba(0,200,150,0.08)', border: '1px solid rgba(0,200,150,0.2)',
@@ -283,7 +295,22 @@ const LiveFeed = ({ initialCategory = null }) => {
           background: '#FFFFFF', border: '1px dashed rgba(11,31,58,0.12)',
           color: 'rgba(11,31,58,0.6)', fontSize: '0.9rem',
         }}>
-          Aún no hay publicaciones{category ? ' en esta categoría' : ''}. Sé el primero en publicar.
+          <div style={{ fontWeight: 700, color: NAVY, marginBottom: '0.35rem' }}>
+            Empieza siguiendo personas y empresas para construir tu comunidad.
+          </div>
+          <div style={{ fontSize: '0.82rem', marginBottom: '0.9rem' }}>
+            {category ? 'Aún no hay publicaciones en esta categoría.' : 'Tu feed está vacío porque todavía no sigues a nadie.'} Descubre a quién seguir o comparte tu primera publicación.
+          </div>
+          <div style={{ display: 'flex', gap: '0.55rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a href="/comunidad" data-testid="feed-empty-discover"
+              style={{ padding: '0.55rem 1rem', borderRadius: 100, background: NAVY, color: '#FFFFFF', fontWeight: 700, fontSize: '0.78rem', textDecoration: 'none' }}>
+              Descubrir personas
+            </a>
+            <a href="/empresas" data-testid="feed-empty-companies"
+              style={{ padding: '0.55rem 1rem', borderRadius: 100, background: '#FFFFFF', color: NAVY, fontWeight: 700, fontSize: '0.78rem', textDecoration: 'none', border: '1px solid rgba(11,31,58,0.15)' }}>
+              Explorar empresas
+            </a>
+          </div>
         </div>
       )}
 

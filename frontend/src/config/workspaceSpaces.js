@@ -1,7 +1,7 @@
 /**
  * Workspace Spaces — catalogo del selector universal de Punto Cero System.
  *
- * Fuente unica de verdad para los espacios que ofrece /workspace.
+ * Fuente única de verdad para los espacios que ofrece /workspace.
  * Este catalogo es SOLO de navegacion: declara donde vive cada espacio y si ya
  * es alcanzable. No hace fetch, no tiene efectos secundarios y no aplica presets.
  *

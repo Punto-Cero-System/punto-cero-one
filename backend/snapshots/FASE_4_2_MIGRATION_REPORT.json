@@ -1,0 +1,123 @@
+{
+  "reporte": "FASE_4_2_MIGRATION_REPORT",
+  "generado": "2026-09-27T23:45:37.578708+00:00",
+  "alcance": "Solo datos MongoDB. 0 archivos de codigo modificados. 0 endpoints.",
+  "documentos_modificados": 3,
+  "cambios": [
+    {
+      "email": "admin@puntocerosystem.com",
+      "campo": "vertical",
+      "antes": null,
+      "nuevo": "legal",
+      "role_antes": "admin",
+      "role_nuevo": "admin",
+      "status": "activo",
+      "entity_id": "pc_usr_01M3JEKXKMKAZPDQRCTCRC749A",
+      "spaces_before": [
+        "legal",
+        "comunidad"
+      ],
+      "spaces_after": [
+        "legal",
+        "comunidad"
+      ],
+      "entitlements_after": [
+        "workspace.open.legal",
+        "workspace.open.comunidad"
+      ],
+      "account_type_before": "personal",
+      "account_type_after": "personal",
+      "verticals_derivadas_before": [],
+      "verticals_derivadas_after": []
+    },
+    {
+      "email": "alejandro@puntocerolegal.com",
+      "campo": "vertical",
+      "antes": null,
+      "nuevo": "legal",
+      "role_antes": "admin",
+      "role_nuevo": "admin",
+      "status": "activo",
+      "entity_id": "pc_usr_01M3JEKXMC1XQG5P3899PYZ6PP",
+      "spaces_before": [
+        "legal",
+        "comunidad"
+      ],
+      "spaces_after": [
+        "legal",
+        "comunidad"
+      ],
+      "entitlements_after": [
+        "workspace.open.legal",
+        "workspace.open.comunidad"
+      ],
+      "account_type_before": "personal",
+      "account_type_after": "personal",
+      "verticals_derivadas_before": [],
+      "verticals_derivadas_after": []
+    },
+    {
+      "email": "darwin@puntocerolegal.com",
+      "campo": "vertical",
+      "antes": null,
+      "nuevo": "legal",
+      "role_antes": "admin",
+      "role_nuevo": "admin",
+      "status": "activo",
+      "entity_id": "pc_usr_01M3JEKXM6NY2WSDS7J85EE7MB",
+      "spaces_before": [
+        "legal",
+        "comunidad"
+      ],
+      "spaces_after": [
+        "legal",
+        "comunidad"
+      ],
+      "entitlements_after": [
+        "workspace.open.legal",
+        "workspace.open.comunidad"
+      ],
+      "account_type_before": "personal",
+      "account_type_after": "profesional",
+      "verticals_derivadas_before": [],
+      "verticals_derivadas_after": [
+        "legal"
+      ]
+    },
+    {
+      "email": "darwinjose07@gmail.com",
+      "campo": "vertical",
+      "antes": null,
+      "nuevo": null,
+      "role_antes": "member",
+      "role_nuevo": "member",
+      "status": "activo",
+      "entity_id": "pc_usr_01M3JEKXKZ4F5703Y3TVPVKD1A",
+      "spaces_before": [
+        "comunidad"
+      ],
+      "spaces_after": [
+        "comunidad"
+      ],
+      "entitlements_after": [
+        "workspace.open.comunidad"
+      ],
+      "account_type_before": "personal",
+      "account_type_after": "personal",
+      "verticals_derivadas_before": [],
+      "verticals_derivadas_after": []
+    }
+  ],
+  "validacion_identidad": "INTACTA (entity_id, external_id, source sin cambios en 4/4)",
+  "validacion_invariante": "CUMPLE 4/4",
+  "tests": {
+    "characterization": "94 passed",
+    "cadena": "155 passed"
+  },
+  "hallazgo_critico": {
+    "titulo": "El campo `vertical` (singular) NO lo lee la derivacion actual",
+    "detalle": "identity_core.extract_verticals lee `verticals` (plural, array) y texto libre (specialties, skills, interests, headline, bio, current_title, current_company). NUNCA lee `vertical` (singular).",
+    "consecuencia_4_3": "Al activar D2 (eliminar _ROLE_TO_SPACES), admin y alejandro quedan con verticals=[] y perderian `legal`. Solo darwin lo conserva, y por su headline='legal', no por el campo migrado.",
+    "accion_requerida": "Decidir antes de 4.3: escribir `verticals: ['legal']` en vez de `vertical: 'legal'`, o adaptar la derivacion."
+  }
+}

@@ -6,7 +6,6 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import AppIcon from '../components/community/AppIcon';
 
-const NAVY = '#0B1F3A';
 const GOLD = '#D4AF37';
 const EMERALD = '#00C896';
 

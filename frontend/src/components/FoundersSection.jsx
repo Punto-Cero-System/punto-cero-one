@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Compass, Cpu, Globe, Briefcase, ArrowRight } from 'lucide-react';
+import { Cpu, Globe, ArrowRight } from 'lucide-react';
 
 // ============================================================================
 // FOUNDERS SECTION · THE PEOPLE BEHIND THE VISION

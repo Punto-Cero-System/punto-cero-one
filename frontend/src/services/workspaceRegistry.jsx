@@ -14,12 +14,7 @@
  */
 
 import React from 'react';
-import {
-  WeatherWidget, CalendarWidget, PodcastWidget, CompaniesShoutout,
-  MarketsWidget, AIOfTheDayWidget, PollWidget,
-  CoursesWidget, LaunchesWidget, MarketplaceWidget,
-  InlineWidgetStrip,
-} from '../components/community/Widgets';
+import { WeatherWidget, CalendarWidget, PodcastWidget, MarketsWidget, AIOfTheDayWidget, PollWidget, CoursesWidget, LaunchesWidget, MarketplaceWidget, InlineWidgetStrip } from '../components/community/Widgets';
 import {
   CryptoLiveWidget, FxLiveWidget, WeatherLiveWidget, RssLiveWidget, YoutubeLiveWidget,
 } from '../components/community/LiveWidgets';

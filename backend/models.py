@@ -8,7 +8,44 @@ import uuid
 # ---------------------------
 # Users (Admin foundation)
 # ---------------------------
-UserRole = Literal["admin", "investor"]
+# FASE 4.3.1 - Catalogo extensible de roles.
+#
+# `role` es CAPACIDAD TECNICA, no acceso a workspace (decision FASE 3J, D2).
+# El acceso a espacios proviene de `verticals` / organizaciones, nunca del rol.
+# Activar esa separacion (D2, eliminar `_ROLE_TO_SPACES`) es un paso posterior;
+# esta fase solo amplia el VOCABULARIO y no cambia ningun comportamiento.
+#
+# `admin` se conserva ADEMAS de `admin_system` de forma deliberada:
+#   - viaja dentro del JWT (`create_access_token(id, email, role)`), asi que
+#     renombrarlo invalidaria los tokens vivos (TTL 8 h);
+#   - `auth.require_admin` compara `role != "admin"` de forma literal;
+#   - el frontend compara `user.role === 'admin'` en 8 archivos.
+# Por eso la transicion es por ALIAS (Opcion A de FASE 3J): se emite `admin`
+# y se normaliza a `admin_system` al leer. La ventana de deuda es el TTL.
+UserRole = Literal[
+    "member",        # usuario base, sin espacios implicitos
+    "admin",         # alias legacy de admin_system (FASE 3J, Opcion A)
+    "investor",      # portal de inversion
+    "org_admin",     # administracion de una organizacion
+    "agent",         # operador-agente
+    "admin_system",  # administracion de plataforma
+]
+
+# Alias de lectura: valor emitido -> valor canonico de la politica.
+# NO lo consume todavia ningun modulo: se activa junto con D2.
+ROLE_ALIASES = {
+    "admin": "admin_system",
+}
+
+
+def normalize_role(role: Optional[str]) -> str:
+    """Resuelve un rol emitido al rol canonico de la politica.
+
+    Puro y tolerante: nunca lanza. Un rol desconocido se devuelve tal cual
+    para que la validacion posterior decida (fail-closed aguas arriba).
+    """
+    key = str(role or "").strip().lower()
+    return ROLE_ALIASES.get(key, key) or "member"
 
 
 class UserPublic(BaseModel):

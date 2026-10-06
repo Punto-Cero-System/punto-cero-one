@@ -1,36 +1,50 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { LayoutGrid, Check } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import CustomCursor from '../components/CustomCursor';
 
-import CommunityLayout from '../components/community/CommunityLayout';
-import WorkspacePanel from '../components/community/workspace/WorkspacePanel';
-import MobileWorkspaceDrawer from '../components/community/workspace/MobileWorkspaceDrawer';
+import CommunityFeedSection from '../components/community/CommunityFeedSection';
+import DiscoverySection from '../components/community/DiscoverySection';
+import WorkspacePreview from '../components/community/WorkspacePreview';
 import WorkspaceDndProvider from '../components/community/workspace/WorkspaceDndProvider';
 import SlideCarousel from '../components/SlideCarousel';
 import { PRIMARY_SLIDES } from '../components/PrimarySlides';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
-import { useWorkspace } from '../contexts/WorkspaceContext';
 
 /**
- * HomePage — evolved into "Mi Espacio", the personal workspace.
+ * HomePage — the entry point of Punto Cero One.
  *
- * - Anonymous users: the workspace runs on the default template (same look as
- *   the previous LinkedIn-style home). The slider sits on top.
- * - Authenticated users: the same layout, but every widget is toggle-able,
- *   reorderable and persisted per-account (WorkspaceContext + /api/workspace).
+ * FASE OMEGA · ETAPA 3 · PUNTO 2 — the Home stops being a launcher/dashboard
+ * and becomes a community. The page is now composed as four explicit layers:
  *
- * The visual identity stays intact — this page reuses the exact widgets
- * previously composed inside LeftSidebar / RightWidgets / LiveFeed, but each
- * one is now addressable by ID inside the Widget Registry.
+ *     HomePage
+ *       ├── PrimarySlides          (identity of the ecosystem)
+ *       ├── CommunityFeedSection   (the living community — centre of activity)
+ *       ├── DiscoverySection       (Noticias, Videos, Empleos, Empresas,
+ *       │                           Eventos, IA)
+ *       └── WorkspacePreview       (Mi Espacio, with all its widgets)
+ *
+ * That is the product journey the phase asked for:
+ *     Usuario → Comunidad → Contenido → Interacción → Workspace
+ *
+ * GUARANTEES PRESERVED
+ *   · FeedWidget stays registered in workspaceRegistry.jsx and still renders
+ *     through WorkspacePanel (Mi Espacio, personal / professional / company
+ *     workspaces) and MobileWorkspaceDrawer. Nothing was removed — the feed
+ *     was PROMOTED, it now simply also has a primary slot on the Home.
+ *   · No route was changed or created. Every link points to a pre-existing
+ *     path.
+ *   · Point 3 (Mi Espacio) is NOT part of this change: WorkspacePreview is a
+ *     pure move of the previous three-column tree, its behaviour is unchanged.
+ *
+ * The sliders, the widget registry, the drag-and-drop provider and the mobile
+ * drawer are all reused as-is.
  */
 const HomePage = () => {
   const { user } = useCommunityAuth();
-  const { ready } = useWorkspace();
-  const isAuthed = !!user && typeof user === 'object';
   const [editing, setEditing] = useState(false);
+
+  const isAuthed = !!user && typeof user === 'object';
 
   return (
     <>
@@ -38,8 +52,8 @@ const HomePage = () => {
       <Header />
       <main id="top" style={{ paddingTop: '58px', background: '#F4F6FB', minHeight: '100vh' }}>
         <WorkspaceDndProvider editing={editing}>
-        <CommunityLayout
-          top={
+          {/* 1 · Identity of the ecosystem */}
+          <div className="pc-community-top">
             <SlideCarousel
               id="pc-slider-primary"
               slides={PRIMARY_SLIDES}
@@ -47,68 +61,47 @@ const HomePage = () => {
               height="clamp(520px, 74vh, 720px)"
               label="Slider principal · visión Punto Cero One"
             />
-          }
-          left={
-            <>
-              {isAuthed && (
-                <WorkspaceToolbar
-                  editing={editing}
-                  onToggle={() => setEditing((v) => !v)}
-                />
-              )}
-              {ready && <WorkspacePanel panel="left" editing={editing} testid="community-left-sidebar" />}
-            </>
-          }
-          center={
-            <>
-              <MobileWorkspaceDrawer editing={editing} onToggleEdit={() => setEditing((v) => !v)} />
-              {ready && <WorkspacePanel panel="center" editing={editing} gap="1rem" />}
-            </>
-          }
-          right={ready && <WorkspacePanel panel="right" editing={editing} testid="community-right-widgets" />}
-        />
+          </div>
+
+          <div style={{
+            width: '100%', maxWidth: 1200, margin: '0 auto', padding: '1.5rem 1rem 0', boxSizing: 'border-box',
+          }}>
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: '0.8rem',
+              padding: '1rem 1.1rem', borderRadius: 18,
+              background: 'linear-gradient(120deg, rgba(11,31,58,0.04), rgba(0,200,150,0.08))',
+              border: '1px solid rgba(11,31,58,0.08)',
+            }}>
+              <div style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.22em', color: 'rgba(11,31,58,0.5)' }}>
+                PUNTO CERO SYSTEM
+              </div>
+              <div style={{ fontSize: 'clamp(1.1rem, 2vw, 1.6rem)', fontWeight: 800, color: '#0B1F3A', lineHeight: 1.3 }}>
+                Punto Cero One es la puerta de entrada al ecosistema: comunidad, soluciones verticales y acceso a los espacios del sistema.
+              </div>
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <a href="/capital" style={{ textDecoration: 'none', background: '#0B1F3A', color: '#FFFFFF', borderRadius: 999, padding: '0.7rem 1rem', fontWeight: 700, fontSize: '0.8rem' }}>Explorar soluciones</a>
+                <a href="https://www.puntocerolegal.com" style={{ textDecoration: 'none', background: '#FFFFFF', color: '#0B1F3A', border: '1px solid rgba(11,31,58,0.12)', borderRadius: 999, padding: '0.7rem 1rem', fontWeight: 700, fontSize: '0.8rem' }}>Conocer Punto Cero Legal</a>
+              </div>
+            </div>
+          </div>
+
+          {/* 2 · The community — centre of activity */}
+          <CommunityFeedSection />
+
+          {/* 3 · Discovery of the ecosystem modules */}
+          <DiscoverySection />
+
+          {/* 4 · Mi Espacio (unchanged behaviour, demoted position) */}
+          <WorkspacePreview
+            editing={editing}
+            onToggleEdit={() => setEditing((v) => !v)}
+            isAuthed={isAuthed}
+          />
         </WorkspaceDndProvider>
       </main>
       <Footer />
     </>
   );
 };
-
-/**
- * Compact toolbar shown at the top of the left panel for authenticated
- * users. Single action: toggle edit-mode in place ("Configuración" and
- * the preset bar were removed per the Fase de Optimización directive —
- * users administer Mi Espacio directly by editing widgets in place).
- */
-const WorkspaceToolbar = ({ editing, onToggle }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-    data-testid="workspace-toolbar"
-    style={{
-      display: 'flex', alignItems: 'center', gap: '0.4rem',
-      padding: '0.55rem 0.6rem', borderRadius: 14,
-      background: '#FFFFFF',
-      border: '1px solid rgba(11,31,58,0.06)',
-      boxShadow: '0 4px 20px rgba(11,31,58,0.04)',
-    }}>
-    <div style={{
-      fontSize: '0.6rem', letterSpacing: '0.2em', fontWeight: 800,
-      color: 'rgba(11,31,58,0.55)', flex: 1,
-    }}>MI ESPACIO</div>
-    <button onClick={onToggle}
-      data-testid="workspace-toggle-edit"
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-        padding: '0.35rem 0.6rem', borderRadius: 100,
-        background: editing ? 'rgba(0,200,150,0.12)' : 'rgba(11,31,58,0.04)',
-        border: `1px solid ${editing ? 'rgba(0,200,150,0.3)' : 'rgba(11,31,58,0.08)'}`,
-        color: editing ? '#00A277' : '#0B1F3A',
-        fontSize: '0.68rem', fontWeight: 800, cursor: 'pointer',
-      }}>
-      {editing ? <Check size={12} /> : <LayoutGrid size={12} />}
-      {editing ? 'Listo' : 'Editar'}
-    </button>
-  </motion.div>
-);
 
 export default HomePage;

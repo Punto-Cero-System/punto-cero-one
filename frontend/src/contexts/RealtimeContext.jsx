@@ -34,7 +34,7 @@ export const RealtimeProvider = ({ children }) => {
     const set = handlersRef.current.get(eventType);
     if (!set) return;
     set.forEach((fn) => {
-      try { fn(payload); } catch (e) { /* silent per-handler */ }
+      try { fn(payload); } catch { /* silent per-handler */ }
     });
   }, []);
 

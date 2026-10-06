@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ExternalLink, Sparkles, Globe, Layers, Rocket, Users } from 'lucide-react';
+import { ArrowRight, ExternalLink, Globe, Layers, Users, Stethoscope, Smile, Brain, HeartPulse } from 'lucide-react';
 import AppIcon from './community/AppIcon';
 
 /**
@@ -155,21 +155,21 @@ const Slide1Community = () => (
     }} />
     <SlideGrid>
       <div>
-        <Eyebrow color="#00C896">TODO EMPIEZA AQUÍ</Eyebrow>
-        <Title>Una <span style={{ fontWeight: 700 }}>comunidad</span>. Un ecosistema.<br />
+        <Eyebrow color="#00C896">PUERTA DE ENTRADA</Eyebrow>
+        <Title>Punto Cero One es la <span style={{ fontWeight: 700 }}>comunidad</span> y la<br />
           <span style={{
             background: 'linear-gradient(90deg, #3B82F6, #8B5CF6, #EC4899)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
             fontWeight: 700,
-          }}>Todo empieza aquí.</span>
+          }}>puerta de entrada a Punto Cero System.</span>
         </Title>
         <Lead>
-          Punto Cero One conecta profesionales, emprendedores y empresas en 18 países latinoamericanos —
-          contenido, oportunidades, IA y capital, en un solo lugar.
+          Aquí descubres profesionales, oportunidades y contenido, y a la vez entiendes cómo acceder a
+          soluciones verticales, espacios operativos y servicios del ecosistema.
         </Lead>
         <CtaRow>
-          <Link to="/join" style={primaryBtnStyle}>Unirse a la comunidad <ArrowRight size={14} /></Link>
-          <a href="#feed" style={ghostBtnStyle}>Explorar el feed</a>
+          <Link to="/capital" style={primaryBtnStyle}>Explorar soluciones <ArrowRight size={14} /></Link>
+          <Link to="https://www.puntocerolegal.com" style={ghostBtnStyle}>Conocer Punto Cero Legal</Link>
         </CtaRow>
       </div>
       <div className="pc-slide-visual" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 240 }}>
@@ -347,19 +347,19 @@ const Slide4Legal = () => (
     }} />
     <SlideGrid>
       <div>
-        <Eyebrow color="#00C896">PRIMER VERTICAL COMERCIAL · LIVE</Eyebrow>
-        <Title><span style={{ fontWeight: 700 }}>Punto Cero Legal</span><br />
-          <span style={{ color: '#00C896', fontWeight: 700 }}>ya está en producción.</span>
+        <Eyebrow color="#00C896">TU COMUNIDAD PROFESIONAL</Eyebrow>
+        <Title><span style={{ fontWeight: 700 }}>La comunidad donde</span><br />
+          <span style={{ color: '#00C896', fontWeight: 700 }}>los profesionales se encuentran.</span>
         </Title>
         <Lead>
-          No es un concepto. No es un prototipo. Es el primer producto real del ecosistema,
-          operativo hoy y evolucionando continuamente.
+          Publica, comparte, sigue a tu pares y descubre oportunidades.
+          Punto Cero One es el punto de encuentro de quienes ejercen su profesion.
         </Lead>
         <CtaRow>
-          <a href="https://puntocerolegal.com" target="_blank" rel="noopener noreferrer" style={primaryBtnStyle}>
-            Visitar Punto Cero Legal <ExternalLink size={14} />
-          </a>
-          <Link to="/capital" style={ghostBtnStyle}>Ver Investor Center</Link>
+          <Link to="/comunidad" style={primaryBtnStyle}>
+            Explorar la comunidad <ExternalLink size={14} />
+          </Link>
+          <Link to="/noticias" style={ghostBtnStyle}>Ver Noticias</Link>
         </CtaRow>
       </div>
       <div className="pc-slide-visual" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
@@ -594,6 +594,130 @@ const BenefitPill = ({ color, text }) => (
 );
 
 /* ============================================================================
+   SLIDE 7 — Punto Cero Medical
+   Comunica que Medical agrupa varias verticales de salud. Todo el contenido
+   vive DENTRO del slide: no hay secciones, rutas ni paginas nuevas. Cada
+   acceso (las 4 verticales y el boton principal) apunta al mismo destino.
+   ========================================================================= */
+/** Destino único: todas las verticales y el botón principal apuntan aquí. */
+
+/** Verticales de salud que conviven dentro del espacio Medical. */
+const MEDICAL_VERTICALS = [
+  {
+    key: 'medicina', href: 'https://medical.puntocerosystem.com',
+    label: 'Medicina',
+    description: 'Gestión clínica, pacientes, expedientes, agenda y atención profesional.',
+    icon: Stethoscope,
+    color: '#00C896',
+  },
+  {
+    key: 'odontologia', href: 'https://medical.puntocerosystem.com',
+    label: 'Odontología',
+    description: 'Consultorios odontológicos, tratamientos, pacientes y gestión digital.',
+    icon: Smile,
+    color: '#38BDF8',
+  },
+  {
+    key: 'psicologia', href: 'https://medical.puntocerosystem.com',
+    label: 'Psicología',
+    description: 'Gestión de pacientes, seguimiento terapéutico y comunicación profesional.',
+    icon: Brain,
+    color: '#A78BFA',
+  },
+  {
+    key: 'enfermeria', href: 'https://medical.puntocerosystem.com',
+    label: 'Enfermería',
+    description: 'Coordinación asistencial, seguimiento de pacientes y servicios de salud.',
+    icon: HeartPulse,
+    color: '#F472B6',
+  },
+];
+
+const Slide7Medical = () => (
+  <SlideShell
+    id="medical"
+    background="linear-gradient(135deg, #062A33 0%, #0B1F3A 55%, #06304A 100%)"
+    image="https://images.pexels.com/photos/11119419/pexels-photo-11119419.jpeg?auto=compress&cs=tinysrgb&w=1600"
+    imageOverlay="linear-gradient(100deg, rgba(6,42,51,0.94) 0%, rgba(11,31,58,0.82) 42%, rgba(0,200,150,0.45) 100%)"
+  >
+    <div style={{
+      position: 'absolute', bottom: '8%', right: '4%', width: 380, height: 380,
+      borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,200,150,0.22) 0%, transparent 65%)',
+      filter: 'blur(30px)',
+    }} />
+    <SlideGrid>
+      <div>
+        <Eyebrow color="#00C896">CONOCE EL ECOSISTEMA</Eyebrow>
+        <Title><span style={{ fontWeight: 700 }}>Empresas, eventos</span><br />
+          <span style={{ color: '#00C896', fontWeight: 700 }}>e inteligencia artificial.</span></Title>
+        <Lead>
+          Conecta con las empresas, los eventos y las herramientas de IA
+        del ecosistema Punto Cero desde un solo lugar.
+        </Lead>
+        <CtaRow>
+          <Link
+            to="/empresas"
+            style={primaryBtnStyle}
+            data-testid="slide-medical-cta"
+            >
+            Explorar empresas <ExternalLink size={14} />
+          </Link>
+        </CtaRow>
+      </div>
+      <div
+        className="pc-slide-visual"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: '0.7rem' }}
+      >
+        {MEDICAL_VERTICALS.map((v, i) => {
+          const Icon = v.icon;
+          return (
+            <motion.a
+              key={v.key}
+              href={v.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid={`slide-medical-vertical-${v.key}`}
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.15 + i * 0.09, ease: 'easeOut' }}
+              whileHover={{ y: -6, scale: 1.02 }}
+              whileTap={{ scale: 0.99 }}
+              style={{
+                display: 'flex', flexDirection: 'column', gap: '0.5rem',
+                padding: '0.95rem 1rem',
+                borderRadius: 16,
+                background: 'rgba(255,255,255,0.07)',
+                border: `1px solid ${v.color}44`,
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.22)',
+                textDecoration: 'none', color: '#FFFFFF',
+              }}
+            >
+              <div
+                style={{
+                  display: 'grid', placeItems: 'center',
+                  width: 38, height: 38, borderRadius: 11,
+                  background: `${v.color}22`, border: `1px solid ${v.color}66`,
+                  color: v.color,
+                }}
+              >
+                <Icon size={19} />
+              </div>
+              <span style={{ fontSize: '0.92rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
+                {v.label}
+              </span>
+              <span style={{ fontSize: '0.74rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.68)' }}>
+                {v.description}
+              </span>
+            </motion.a>
+          );
+        })}
+      </div>
+    </SlideGrid>
+  </SlideShell>
+);
+
+/* ============================================================================
    EXPORT
    ========================================================================= */
 const PRIMARY_SLIDES = [
@@ -601,6 +725,7 @@ const PRIMARY_SLIDES = [
   { key: 'vision', node: <Slide2Vision /> },
   { key: 'ecosystem', node: <Slide3Ecosystem /> },
   { key: 'legal', node: <Slide4Legal /> },
+  { key: 'medical', node: <Slide7Medical /> },
   { key: 'latam', node: <Slide5Latam /> },
   { key: 'join', node: <Slide6Join /> },
 ];

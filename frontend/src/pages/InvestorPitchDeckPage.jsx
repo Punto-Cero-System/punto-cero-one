@@ -1,11 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import {
-  ArrowLeft, ArrowRight, ExternalLink, Sparkles, Brain, Database, Lock, Zap,
-  FileText, Users, BarChart, CreditCard, Layers, Globe, TrendingUp, Building2,
-  Scale, Target, MessageCircle, Mail, Download
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, ExternalLink, Sparkles, Brain, Database, Lock, Zap, FileText, Users, BarChart, CreditCard, Scale, Target, MessageCircle, Download } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -42,7 +38,7 @@ const sendEvent = (payload) => {
         keepalive: true,
       });
     }
-  } catch (_) { /* silent */ }
+  } catch { /* silent */ }
 };
 
 // Hook: measures dwell time per .pitch-slide-track element and posts to backend.
@@ -2038,7 +2034,7 @@ const PitchDeckNav = () => {
                 link.click();
                 document.body.removeChild(link);
                 setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1500);
-              } catch (err) {
+              } catch {
                 // Fallback: open in a new tab so the user can still get the PDF
                 window.open(url, '_blank', 'noopener,noreferrer');
               }

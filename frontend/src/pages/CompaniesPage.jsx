@@ -1,12 +1,15 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';import EmptyState from '../components/EmptyState';
+
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ExternalLink, Globe2, Plus, Check, MapPin, ShieldCheck, ImagePlus, X } from 'lucide-react';
+import { ExternalLink, Plus, ImagePlus, X } from 'lucide-react';
+import FollowButton from '../components/community/FollowButton';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
 import { companyService } from '../services/platformService';
 import { useCommunityAuth } from '../contexts/CommunityAuthContext';
 import CompanyCreateModal from '../components/business/CompanyCreateModal';
 import CompanyMediaManager from '../components/business/CompanyMediaManager';
+import CompanyTrustBadge from '../components/business/CompanyTrustBadge';
 import LogoImage from '../components/common/LogoImage';
 
 const CompaniesPage = () => {
@@ -31,25 +34,21 @@ const CompaniesPage = () => {
       setItems((prev) => (reset ? data.items : [...prev, ...data.items]));
       setCursor(data.next_cursor);
       setHasMore(!!data.next_cursor);
-    } catch (e) { /* silent */ } finally { setLoading(false); }
+    } catch { /* silent */ } finally { setLoading(false); }
   }, [cursor, vertical]);
 
   // The reset effect intentionally runs only when the filter changes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setCursor(null); setHasMore(true); load(true); }, [vertical]);
 
-  const onFollow = async (id) => {
-    const r = await companyService.follow(id);
-    setItems((prev) => prev.map((c) =>
-      c.id === id ? { ...c, my_following: r.following, followers_count: c.followers_count + (r.following ? 1 : -1) } : c
-    ));
-    // Notify LiveFeed / Recommendations to refresh so the ranking picks up the
-    // change immediately without a manual reload.
-    try {
-      window.dispatchEvent(new CustomEvent('pc:follow-change', {
-        detail: { entityType: 'company', entityId: id, following: !!r.following },
-      }));
-    } catch { /* no-op */ }
+  // OMEGA F0 — follow now lives entirely in <FollowButton />, which talks to
+  // the unified /api/follows endpoint and dispatches pc:follow-change itself.
+  // This handler only mirrors the authoritative `followers_count` coming back
+  // from the response into the card so the counter stays in sync.
+  const onFollowed = (id, nextFollowing, count) => {
+    setItems((prev) => prev.map((c) => (
+      c.id === id ? { ...c, my_following: nextFollowing, followers_count: count } : c
+    )));
   };
 
   const onCreated = (c) => setItems((prev) => [c, ...prev]);
@@ -114,10 +113,12 @@ const CompaniesPage = () => {
                 <LogoImage src={c.logo_url} name={c.name} size={46} radius={10}
                   border="3px solid #FFFFFF" />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h2 style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1rem', fontWeight: 700, color: NAVY, margin: 0, letterSpacing: '-0.01em', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <h2 style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1rem', fontWeight: 700, color: NAVY, margin: 0, letterSpacing: '-0.01em', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <Link to={`/empresas/${c.id}`} data-testid={`company-link-${c.id}`}
                       style={{ color: NAVY, textDecoration: 'none' }}>{c.name}</Link>
-                    {c.verification === 'verified' && <ShieldCheck size={14} color="#00C896" />}
+                    {/* Names the trust state instead of a bare green shield: the
+                        curated directory is NOT the same as a verified company. */}
+                    <CompanyTrustBadge company={c} size="sm" />
                   </h2>
                   <div style={{ fontSize: '0.7rem', color: 'rgba(11,31,58,0.55)' }}>
                     {c.vertical} {c.country && `· ${c.country}`}
@@ -134,17 +135,18 @@ const CompaniesPage = () => {
               </div>
               <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.15rem' }}>
                 {isAuthed && (
-                  <button onClick={() => onFollow(c.id)} data-testid={`company-follow-${c.id}`}
-                    style={{
-                      padding: '0.4rem 0.85rem', borderRadius: 100, cursor: 'pointer',
-                      border: `1px solid ${c.my_following ? '#00C896' : 'rgba(11,31,58,0.12)'}`,
-                      background: c.my_following ? 'rgba(0,200,150,0.12)' : '#FFFFFF',
-                      color: c.my_following ? '#00A277' : NAVY,
-                      fontSize: '0.72rem', fontWeight: 700,
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                    }}>
-                    {c.my_following ? <><Check size={11} /> Siguiendo</> : '+ Seguir'}
-                  </button>
+                  // OMEGA F0 — universal follow. `testid` and `size="sm"` keep
+                  // the exact visual footprint and selector this card had
+                  // with its inline button, so existing QA selectors
+                  // (company-follow-<id>) still resolve.
+                  <FollowButton
+                    entityType="company"
+                    entityId={c.id}
+                    initialFollowing={c.my_following}
+                    size="sm"
+                    testid={`company-follow-${c.id}`}
+                    onChange={(nextFollowing, count) => onFollowed(c.id, nextFollowing, count)}
+                  />
                 )}
                 {c.website && (
                   <a href={c.website} target="_blank" rel="noopener noreferrer"
@@ -178,12 +180,16 @@ const CompaniesPage = () => {
         <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(11,31,58,0.5)' }}>Cargando…</div>
       )}
       {!loading && items.length === 0 && (
-        <div data-testid="companies-empty" style={{
-          padding: '2rem', textAlign: 'center', borderRadius: 16, background: '#FFFFFF',
-          border: '1px dashed rgba(11,31,58,0.12)', color: 'rgba(11,31,58,0.6)', fontSize: '0.9rem',
-        }}>
-          Aún no hay empresas registradas{vertical ? ' en esta vertical' : ''}. {isAuthed ? '¡Sé la primera!' : 'Únete y publica tu empresa.'}
-        </div>
+        <EmptyState
+          testid="companies-empty"
+          icon="companies"
+          title={vertical ? `Aún no hay empresas en ${vertical}` : 'Aún no hay empresas registradas'}
+          why="El directorio se construye con las empresas que se unen al ecosistema. Explora la comunidad para ver quién opera ya en tu sector para descubrir quién opera ya en tu sector."
+          actions={[
+            { label: 'Ver la comunidad', to: '/comunidad', kind: 'primary', testid: 'companies-empty-cta-community' },
+            { label: 'Explorar oportunidades', to: '/empleos', testid: 'companies-empty-cta-jobs' },            ...(isAuthed ? [] : [{ label: 'Unirme al ecosistema', to: '/join', testid: 'companies-empty-cta-join' }]),
+          ]}
+        />
       )}
       {hasMore && !loading && (
         <button data-testid="companies-load-more" onClick={() => load(false)}
@@ -238,7 +244,7 @@ const MediaEditModal = ({ company, onClose, onUpdated }) => (
           <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.2rem',
                         fontWeight: 700, color: NAVY }}>{company.name}</div>
         </div>
-        <button onClick={onClose} data-testid="company-media-modal-close"
+        <button onClick={onClose} data-testid="company-media-modal-close" aria-label="Cerrar"
           style={{
             width: 36, height: 36, borderRadius: '50%',
             border: 'none', background: 'rgba(11,31,58,0.06)', cursor: 'pointer',

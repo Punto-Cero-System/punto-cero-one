@@ -14,6 +14,22 @@ from typing import Optional
 from fastapi import APIRouter, Cookie, Header, Query, Request
 
 from services.discovery.regional import regional_sort, normalize_country, LATAM_PLUS_ES
+# OMEGA CARRIL B4.1 — la visibilidad vive ahora en el servicio compartido.
+# Hasta B4.1 estos dos se importaban de `routes.feed_routes`, lo que obligaba a
+# un `service` (`feed_engine`, que cerrará B4) a depender de una RUTA. La
+# dependencia queda en un solo sentido: routes → services.
+#
+# `_visibility_clause` es la MISMA función que usa `list_posts`: los tres
+# endpoints que leen `posts` coinciden por construcción y no pueden divergir.
+from services.feed_visibility import _visibility_clause, _viewer_group_ids
+
+#: `current_user_or_none` es el resolver de sesión ya consolidado del proyecto
+#: (`services.community_deps`), el mismo que usa `feed_routes`: cookie
+#: `session_token`, fallback `Authorization: Bearer`, y validación de `expires_at`.
+#: Se reutiliza en lugar de reimplementarlo. `_viewer_country` NO se toca: sigue
+#: resolviendo el país exactamente igual, porque su precedencia (override →
+#: sesión → headers) es parte del contrato de búsqueda pública.
+from services.community_deps import current_user_or_none
 
 
 router = APIRouter(prefix="/api/search", tags=["search"])
@@ -104,20 +120,51 @@ async def search(
                 {"name": _regex(q)}, {"tagline": _regex(q)}, {"description": _regex(q)},
                 {"tags": _regex(q)}, {"hashtags": _regex(q)},
             ]},
-            {"_id": 0, "id": 1, "name": 1, "tagline": 1, "logo_url": 1, "slug": 1, "vertical": 1, "country": 1, "is_public_seed": 1, "verification": 1},
+            {"_id": 0, "id": 1, "name": 1, "tagline": 1, "logo_url": 1, "slug": 1, "vertical": 1, "country": 1, "is_public_seed": 1, "verification": 1, "origin": 1},
         ).limit(limit)
         results["companies"] = [{
             "type": "companies", "id": c["id"],
             "title": c["name"], "subtitle": c.get("tagline") or c.get("vertical"),
             "image": c.get("logo_url"), "meta": c.get("country"),
             "url": f"/empresas/{c.get('slug') or c['id']}",
+            # `verified` means an identity check happened — never implied by the
+            # company being part of the curated directory.
             "verified": c.get("verification") == "verified",
+            "origin": c.get("origin") or ("directory" if c.get("is_public_seed") else "member"),
             "is_public": bool(c.get("is_public_seed")),
         } async for c in cur]
 
     if "posts" in results:
+        # OMEGA CARRIL B3 — la visibilidad va EN LA QUERY, no como filtro en
+        # Python. Dos razones, ambas obligatorias:
+        #
+        #   1. Un post `members` no debe aparecer NUNCA: filtrar después lo
+        #      dejaría filtrarse por otro camino y exigiría recortar el item a
+        #      mano (title/subtitle/url), que es exactamente la fuga parcial que
+        #      este carril cierra.
+        #   2. El `.limit()` de más abajo es lo que hace peligroso filtrar
+        #      tarde: los posts ocultos ocuparían plazas del `limit` y
+        #      desplazarían a los públicos, convirtiendo la búsqueda en un
+        #      oráculo ("si no aparece, existe pero no lo ves"). Con la
+        #      visibilidad en la query, la página se llena solo con lo que el
+        #      viewer puede leer y el conteo sigue siendo correcto.
+        #
+        # El `$or` de la búsqueda se conserva: se fusiona la cláusula en una
+        # `$and` implícita por claves distintas, no se sobrescribe nada.
+        viewer_user = await current_user_or_none(request)
+        post_query: dict = {
+            "status": "published",
+            "$or": [{"body": _regex(q)}, {"hashtags": q.lower().lstrip("#")}],
+        }
+        vis_clause = _visibility_clause(await _viewer_group_ids(db, viewer_user))
+        if "$or" in vis_clause:
+            # El `$or` de búsqueda ya está ocupado: la cláusula va como `$and`
+            # para no pisarlo.
+            post_query["$and"] = [vis_clause]
+        else:
+            post_query["visibility"] = vis_clause["visibility"]
         cur = db.posts.find(
-            {"status": "published", "$or": [{"body": _regex(q)}, {"hashtags": q.lower().lstrip("#")}]},
+            post_query,
             {"_id": 0, "id": 1, "body": 1, "author_id": 1, "hashtags": 1},
         ).sort("created_at", -1).limit(limit)
         results["posts"] = [{

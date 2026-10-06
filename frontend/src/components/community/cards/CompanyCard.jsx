@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, MapPin, Users, TrendingUp } from 'lucide-react';
+import { Building2, MapPin, Users } from 'lucide-react';
 import BaseCard, { CardCTA, CardMeta } from './BaseCard';
 
 const ACCENT = '#0EA5E9';

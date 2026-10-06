@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { Send } from 'lucide-react';
 import CategoryPage, { NAVY } from '../components/CategoryPage';
 import { messagingService } from '../services/coreServices';
@@ -100,9 +100,37 @@ const MessagesPage = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '0.85rem', minHeight: 480 }}>
         <div data-testid="messages-conversations" style={{ background: '#FFFFFF', borderRadius: 12, border: '1px solid rgba(11,31,58,0.06)', overflow: 'auto' }}>
           {conversations.length === 0 && (
-            <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'rgba(11,31,58,0.5)', fontSize: '0.82rem' }}>
-              Aún no tienes conversaciones. Cuando escribas o recibas un mensaje aparecerán aquí.
+
+            <div data-testid="messages-empty" style={{
+
+              padding: '1.5rem 1rem', textAlign: 'center', borderRadius: 12,
+
+              border: '1px dashed rgba(11,31,58,0.12)', background: 'rgba(11,31,58,0.02)',
+
+            }}>
+
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: NAVY }}>
+
+                Todavía no tienes conversaciones
+
+              </div>
+
+              <div style={{ fontSize: '0.75rem', color: 'rgba(11,31,58,0.55)', margin: '0.3rem 0 0.7rem' }}>
+
+                Conecta con la comunidad para empezar a conversar.
+
+              </div>
+
+              <Link to="/comunidad" data-testid="messages-empty-cta-community" style={{
+
+                display: 'inline-flex', padding: '0.4rem 0.9rem', borderRadius: 100,
+
+                background: '#00C896', color: NAVY, fontSize: '0.74rem', fontWeight: 800, textDecoration: 'none',
+
+              }}>Buscar en la comunidad</Link>
+
             </div>
+
           )}
           {conversations.map((c) => {
             const other = c.participants.find((p) => p.id !== user.id) || c.participants[0];
@@ -220,7 +248,7 @@ const MessagesPage = () => {
                     border: '1px solid rgba(11,31,58,0.12)', outline: 'none',
                     fontSize: '0.85rem', fontFamily: 'inherit',
                     resize: 'none', lineHeight: 1.4, maxHeight: 140, overflowY: 'auto' }} />
-                <button type="submit" disabled={busy || !body.trim()} data-testid="messages-send"
+                <button type="submit" disabled={busy || !body.trim()} data-testid="messages-send" aria-label="Enviar mensaje"
                   style={{ padding: '0.5rem 0.85rem', borderRadius: 100, background: NAVY, color: '#FFFFFF', border: 'none', cursor: 'pointer', height: 40 }}>
                   <Send size={13} />
                 </button>

@@ -4,6 +4,11 @@
 .idea/
 .vscode/
 
+# Local environment configuration
+.env
+.env.*
+!.env.example
+
 # Dependencies
 node_modules/
 /node_modules
