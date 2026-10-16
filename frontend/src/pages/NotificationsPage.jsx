@@ -54,9 +54,6 @@ const NotificationsPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (user) load(true); }, [user]);
 
-  if (user === undefined) return null;
-  if (!user) return <Navigate to="/join" replace />;
-
   const openItem = async (n) => {
     if (!n.is_read) {
       try {
@@ -113,6 +110,10 @@ const NotificationsPage = () => {
       { key: 'anteriores', label: 'Anteriores', items: anteriores },
     ].filter((g) => g.items.length > 0);
   }, [items]);
+
+  if (user === undefined) return null;
+  if (!user) return <Navigate to="/join" replace />;
+
   return (
     <CategoryPage icon="community" eyebrow="Notification Center" title="Todas tus notificaciones"
       subtitle="Reacciones, comentarios, seguidores, empleos, eventos y mensajes — en un solo lugar."
