@@ -1,5 +1,0 @@
-frontend/src/contexts/AuthContext.jsx
-frontend/src/contexts/CommunityAuthContext.jsx
-frontend/src/contexts/RealtimeContext.jsx
-frontend/src/contexts/UIPreferencesContext.jsx
-frontend/src/contexts/WorkspaceContext.jsx

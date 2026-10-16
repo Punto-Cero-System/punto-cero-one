@@ -1,8 +1,0 @@
-test_group_follow_graph                 => TODAS LAS COMPROBACIONES OK
-test_omega_fase_A_activities            => TODAS LAS COMPROBACIONES OK
-test_omega_f0_9_4_activities_infra      => TODAS LAS COMPROBACIONES OK
-test_omega_f0_9_3_activities            => TODAS LAS COMPROBACIONES OK
-test_omega_f0_9_1_fanout                => TODAS LAS COMPROBACIONES OK
-test_omega_f0_8_group_privacy           => RESULTADO: TODAS LAS COMPROBACIONES OK
-test_omega_f0_follower_counter          => RESULTADO: TODAS LAS COMPROBACIONES OK
-py_compile => exit 0
